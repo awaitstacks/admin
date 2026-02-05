@@ -22,7 +22,62 @@ const TourDashboard = () => {
   const [selectedTourId, setSelectedTourId] = useState("");
   const [dismissedBookings, setDismissedBookings] = useState(new Set());
   const [isLoading, setIsLoading] = useState(false);
+  // Protection condition → tour தேர்ந்தெடுத்து data வந்திருந்தால்
+  const shouldProtect = Boolean(
+    selectedTourId && 
+    !isLoading && 
+    bookings && 
+    bookings.length > 0
+  );
   const location = useLocation();
+  const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+
+  // 1. Browser reload / close tab / navigate away
+  useEffect(() => {
+    if (!shouldProtect) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';   // Browser default "Leave site?" dialog வரும்
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [shouldProtect]);
+
+  // 2. Back button / mobile swipe back protection
+  useEffect(() => {
+    if (!shouldProtect) return;
+
+    // Dummy history entry push → back அடிச்சா popstate வரும்
+    window.history.pushState(null, null, window.location.href);
+
+    const handlePopState = () => {
+      setShowConfirmLeave(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [shouldProtect]);
+
+  // Confirm & Cancel handlers
+  const handleConfirmLeave = () => {
+    setShowConfirmLeave(false);
+    window.history.back();
+  };
+
+  const handleCancelLeave = () => {
+    setShowConfirmLeave(false);
+    // Trap-ஐ மறுபடியும் வைக்கிறோம்
+    window.history.pushState(null, null, window.location.href);
+  };
+  
 
   // Clear toasts on route change
   useEffect(() => {
@@ -508,6 +563,87 @@ const TourDashboard = () => {
             </>
           )}
         </>
+      )}
+
+      {/* ── Confirmation Popup ─────────────────────────────────────── */}
+      {showConfirmLeave && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px'
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '440px',
+              width: '100%',
+              textAlign: 'center',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)'
+            }}
+          >
+            <h2 style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: 'bold', 
+              marginBottom: '16px', 
+              color: '#111827' 
+            }}>
+              Leave this page?
+            </h2>
+
+            <p style={{ 
+              color: '#4b5563', 
+              marginBottom: '24px', 
+              lineHeight: '1.6' 
+            }}>
+              You are viewing the dashboard for <strong>
+                {tourList.find(t => t._id === selectedTourId)?.title || "this tour"}
+              </strong>.<br />
+              Leaving will clear the current view.<br />
+              Are you sure you want to leave?
+            </p>
+
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <button
+                onClick={handleCancelLeave}
+                style={{
+                  padding: '12px 28px',
+                  backgroundColor: '#e5e7eb',
+                  color: '#1f2937',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel (Stay)
+              </button>
+
+              <button
+                onClick={handleConfirmLeave}
+                style={{
+                  padding: '12px 28px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Yes, Leave
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,85 +1,107 @@
+
 import React, { useContext, useEffect, useState } from "react";
-import { TourContext } from "../../context/TourContext";
+import { TourAdminContext } from "../../context/TourAdminContext";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import { toast } from "react-toastify";
 
 const CHUNK_SIZE = 8;
 
 const COMPANY_NAME = "GV - Tour Planners LLP";
 const COMPANY_ADDRESS = "15/4, Nehru Street, Jaihindpuram, Madurai - 625011";
 
-const TourRoomList = () => {
+const AdminRoomlist = () => {
   const {
-    tourList,
-    getTourList,
-    getRoomAllocation,
+    tours,
+    fetchToursList,
     roomAllocation,
     roomAllocationLoading,
     roomAllocationError,
-  } = useContext(TourContext);
+    fetchRoomAllocation,
+    setRoomAllocation
+  } = useContext(TourAdminContext);
 
   const [selectedTourId, setSelectedTourId] = useState("");
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isGeneratingVendorPDF, setIsGeneratingVendorPDF] = useState(false);
-    const [showConfirmLeave, setShowConfirmLeave] = useState(false);
-    const shouldProtect = Boolean(selectedTourId);   // protect as soon as a tour is selected
-  
-    // 1. Browser reload / close tab / navigate away confirmation
-    useEffect(() => {
-      if (!shouldProtect) return;
-  
-      const handleBeforeUnload = (e) => {
-        e.preventDefault();
-        e.returnValue = '';   // This triggers the browser's default "Leave site?" dialog
-      };
-  
-      window.addEventListener('beforeunload', handleBeforeUnload);
-  
-      return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-      };
-    }, [shouldProtect]);
-  
-    // 2. Back button / mobile swipe back protection
-    useEffect(() => {
-      if (!shouldProtect) return;
-  
-      // Push a dummy history entry so back button triggers popstate
-      window.history.pushState(null, null, window.location.href);
-  
-      const handlePopState = () => {
-        setShowConfirmLeave(true);
-      };
-  
-      window.addEventListener('popstate', handlePopState);
-  
-      return () => {
-        window.removeEventListener('popstate', handlePopState);
-      };
-    }, [shouldProtect]);
-  
-    // Confirm / Cancel handlers
-    const handleConfirmLeave = () => {
-      setShowConfirmLeave(false);
-      window.history.back();
+  const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+  const shouldProtect = Boolean(selectedTourId);   // protect as soon as a tour is selected
+
+  // 1. Browser reload / close tab / navigate away confirmation
+  useEffect(() => {
+    if (!shouldProtect) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';   // This triggers the browser's default "Leave site?" dialog
     };
-  
-    const handleCancelLeave = () => {
-      setShowConfirmLeave(false);
-      // Re-push to keep the back button trap active
-      window.history.pushState(null, null, window.location.href);
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  
+  }, [shouldProtect]);
+
+  // 2. Back button / mobile swipe back protection
+  useEffect(() => {
+    if (!shouldProtect) return;
+
+    // Push a dummy history entry so back button triggers popstate
+    window.history.pushState(null, null, window.location.href);
+
+    const handlePopState = () => {
+      setShowConfirmLeave(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [shouldProtect]);
+
+  // Confirm / Cancel handlers
+  const handleConfirmLeave = () => {
+    setShowConfirmLeave(false);
+    window.history.back();
+  };
+
+  const handleCancelLeave = () => {
+    setShowConfirmLeave(false);
+    // Re-push to keep the back button trap active
+    window.history.pushState(null, null, window.location.href);
+  };
 
   useEffect(() => {
-    if (tourList.length === 0) getTourList();
-  }, [getTourList, tourList.length]);
+    if (tours?.length === 0) {
+      fetchToursList();
+    }
+  }, [tours?.length, fetchToursList]);
+
+  // Reset when page mounts (or navigates back to this page)
+  useEffect(() => {
+    // Full reset on mount
+    setSelectedTourId("");           // Dropdown to "-- Select Tour --"
+    setRoomAllocation(null);         // Clear room data
+    // Optional: clear loading/error states if you expose setters
+    // setRoomAllocationLoading(false);
+    // setRoomAllocationError(null);
+
+    // Cleanup when leaving the page
+    return () => {
+      setSelectedTourId("");
+      setRoomAllocation(null);
+    };
+  }, []); // empty deps → only on mount/unmount
 
   useEffect(() => {
-    if (selectedTourId) getRoomAllocation(selectedTourId);
-  }, [selectedTourId, getRoomAllocation]);
+    if (selectedTourId) {
+      fetchRoomAllocation(selectedTourId);
+    }
+  }, [selectedTourId, fetchRoomAllocation]);
 
-  const selectedTour = tourList.find((t) => t._id === selectedTourId);
+  const selectedTour = tours?.find((t) => t._id === selectedTourId);
 
   /* ---------------- HELPERS ---------------- */
   const chunkArray = (arr, size) => {
@@ -202,9 +224,10 @@ const TourRoomList = () => {
         ".pdf";
 
       pdf.save(fileName);
+      toast.success("PDF downloaded successfully");
     } catch (err) {
       console.error(err);
-      alert("PDF generation failed");
+      toast.error("PDF generation failed");
     } finally {
       if (isVendor) setIsGeneratingVendorPDF(false);
       else setIsGeneratingPDF(false);
@@ -215,7 +238,7 @@ const TourRoomList = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-extrabold text-center text-gray-800 mb-10">
-          Tour Room Allocation
+          Admin Room Allocation
         </h1>
 
         <div className="bg-white rounded-xl shadow-lg p-6 mb-10">
@@ -225,7 +248,7 @@ const TourRoomList = () => {
             onChange={(e) => setSelectedTourId(e.target.value)}
           >
             <option value="">-- Select Tour --</option>
-            {tourList.map((t) => (
+            {tours.map((t) => (
               <option key={t._id} value={t._id}>
                 {t.title}
               </option>
@@ -263,7 +286,7 @@ const TourRoomList = () => {
                 disabled={isGeneratingPDF}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-10 rounded-xl text-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed transition transform hover:scale-105"
               >
-                {isGeneratingPDF ? "Generating..." : "Download Full PDF"}
+                {isGeneratingPDF ? "Generating..." : "Download Admin PDF"}
               </button>
 
               <button
@@ -273,18 +296,18 @@ const TourRoomList = () => {
               >
                 {isGeneratingVendorPDF
                   ? "Generating..."
-                  : "Download Vendor File"}
+                  : "Download Vendor PDF"}
               </button>
             </div>
 
             {/* Main Content Card */}
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className=" bg-white-300 text-blue py-8 px-6">
+              <div className="bg-gradient-to-r from-white-700 to-white-300 text-black py-8 px-6">
                 <h2 className="text-3xl font-bold text-center">
                   {selectedTour?.title}
                 </h2>
                 {hasFamilies && (
-                  <p className="text-center mt-4 text-black-100 italic text-lg">
+                  <p className="text-center mt-4 text-black italic text-lg">
                     Rooms grouped by family (F1, F2, F3...)
                   </p>
                 )}
@@ -388,7 +411,7 @@ const TourRoomList = () => {
 
       {/* ADMIN PDF (WITH MOBILE) */}
       <div style={{ position: "absolute", left: "-9999px", width: "297mm" }}>
-        {/* First Page - Admin (ONLY HERE company header) */}
+        {/* First Page - Admin */}
         <div className="pdf-page admin-pdf-page">
           <div style={{ textAlign: "center", marginBottom: "8mm" }}>
             <div
@@ -484,7 +507,7 @@ const TourRoomList = () => {
           </div>
         </div>
 
-        {/* Subsequent Room Pages - Admin (NO company header) */}
+        {/* Subsequent Room Pages - Admin */}
         {roomChunks.map((chunk, pageIndex) => (
           <div className="pdf-page admin-pdf-page" key={`admin-${pageIndex}`}>
             <div className="room-grid">
@@ -532,7 +555,7 @@ const TourRoomList = () => {
 
       {/* VENDOR PDF (NO MOBILE) */}
       <div style={{ position: "absolute", left: "-9999px", width: "297mm" }}>
-        {/* First Page - Vendor (ONLY HERE company header) */}
+        {/* First Page - Vendor */}
         <div className="pdf-page vendor-pdf-page">
           <div style={{ textAlign: "center", marginBottom: "8mm" }}>
             <div
@@ -598,6 +621,7 @@ const TourRoomList = () => {
               Place:
             </div>
           </div>
+
           {hasFamilies && (
             <p
               style={{
@@ -627,7 +651,7 @@ const TourRoomList = () => {
           </div>
         </div>
 
-        {/* Subsequent Room Pages - Vendor (NO company header) */}
+        {/* Subsequent Room Pages - Vendor */}
         {roomChunks.map((chunk, pageIndex) => (
           <div className="pdf-page vendor-pdf-page" key={`vendor-${pageIndex}`}>
             <div className="room-grid">
@@ -643,7 +667,7 @@ const TourRoomList = () => {
                           <span className="family-badge">({family})</span>
                         )}
                       </div>
-                      {/* Mobile hidden in vendor copy */}
+                      {/* Mobile hidden */}
                       <div className="sharing" style={{ marginTop: "8mm" }}>
                         {getSharingLabel(room.occupants.length)} SHARING
                       </div>
@@ -672,6 +696,7 @@ const TourRoomList = () => {
           </div>
         ))}
       </div>
+      {/* Leave Confirmation Popup */}
       {showConfirmLeave && (
         <div
           style={{
@@ -741,6 +766,8 @@ const TourRoomList = () => {
         </div>
       )}
     </div>
+
+
   );
 };
 
@@ -795,4 +822,4 @@ const Stat = ({ label, value, isPDF }) => {
   return null;
 };
 
-export default TourRoomList;
+export default AdminRoomlist;

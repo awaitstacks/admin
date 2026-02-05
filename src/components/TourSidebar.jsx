@@ -25,6 +25,19 @@ import {
   Book,
   BookAIcon,
   BookImage,
+  BookOpen,
+  BookHeartIcon,
+  ChartNoAxesColumn,
+  ListIcon,
+  HouseIcon,
+  MapPinHouse,
+  HouseWifiIcon,
+  HousePlug,
+  HomeIcon,
+  LucideHome,
+  HotelIcon,
+  HousePlugIcon,
+  HousePlus,
 } from "lucide-react";
 
 const TourSidebar = () => {
@@ -131,12 +144,15 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
 const adminMenuItems = [
   { to: "/admin-dashboard", icon: Home, label: "Dashboard" },
   { to: "/all-bookings", icon: Calendar, label: "Bookings" },
+  { to: "/get-bookings", icon: BookHeartIcon, label: "Tour Bookings" },
   { to: "/add-tour", icon: Plus, label: "Add Tour" },
   { to: "/tour-list", icon: Users, label: "Tour Controls and Data" },
   { to: "/cancel-rule", icon: FileText, label: "Cancellation Rule" },
   { to: "/db-migration", icon: OctagonAlert, label: "DB Migration centre" },
   { to: "/booking-approvals", icon: Signature, label: "Booking approvals" },
   { to: "/cancel-centre", icon: TicketX, label: "Cancellation approvals" },
+  { to: "/admin-namelist", icon: ListIcon, label: "Admin Name List" },
+  { to: "/admin-roomlist", icon: HousePlus, label: "Admin Room List" },
   { to: "/all-users", icon: User2Icon, label: "All users" },
 ];
 
