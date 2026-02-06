@@ -203,7 +203,7 @@ import "react-toastify/dist/ReactToastify.css";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-const AdminNamelist = () => {
+const AdminNameList = () => {
   const { tours = [], fetchToursList, tourBookings = [], fetchBookingsOfTour, selectedTourId, setSelectedTourId, isLoadingBookings = false } = useContext(TourAdminContext);
   const [nameFilter, setNameFilter] = useState("");
   const [phoneFilter, setPhoneFilter] = useState("");
@@ -574,6 +574,6 @@ useEffect(() => {
   );
 };
 
-export default AdminNamelist;
+export default AdminNameList;
 
 

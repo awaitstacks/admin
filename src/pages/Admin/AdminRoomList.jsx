@@ -10,7 +10,7 @@ const CHUNK_SIZE = 8;
 const COMPANY_NAME = "GV - Tour Planners LLP";
 const COMPANY_ADDRESS = "15/4, Nehru Street, Jaihindpuram, Madurai - 625011";
 
-const AdminRoomlist = () => {
+const AdminRoomList = () => {
   const {
     tours,
     fetchToursList,
@@ -822,4 +822,4 @@ const Stat = ({ label, value, isPDF }) => {
   return null;
 };
 
-export default AdminRoomlist;
+export default AdminRoomList;
