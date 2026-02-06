@@ -143,17 +143,17 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
 
 const adminMenuItems = [
   { to: "/admin-dashboard", icon: Home, label: "Dashboard" },
-  { to: "/all-bookings", icon: Calendar, label: "Bookings" },
-  { to: "/get-bookings", icon: BookHeartIcon, label: "Tour Bookings" },
+  { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
+  { to: "/all-users", icon: User2Icon, label: "All users" },
   { to: "/add-tour", icon: Plus, label: "Add Tour" },
+  { to: "/admin-namelist", icon: ListIcon, label: "Admin Name List" },
+  { to: "/admin-roomlist", icon: HousePlus, label: "Admin Room List" },
+  { to: "/booking-approvals", icon: Signature, label: "Booking approvals" },
+  { to: "/cancel-centre", icon: TicketX, label: "Cancellation approvals" },
+  { to: "/all-bookings", icon: Calendar, label: "Rejection centre" },
   { to: "/tour-list", icon: Users, label: "Tour Controls and Data" },
   { to: "/cancel-rule", icon: FileText, label: "Cancellation Rule" },
   { to: "/db-migration", icon: OctagonAlert, label: "DB Migration centre" },
-  { to: "/booking-approvals", icon: Signature, label: "Booking approvals" },
-  { to: "/cancel-centre", icon: TicketX, label: "Cancellation approvals" },
-  { to: "/admin-namelist", icon: ListIcon, label: "Admin Name List" },
-  { to: "/admin-roomlist", icon: HousePlus, label: "Admin Room List" },
-  { to: "/all-users", icon: User2Icon, label: "All users" },
 ];
 
 const tourMenuItems = [
@@ -166,11 +166,11 @@ const tourMenuItems = [
   { to: "/tour-dashboard", icon: Info, label: "Tour info" },
   { to: "/tour-bookings", icon: BookImage, label: "Tour Bookings" },
   { to: "/tour-profile", icon: User, label: "Tour profile" },
-  { to: "/tour-namelist", icon: FileText, label: "Name List" },
+  { to: "/tour-namelist", icon: FileText, label: "Tour Name List" },
   {
     to: "/tour-roomlist",
     icon: Hotel,
-    label: "Room list",
+    label: "Tour Room list",
   },
   { to: "/tour-updateBalance", icon: IndianRupee, label: "Payment controller" },
   {
