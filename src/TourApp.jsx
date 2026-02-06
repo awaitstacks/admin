@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 
 import TourNavbar from "./components/TourNavbar.jsx";
 import TourSidebar from "./components/TourSidebar.jsx";
+import TourLogin from "./pages/TourLogin.jsx";
 
 import { TourAdminContext } from "./context/TourAdminContext.jsx";
 import { TourContext } from "./context/TourContext.jsx";
@@ -10,28 +11,26 @@ import { TourContext } from "./context/TourContext.jsx";
 import TourAdminDashboard from "./pages/Admin/TourAdminDashboard.jsx";
 import AllBookings from "./pages/Admin/AllBookings.jsx";
 import AddTour from "./pages/Admin/AddTour.jsx";
-
-import TourLogin from "./pages/TourLogin.jsx";
 import ToursList from "./pages/Admin/ToursList.jsx";
+import CancelRule from "./pages/Admin/CancelRule.jsx";
+import CancellationCentre from "./pages/Admin/CancellationCentre.jsx";
+import DBMigrationCenter from "./pages/Admin/DBMigrationCenter.jsx";
+import BookingApprovals from "./pages/Admin/BookingApprovals.jsx";
+import UsersData from "./pages/Admin/UsersData.jsx";
+import GetBookings from "./pages/Admin/GetBookings.jsx";
+import AdminNameList from "./pages/Admin/AdminNameList.jsx";
+import AdminRoomList from "./pages/Admin/AdminRoomList.jsx";
+
 import TourDashboard from "./pages/Doctor/TourDashboard.jsx";
 import TourBookings from "./pages/Doctor/TourBookings.jsx";
 import TourProfile from "./pages/Doctor/TourProfile.jsx";
 import TourNameList from "./pages/Doctor/TourNameList.jsx";
-import CancelRule from "./pages/Admin/CancelRule.jsx";
-
 import BookingControls from "./pages/Doctor/BookingControls.jsx";
 import CancellationControls from "./pages/Doctor/CancellationControls.jsx";
-import CancellationCentre from "./pages/Admin/CancellationCentre.jsx";
 import ManageBooking from "./pages/Doctor/ManageBooking.jsx";
-import DBMigrationCenter from "./pages/Admin/DBMigrationCenter.jsx";
-import BookingApprovals from "./pages/Admin/BookingApprovals.jsx";
 import TourRoomList from "./pages/Doctor/TourRoomList.jsx";
-import UsersData from "./pages/Admin/UsersData.jsx";
 import AllTourBookings from "./pages/Doctor/AllTourBookings.jsx";
 import TaskDashboard from "./pages/Doctor/TaskDashboard.jsx";
-import GetBookings from "./pages/Admin/GetBookings.jsx";
-import AdminNameList from "./pages/Admin/AdminNameList.jsx";
-import AdminRoomList from "./pages/Admin/AdminRoomList.jsx";
 
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
