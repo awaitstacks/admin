@@ -1,3 +1,4 @@
+
 // import React, { useContext, useEffect, useState, useRef } from 'react';
 // import { 
 //   Users, 
@@ -8,7 +9,7 @@
 //   ChevronDown
 // } from 'lucide-react';
 // import { TourAdminContext } from '../../context/TourAdminContext';
-// import { toast, ToastContainer } from "react-toastify";
+// import { ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
 
 // const UsersData = () => {
@@ -18,41 +19,67 @@
 //   const [genderFilter, setGenderFilter] = useState('all');
 //   const [phoneFilter, setPhoneFilter] = useState('');
 //   const [genderOpen, setGenderOpen] = useState(false);
-//   const [hasShownToast, setHasShownToast] = useState(false); // duplicate toast தடுக்க
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [loadMessage, setLoadMessage] = useState(''); // success or error message
 
 //   const dropdownRef = useRef(null);
 
-//   // Fetch users only once & show toast only once
+//   // ──────────────────────────────────────────────
+//       // UNSAVED CHANGES / LEAVE CONFIRMATION PROTECTION
+//       // ──────────────────────────────────────────────
+//       const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  
+//       useEffect(() => {
+//           const handleBeforeUnload = (event) => {
+//               event.preventDefault();
+//               event.returnValue = "You have unsaved changes or active filters. Are you sure you want to leave?";
+//           };
+  
+//           window.addEventListener("beforeunload", handleBeforeUnload);
+  
+//           return () => {
+//               window.removeEventListener("beforeunload", handleBeforeUnload);
+//           };
+//       }, []);
+  
+//       useEffect(() => {
+//           window.history.pushState(null, null, window.location.href);
+  
+//           const handlePopState = (event) => {
+//               event.preventDefault();
+//               setShowLeaveConfirm(true);
+//           };
+  
+//           window.addEventListener("popstate", handlePopState);
+  
+//           return () => {
+//               window.removeEventListener("popstate", handlePopState);
+//           };
+//       }, []);
+
+//   // Fetch users once & show inline message (no toast)
 //   useEffect(() => {
-//     if (aToken && !hasShownToast) { // hasShownToast false இருந்தா மட்டும் run
+//     if (aToken) {
+//       setIsLoading(true);
+//       setLoadMessage('');
+
 //       getAllUsers()
 //         .then(() => {
 //           if (allUsers && allUsers.length > 0) {
-//             toast.success(`Loaded ${allUsers.length} users`, {
-//               toastId: "users-loaded", // ← unique ID கொடுத்து duplicate தடுக்க
-//               position: "top-right",
-//               autoClose: 3000,
-//               hideProgressBar: false,
-//               closeOnClick: true,
-//               pauseOnHover: true,
-//               draggable: true,
-//             });
+//             setLoadMessage(`Users loaded successfully (${allUsers.length})`);
 //           } else {
-//             toast.info("No users found", {
-//               toastId: "no-users",
-//               position: "top-right",
-//               autoClose: 3000,
-//             });
+//             setLoadMessage("No users found");
 //           }
-//           setHasShownToast(true); // இப்போ toast காட்டிட்டோம் — மறுபடியும் காட்டாது
 //         })
 //         .catch((error) => {
 //           console.error("Error fetching users:", error);
-//           toast.error("Failed to load users", { toastId: "fetch-error" });
-//           setHasShownToast(true);
+//           setLoadMessage("Failed to load users");
+//         })
+//         .finally(() => {
+//           setIsLoading(false);
 //         });
 //     }
-//   }, [aToken, getAllUsers, hasShownToast]); // allUsers dependency remove பண்ணலாம், ஆனா hasShownToast control பண்ணுது
+//   }, [aToken, getAllUsers]);
 
 //   // Close dropdown on outside click
 //   useEffect(() => {
@@ -110,6 +137,8 @@
 //             <p className="text-gray-600 mt-1">
 //               {allUsers?.length || 0} registered users • {new Date().toLocaleDateString()}
 //             </p>
+
+            
 //           </div>
 //         </div>
 //       </div>
@@ -294,13 +323,49 @@
 //           </p>
 //         </div>
 //       )}
+
+//       {/* Leave Confirmation Popup */}
+//             {showLeaveConfirm && (
+//                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+//                     <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
+//                         <h2 className="text-2xl font-bold text-gray-800 mb-4">
+//                             Confirm Navigation
+//                         </h2>
+//                         <p className="text-gray-600 mb-6">
+//                             You are about to leave this page.<br />
+//                             Any active filters or changes will be lost on reload.<br /><br />
+//                             Are you sure you want to continue?
+//                         </p>
+//                         <div className="flex justify-center gap-6">
+//                             <button
+//                                 onClick={() => {
+//                                     setShowLeaveConfirm(false);
+//                                     window.history.pushState(null, null, window.location.href);
+//                                 }}
+//                                 className="px-8 py-3 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition"
+//                             >
+//                                 Cancel (Stay)
+//                             </button>
+//                             <button
+//                                 onClick={() => {
+//                                     setShowLeaveConfirm(false);
+//                                     window.history.back();
+//                                 }}
+//                                 className="px-8 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition"
+//                             >
+//                                 Yes (Leave)
+//                             </button>
+//                         </div>
+//                     </div>
+//                 </div>
+//             )}
 //     </div>
 //   );
 // };
 
 // export default UsersData;
 
-
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import { 
   Users, 
@@ -311,7 +376,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { TourAdminContext } from '../../context/TourAdminContext';
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const UsersData = () => {
@@ -322,60 +387,51 @@ const UsersData = () => {
   const [phoneFilter, setPhoneFilter] = useState('');
   const [genderOpen, setGenderOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadMessage, setLoadMessage] = useState(''); // success or error message
 
   const dropdownRef = useRef(null);
 
   // ──────────────────────────────────────────────
-      // UNSAVED CHANGES / LEAVE CONFIRMATION PROTECTION
-      // ──────────────────────────────────────────────
-      const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  
-      useEffect(() => {
-          const handleBeforeUnload = (event) => {
-              event.preventDefault();
-              event.returnValue = "You have unsaved changes or active filters. Are you sure you want to leave?";
-          };
-  
-          window.addEventListener("beforeunload", handleBeforeUnload);
-  
-          return () => {
-              window.removeEventListener("beforeunload", handleBeforeUnload);
-          };
-      }, []);
-  
-      useEffect(() => {
-          window.history.pushState(null, null, window.location.href);
-  
-          const handlePopState = (event) => {
-              event.preventDefault();
-              setShowLeaveConfirm(true);
-          };
-  
-          window.addEventListener("popstate", handlePopState);
-  
-          return () => {
-              window.removeEventListener("popstate", handlePopState);
-          };
-      }, []);
+  // LEAVE CONFIRMATION PROTECTION
+  // ──────────────────────────────────────────────
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-  // Fetch users once & show inline message (no toast)
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "You have unsaved changes or active filters. Are you sure you want to leave?";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    window.history.pushState(null, null, window.location.href);
+
+    const handlePopState = (event) => {
+      event.preventDefault();
+      setShowLeaveConfirm(true);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  // Fetch users – show toast only on error
   useEffect(() => {
     if (aToken) {
       setIsLoading(true);
-      setLoadMessage('');
 
       getAllUsers()
-        .then(() => {
-          if (allUsers && allUsers.length > 0) {
-            setLoadMessage(`Users loaded successfully (${allUsers.length})`);
-          } else {
-            setLoadMessage("No users found");
-          }
-        })
         .catch((error) => {
           console.error("Error fetching users:", error);
-          setLoadMessage("Failed to load users");
+          toast.error("Failed to load users");
         })
         .finally(() => {
           setIsLoading(false);
@@ -383,7 +439,7 @@ const UsersData = () => {
     }
   }, [aToken, getAllUsers]);
 
-  // Close dropdown on outside click
+  // Close gender dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -417,7 +473,7 @@ const UsersData = () => {
   const hasFilters = searchTerm || genderFilter !== 'all' || phoneFilter !== '';
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-full mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-full mx-auto bg-gray-50 min-h-screen">
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -431,55 +487,49 @@ const UsersData = () => {
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 sm:mb-10 gap-4">
         <div className="flex items-center gap-3">
           <Users className="w-10 h-10 text-indigo-600" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Users Management</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Users Management</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">
               {allUsers?.length || 0} registered users • {new Date().toLocaleDateString()}
             </p>
-
-            
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-lg mb-6">
+      <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Search */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-              Search by Name or Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search by Name or Email</label>
             <div className="relative">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Type to search..."
-                className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
-              <SearchIcon className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
             </div>
           </div>
 
           {/* Gender Dropdown */}
           <div className="relative" ref={dropdownRef}>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-              Gender
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
             <div 
               onClick={() => setGenderOpen(!genderOpen)}
-              className="w-full px-4 py-2.5 sm:py-3 text-xs sm:text-sm bg-white border border-gray-300 rounded-xl cursor-pointer flex justify-between items-center hover:border-indigo-500 transition-all shadow-sm"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg cursor-pointer flex justify-between items-center bg-white hover:border-indigo-500"
             >
               <span>{genderFilter === 'all' ? 'All Genders' : genderFilter}</span>
-              <ChevronDown className={`text-gray-500 transition-transform ${genderOpen ? 'rotate-180' : ''}`} size={16} />
+              <ChevronDown className={`text-gray-500 transition-transform ${genderOpen ? 'rotate-180' : ''}`} size={18} />
             </div>
 
             {genderOpen && (
-              <div className="absolute z-20 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden">
+              <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
                 {['all', 'Male', 'Female', 'Other', 'Not Selected'].map(opt => (
                   <div
                     key={opt}
@@ -487,7 +537,7 @@ const UsersData = () => {
                       setGenderFilter(opt);
                       setGenderOpen(false);
                     }}
-                    className="px-4 sm:px-5 py-2.5 sm:py-3 hover:bg-indigo-50 cursor-pointer transition-colors text-xs sm:text-sm"
+                    className="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer"
                   >
                     {opt === 'all' ? 'All Genders' : opt}
                   </div>
@@ -496,171 +546,197 @@ const UsersData = () => {
             )}
           </div>
 
-          {/* Phone Number */}
+          {/* Phone */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-              Phone Number
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
             <div className="relative">
               <input
                 type="text"
                 value={phoneFilter}
                 onChange={(e) => setPhoneFilter(e.target.value)}
                 placeholder="Search phone number..."
-                className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
-              <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
             </div>
           </div>
 
-          {/* Clear Button */}
+          {/* Clear button */}
           {hasFilters && (
-            <div className="self-end w-full sm:w-auto">
+            <div className="self-end">
               <button
                 onClick={clearFilters}
-                className="
-                  w-full sm:w-auto px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold 
-                  bg-gradient-to-r from-indigo-500 to-indigo-600 
-                  text-white rounded-xl shadow-md 
-                  flex items-center gap-2 justify-center 
-                  hover:from-indigo-600 hover:to-indigo-700 
-                  transition-all duration-300
-                "
+                className="w-full sm:w-auto px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition flex items-center justify-center gap-2"
               >
-                <X size={16} />
-                Clear Filters
+                <X size={16} /> Clear Filters
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Table */}
-      {allUsers && (
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-blue-50">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider w-16 sm:w-20">
-                    Photo
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                    Name & Email
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                    Gender
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                    Address
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
-                  <tr 
-                    key={user._id}
-                    className="hover:bg-indigo-50/30 transition-colors duration-200"
-                  >
-                    <td className="px-4 sm:px-6 py-4 sm:py-5 whitespace-nowrap">
-                      {user.image && user.image.includes('http') ? (
-                        <img
-                          src={user.image}
-                          alt={user.name || 'User'}
-                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-indigo-100 shadow-md"
-                          onError={(e) => {
-                            e.target.src = `https://ui-avatars.com/api/?name=${user.name || 'User'}&background=6366f1&color=fff`;
-                          }}
-                        />
-                      ) : (
-                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg sm:text-xl shadow-md">
-                          {(user.name?.[0] || 'U').toUpperCase()}
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="px-4 sm:px-6 py-4 sm:py-5">
-                      <div className="text-sm sm:text-base font-medium text-gray-900">
-                        {user.name || '—'}
-                      </div>
-                      <div className="text-xs sm:text-sm text-gray-600 mt-1 flex items-center gap-1 sm:gap-2">
-                        <Mail size={14} className="text-indigo-500" />
-                        {user.email}
-                      </div>
-                    </td>
-
-                    <td className="px-4 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm text-gray-700 font-medium">
-                      {user.phone || 'Not provided'}
-                    </td>
-
-                    <td className="px-4 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm text-gray-700">
-                      {user.gender || 'Not selected'}
-                    </td>
-
-                    <td className="px-4 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm text-gray-700">
-                      {user.address?.line1 || user.address?.line2
-                        ? `${user.address.line1 || ''} ${user.address.line2 || ''}`.trim()
-                        : 'No address'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {/* Loading */}
+      {isLoading && (
+        <div className="text-center py-12 text-gray-600 text-lg">Loading users...</div>
       )}
 
-      {/* No results */}
-      {allUsers && filteredUsers.length === 0 && (
-        <div className="text-center py-16 sm:py-20 bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-100">
-          <Users className="w-16 h-16 sm:w-20 sm:h-20 text-gray-300 mx-auto mb-4 sm:mb-6" />
-          <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
-            No matching users
-          </h3>
-          <p className="text-sm sm:text-base text-gray-600">
-            Try adjusting your search or filters
-          </p>
-        </div>
+      {/* Content */}
+      {!isLoading && allUsers && (
+        <>
+          {/* DESKTOP TABLE */}
+          <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-24">Photo</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Name & Email</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Phone</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Gender</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Address</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredUsers.map((user) => (
+                    <tr key={user._id} className="hover:bg-indigo-50/30 transition-colors">
+                      <td className="px-6 py-5 whitespace-nowrap">
+                        {user.image && user.image.includes('http') ? (
+                          <img
+                            src={user.image}
+                            alt={user.name || 'User'}
+                            className="h-12 w-12 rounded-full object-cover border-2 border-indigo-100"
+                            onError={(e) => {
+                              e.target.src = `https://ui-avatars.com/api/?name=${user.name || 'User'}&background=6366f1&color=fff`;
+                            }}
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl">
+                            {(user.name?.[0] || 'U').toUpperCase()}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="font-medium text-gray-900">{user.name || '—'}</div>
+                        <div className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                          <Mail size={14} /> {user.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-gray-700">{user.phone || 'Not provided'}</td>
+                      <td className="px-6 py-5 text-gray-700">{user.gender || 'Not selected'}</td>
+                      <td className="px-6 py-5 text-gray-700">
+                        {user.address?.line1 || user.address?.line2
+                          ? `${user.address.line1 || ''} ${user.address.line2 || ''}`.trim()
+                          : 'No address'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* MOBILE VERTICAL CARDS */}
+          <div className="md:hidden space-y-5">
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-xl shadow-md border border-gray-100">
+                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-800 mb-2">No matching users</h3>
+                <p className="text-gray-600">Try adjusting your search or filters</p>
+              </div>
+            ) : (
+              filteredUsers.map((user) => (
+                <div
+                  key={user._id}
+                  className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden"
+                >
+                  {/* Header with photo + name/email */}
+                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 flex items-center gap-4">
+                    {user.image && user.image.includes('http') ? (
+                      <img
+                        src={user.image}
+                        alt={user.name || 'User'}
+                        className="h-14 w-14 rounded-full object-cover border-2 border-white shadow"
+                        onError={(e) => {
+                          e.target.src = `https://ui-avatars.com/api/?name=${user.name || 'User'}&background=6366f1&color=fff`;
+                        }}
+                      />
+                    ) : (
+                      <div className="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl shadow">
+                        {(user.name?.[0] || 'U').toUpperCase()}
+                      </div>
+                    )}
+
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-lg truncate">
+                        {user.name || 'Unknown User'}
+                      </h3>
+                      <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5 truncate">
+                        <Mail size={14} /> {user.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Details stacked vertically */}
+                  <div className="p-4 space-y-3.5 text-sm divide-y divide-gray-100">
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600">Phone</span>
+                      <span className="font-medium">{user.phone || 'Not provided'}</span>
+                    </div>
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-600">Gender</span>
+                      <span className="font-medium">{user.gender || 'Not selected'}</span>
+                    </div>
+                    <div className="pt-3">
+                      <span className="text-gray-600 block mb-1">Address</span>
+                      <p className="text-gray-800">
+                        {user.address?.line1 || user.address?.line2
+                          ? `${user.address.line1 || ''} ${user.address.line2 || ''}`.trim()
+                          : 'No address provided'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
       )}
 
       {/* Leave Confirmation Popup */}
-            {showLeaveConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
-                    <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                            Confirm Navigation
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            You are about to leave this page.<br />
-                            Any active filters or changes will be lost on reload.<br /><br />
-                            Are you sure you want to continue?
-                        </p>
-                        <div className="flex justify-center gap-6">
-                            <button
-                                onClick={() => {
-                                    setShowLeaveConfirm(false);
-                                    window.history.pushState(null, null, window.location.href);
-                                }}
-                                className="px-8 py-3 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition"
-                            >
-                                Cancel (Stay)
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowLeaveConfirm(false);
-                                    window.history.back();
-                                }}
-                                className="px-8 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition"
-                            >
-                                Yes (Leave)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Confirm Navigation
+            </h2>
+            <p className="text-gray-600 mb-6">
+              You are about to leave this page.<br />
+              Any active filters or changes will be lost on reload.<br /><br />
+              Are you sure you want to continue?
+            </p>
+            <div className="flex justify-center gap-6">
+              <button
+                onClick={() => {
+                  setShowLeaveConfirm(false);
+                  window.history.pushState(null, null, window.location.href);
+                }}
+                className="px-8 py-3 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition"
+              >
+                Cancel (Stay)
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveConfirm(false);
+                  window.history.back();
+                }}
+                className="px-8 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition"
+              >
+                Yes (Leave)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
