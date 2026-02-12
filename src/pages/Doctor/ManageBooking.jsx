@@ -125,13 +125,28 @@ const ManageBooking = () => {
   };
 
   const removeTraveller = (index) => {
-    if (window.confirm("Are you sure you want to remove this traveller?")) {
-      setBooking((prev) => ({
-        ...prev,
-        travellers: prev.travellers.filter((_, i) => i !== index),
-      }));
-      toast.info("Traveller removed. Save to confirm.");
+    const travellerToRemove = booking.travellers[index];
+
+    // Only show serious warning if this is an EXISTING traveller (has _id)
+    if (travellerToRemove._id) {
+      const warningMessage = 
+        "WARNING: Removing this existing traveller will reset all advance and balance payments for the entire booking.\n\n" +
+        "This action effectively treats the booking as new — no prior payment history, calculations, or records will be carried forward for this traveller.\n\n" +
+        "Please consult with the admin team before proceeding to avoid unintended financial adjustments.\n\n" +
+        "Are you sure you want to continue?";
+
+      if (!window.confirm(warningMessage)) {
+        return; // User cancelled → do nothing
+      }
     }
+
+    // Proceed with removal (no warning for newly added travellers)
+    setBooking((prev) => ({
+      ...prev,
+      travellers: prev.travellers.filter((_, i) => i !== index),
+    }));
+
+    toast.info("Traveller removed. Save to confirm.");
   };
 
   const getPackage = (traveller) => {
@@ -350,7 +365,6 @@ const ManageBooking = () => {
 
         const res = await getManagedBookingsHistory();
         if (res.success && Array.isArray(res.data)) {
-          // Sort history: newest first (latest raisedAt/createdAt at top)
           const filtered = res.data
             .filter(
               (e) => e.originalBooking?._id?.toString() === booking._id.toString()
@@ -358,7 +372,7 @@ const ManageBooking = () => {
             .sort((a, b) => {
               const dateA = new Date(a.raisedAt || a.createdAt || 0);
               const dateB = new Date(b.raisedAt || b.createdAt || 0);
-              return dateB - dateA; // descending → newest first
+              return dateB - dateA; // newest first
             });
 
           setBalanceHistory(filtered);
@@ -385,7 +399,6 @@ const ManageBooking = () => {
       try {
         const res = await getManagedBookingsHistory();
         if (res.success && Array.isArray(res.data)) {
-          // Sort history: newest first
           const filtered = res.data
             .filter(
               (e) => e.originalBooking?._id?.toString() === booking._id.toString()
@@ -393,7 +406,7 @@ const ManageBooking = () => {
             .sort((a, b) => {
               const dateA = new Date(a.raisedAt || a.createdAt || 0);
               const dateB = new Date(b.raisedAt || b.createdAt || 0);
-              return dateB - dateA; // newest on top
+              return dateB - dateA; // newest first
             });
 
           setBalanceHistory(filtered);
