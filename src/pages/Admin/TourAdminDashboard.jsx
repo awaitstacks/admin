@@ -1,5 +1,6 @@
 
-/* eslint-disable no-unused-vars */
+
+// /* eslint-disable react-hooks/exhaustive-deps */
 // import React, { useContext, useEffect, useState, useCallback } from "react";
 // import { useLocation } from "react-router-dom";
 // import { TourAdminContext } from "../../context/TourAdminContext";
@@ -18,7 +19,9 @@
 //   FilePenLine,
 //   Check,
 //   X,
-//   Clock, // for unverified bookings
+//   Clock,
+//   FileCheck,          // ← new for cancellation receipts
+//   Briefcase,          // ← new for manage booking receipts
 // } from "lucide-react";
 
 // const TourAdminDashboard = () => {
@@ -109,12 +112,24 @@
 //         (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
 //       ),
 
-//     // New filter: Unverified / New bookings (both payments unpaid)
 //     unverified: (b) =>
 //       !b?.payment?.advance?.paid &&
 //       !b?.payment?.balance?.paid &&
 //       b.travellers?.some(
 //         (t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin,
+//       ),
+
+//     // New filters - view only
+//     cancellationReceipt: (b) =>
+//       b?.cancellationReceipt === true &&
+//       b.travellers?.some(
+//         (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+//       ),
+
+//     manageBookingReceipt: (b) =>
+//       b?.manageBookingReceipt === true &&
+//       b.travellers?.some(
+//         (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
 //       ),
 //   };
 
@@ -126,6 +141,8 @@
 //     modifyReceipt: bookings.filter(filters.modifyReceipt),
 //     unverified: bookings.filter(filters.unverified),
 //     manageRequests: Array.isArray(pendingApprovals) ? pendingApprovals : [],
+//     cancellationReceipt: bookings.filter(filters.cancellationReceipt),
+//     manageBookingReceipt: bookings.filter(filters.manageBookingReceipt),
 //   };
 
 //   const totalTravellers = bookings.reduce((count, b) => {
@@ -367,8 +384,8 @@
 //                           : ""}
 //                         {t.cancelled.releaseddAt
 //                           ? `, Released at ${formatDate(
-//                             t.cancelled.releaseddAt,
-//                           )}`
+//                               t.cancelled.releaseddAt,
+//                             )}`
 //                           : ""}
 //                       </p>
 //                     )}
@@ -415,17 +432,23 @@
 //                 Advance Receipt Sent:{" "}
 //                 {booking.receipts?.advanceReceiptSent
 //                   ? `Yes at ${formatDate(
-//                     booking.receipts.advanceReceiptSentAt,
-//                   )}`
+//                       booking.receipts.advanceReceiptSentAt,
+//                     )}`
 //                   : "No"}
 //               </p>
 //               <p>
 //                 Balance Receipt Sent:{" "}
 //                 {booking.receipts?.balanceReceiptSent
 //                   ? `Yes at ${formatDate(
-//                     booking.receipts.balanceReceiptSentAt,
-//                   )}`
+//                       booking.receipts.balanceReceiptSentAt,
+//                     )}`
 //                   : "No"}
+//               </p>
+//               <p>
+//                 Cancellation Receipt: {booking.cancellationReceipt ? "Yes" : "No"}
+//               </p>
+//               <p>
+//                 Manage Booking Receipt: {booking.manageBookingReceipt ? "Yes" : "No"}
 //               </p>
 //             </div>
 
@@ -473,8 +496,8 @@
 //                     : ""}
 //                   {booking.cancelled.releaseddAt
 //                     ? `, Released at ${formatDate(
-//                       booking.cancelled.releaseddAt,
-//                     )}`
+//                         booking.cancelled.releaseddAt,
+//                       )}`
 //                     : ""}
 //                 </p>
 //               </div>
@@ -631,7 +654,46 @@
 //               </p>
 //             </div>
 
-//             <div className="flex gap-3 justify-end"></div>
+//             <div className="flex gap-3 justify-end">
+//               <button
+//                 onClick={(e) => {
+//                   e.stopPropagation();
+//                   handleReject(booking._id);
+//                 }}
+//                 disabled={isActing}
+//                 className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition ${
+//                   isActing
+//                     ? "bg-gray-400 cursor-not-allowed"
+//                     : "bg-red-600 hover:bg-red-700 text-white"
+//                 }`}
+//               >
+//                 {isActing ? (
+//                   <Loader2 className="w-4 h-4 animate-spin" />
+//                 ) : (
+//                   <X className="w-4 h-4" />
+//                 )}
+//                 Reject
+//               </button>
+//               <button
+//                 onClick={(e) => {
+//                   e.stopPropagation();
+//                   handleApprove(booking._id);
+//                 }}
+//                 disabled={isActing}
+//                 className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition ${
+//                   isActing
+//                     ? "bg-gray-400 cursor-not-allowed"
+//                     : "bg-green-600 hover:bg-green-700 text-white"
+//                 }`}
+//               >
+//                 {isActing ? (
+//                   <Loader2 className="w-4 h-4 animate-spin" />
+//                 ) : (
+//                   <Check className="w-4 h-4" />
+//                 )}
+//                 Approve
+//               </button>
+//             </div>
 //           </div>
 //         )}
 //       </div>
@@ -661,13 +723,13 @@
 //             <div className="space-y-4">
 //               {category === "cancellation"
 //                 ? visible.map((b) => (
-//                   <CancellationItem key={b._id} booking={b} />
-//                 ))
+//                     <CancellationItem key={b._id} booking={b} />
+//                   ))
 //                 : category === "manageRequests"
-//                   ? visible.map((b) => (
+//                 ? visible.map((b) => (
 //                     <ManageRequestItem key={b._id} booking={b} />
 //                   ))
-//                   : visible.map((b) => (
+//                 : visible.map((b) => (
 //                     <BookingItem
 //                       key={b._id}
 //                       booking={b}
@@ -711,7 +773,7 @@
 //     },
 //     {
 //       label: "Unverified",
-//       value: unverifiedCount,
+//       value: categorized.unverified.length,
 //       Icon: Clock,
 //       color: "text-teal-600",
 //       bg: "bg-teal-100",
@@ -758,6 +820,21 @@
 //       color: "text-pink-600",
 //       bg: "bg-pink-100",
 //     },
+//     // New metrics
+//     {
+//       label: "Cancellation Receipts",
+//       value: categorized.cancellationReceipt.length,
+//       Icon: FileCheck,
+//       color: "text-rose-600",
+//       bg: "bg-rose-100",
+//     },
+//     {
+//       label: "Manage Booking Receipts",
+//       value: categorized.manageBookingReceipt.length,
+//       Icon: Briefcase,
+//       color: "text-indigo-600",
+//       bg: "bg-indigo-100",
+//     },
 //   ];
 
 //   return (
@@ -786,24 +863,7 @@
 //           </div>
 //         ) : (
 //           <>
-//             {/* <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-4 mb-10">
-//               {metrics.map((s, i) => (
-//                 <div
-//                   key={i}
-//                   className="bg-white p-4 rounded-xl shadow-sm border hover:shadow-md transition text-center"
-//                 >
-//                   <div
-//                     className={`w-12 h-12 ${s.bg} rounded-full flex items-center justify-center mx-auto mb-3`}
-//                   >
-//                     <s.Icon className={`w-6 h-6 ${s.color}`} />
-//                   </div>
-//                   <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-//                   <p className="text-xs text-gray-500 mt-1">{s.label}</p>
-//                 </div>
-//               ))}
-//             </div> */}
-
-//             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-9 gap-4 mb-10">
+//             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-4 mb-10">
 //               {metrics.map((m, i) => (
 //                 <div
 //                   key={i}
@@ -817,13 +877,13 @@
 
 //                   <p className="text-2xl font-bold text-gray-900">{m.value}</p>
 
-//                   {/* மாற்றம்: text wrap + center + line clamp */}
 //                   <p className="text-xs text-gray-500 mt-2 px-2 leading-tight whitespace-normal break-words line-clamp-2 text-center">
 //                     {m.label}
 //                   </p>
 //                 </div>
 //               ))}
 //             </div>
+
 //             <Section
 //               title="Unverified Bookings"
 //               category="unverified"
@@ -853,12 +913,20 @@
 //               Icon={FileText}
 //             />
 //             <Section
-//               title="Booking Completion Actions"
-//               category="completion"
-//               statusLabel="Pending"
-//               statusColor="text-orange-600"
-//               Icon={CheckCircle}
+//               title="Cancellation Receipts Pending"
+//               category="cancellationReceipt"
+//               statusLabel="Marked"
+//               statusColor="text-rose-600"
+//               Icon={FileCheck}
 //             />
+//             <Section
+//               title="Manage Booking Receipts Pending"
+//               category="manageBookingReceipt"
+//               statusLabel="Marked"
+//               statusColor="text-indigo-600"
+//               Icon={Briefcase}
+//             />
+          
 //             <Section
 //               title="Cancellation Request Actions"
 //               category="cancellation"
@@ -873,6 +941,13 @@
 //               statusColor="text-pink-600"
 //               Icon={FilePenLine}
 //             />
+//               <Section
+//               title="Booking Completion Actions"
+//               category="completion"
+//               statusLabel="Pending"
+//               statusColor="text-orange-600"
+//               Icon={CheckCircle}
+//             />
 //           </>
 //         )}
 //       </div>
@@ -881,7 +956,6 @@
 // };
 
 // export default TourAdminDashboard;
-
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect, useState, useCallback } from "react";
@@ -900,11 +974,9 @@ import {
   Copy,
   Loader2,
   FilePenLine,
-  Check,
-  X,
   Clock,
-  FileCheck,          // ← new for cancellation receipts
-  Briefcase,          // ← new for manage booking receipts
+  FileCheck,
+  Briefcase,
 } from "lucide-react";
 
 const TourAdminDashboard = () => {
@@ -914,8 +986,6 @@ const TourAdminDashboard = () => {
     releaseBooking,
     getPendingApprovals,
     pendingApprovals,
-    approveBookingUpdate,
-    rejectBookingUpdate,
   } = useContext(TourAdminContext);
 
   const [expanded, setExpanded] = useState({});
@@ -1002,7 +1072,6 @@ const TourAdminDashboard = () => {
         (t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin,
       ),
 
-    // New filters - view only
     cancellationReceipt: (b) =>
       b?.cancellationReceipt === true &&
       b.travellers?.some(
@@ -1046,8 +1115,6 @@ const TourAdminDashboard = () => {
   const uniqueUsers = new Set(
     bookings.map((b) => b.userData?._id || b.contact?.email),
   ).size;
-  const pendingManageCount = categorized.manageRequests.length;
-  const unverifiedCount = categorized.unverified.length;
 
   const toggleExpand = (category, id) => {
     setExpanded((prev) => ({
@@ -1065,28 +1132,6 @@ const TourAdminDashboard = () => {
       () => toast.success("Booking ID copied!"),
       () => toast.error("Failed to copy"),
     );
-  };
-
-  const handleApprove = async (bookingId) => {
-    if (!window.confirm("Approve this manage booking request?")) return;
-    setActionLoading((prev) => ({ ...prev, [bookingId]: "approve" }));
-    try {
-      const res = await approveBookingUpdate(bookingId);
-      if (res?.success) await getPendingApprovals();
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [bookingId]: null }));
-    }
-  };
-
-  const handleReject = async (bookingId) => {
-    if (!window.confirm("Reject this manage booking request?")) return;
-    setActionLoading((prev) => ({ ...prev, [bookingId]: "reject" }));
-    try {
-      const res = await rejectBookingUpdate(bookingId);
-      if (res?.success) await getPendingApprovals();
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [bookingId]: null }));
-    }
   };
 
   const handleReleaseBooking = async (bookingId, travellerId) => {
@@ -1484,7 +1529,6 @@ const TourAdminDashboard = () => {
     const name =
       `${first.firstName || ""} ${first.lastName || ""}`.trim() ||
       "Unknown Traveller";
-    const isActing = actionLoading[booking._id];
 
     return (
       <div
@@ -1511,7 +1555,7 @@ const TourAdminDashboard = () => {
         </div>
 
         {expanded["manageRequests"]?.[booking._id] && (
-          <div className="mt-4 pt-4 border-t border-pink-100 space-y-4">
+          <div className="mt-4 pt-4 border-t border-pink-100 space-y-4 text-sm text-gray-700">
             <div className="flex items-center gap-2">
               <strong>Booking ID:</strong>
               <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
@@ -1530,53 +1574,24 @@ const TourAdminDashboard = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <p>
-                <strong>Email:</strong> {booking.contact?.email}
+                <strong>Email:</strong> {booking.contact?.email || "—"}
               </p>
               <p>
-                <strong>Mobile:</strong> {booking.contact?.mobile}
+                <strong>Mobile:</strong> {booking.contact?.mobile || "—"}
+              </p>
+              <p>
+                <strong>Tour:</strong> {booking.tourData?.title || "—"}
+              </p>
+             
+              <p>
+                <strong>Travellers Count:</strong> {booking.travellers?.length || 1}
+              </p>
+              <p>
+                <strong>Status:</strong> Pending Admin Review
               </p>
             </div>
 
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleReject(booking._id);
-                }}
-                disabled={isActing}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition ${
-                  isActing
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-700 text-white"
-                }`}
-              >
-                {isActing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <X className="w-4 h-4" />
-                )}
-                Reject
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleApprove(booking._id);
-                }}
-                disabled={isActing}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition ${
-                  isActing
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 text-white"
-                }`}
-              >
-                {isActing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4" />
-                )}
-                Approve
-              </button>
-            </div>
+            
           </div>
         )}
       </div>
@@ -1698,12 +1713,11 @@ const TourAdminDashboard = () => {
     },
     {
       label: "Manage Requests",
-      value: pendingManageCount,
+      value: categorized.manageRequests.length,
       Icon: FilePenLine,
       color: "text-pink-600",
       bg: "bg-pink-100",
     },
-    // New metrics
     {
       label: "Cancellation Receipts",
       value: categorized.cancellationReceipt.length,
@@ -1809,7 +1823,6 @@ const TourAdminDashboard = () => {
               statusColor="text-indigo-600"
               Icon={Briefcase}
             />
-          
             <Section
               title="Cancellation Request Actions"
               category="cancellation"
@@ -1824,7 +1837,7 @@ const TourAdminDashboard = () => {
               statusColor="text-pink-600"
               Icon={FilePenLine}
             />
-              <Section
+            <Section
               title="Booking Completion Actions"
               category="completion"
               statusLabel="Pending"
@@ -1839,3 +1852,4 @@ const TourAdminDashboard = () => {
 };
 
 export default TourAdminDashboard;
+

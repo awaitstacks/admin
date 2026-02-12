@@ -445,7 +445,7 @@ const TourAdminContextProvider = (props) => {
 
   const approveBookingUpdate = async (bookingId) => {
     try {
-      console.log("Approving booking update for:", bookingId);
+      
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/approvebookingupdate`,
         { bookingId },
@@ -460,7 +460,7 @@ const TourAdminContextProvider = (props) => {
       );
 
       if (validated.success) {
-        toast.success("Booking update approved!");
+        
         await getPendingApprovals();
         await getAllBookings();
       }
@@ -469,7 +469,7 @@ const TourAdminContextProvider = (props) => {
     } catch (error) {
       console.error("Approve update error:", error);
       const msg = error.response?.data?.message || "Failed to approve update";
-      toast.error(msg);
+      
       throw error;
     }
   };
@@ -491,7 +491,7 @@ const TourAdminContextProvider = (props) => {
       );
 
       if (validated.success) {
-        toast.success("Booking update rejected!");
+        
         await getPendingApprovals();
         await getAllBookings();
       }
@@ -500,7 +500,7 @@ const TourAdminContextProvider = (props) => {
     } catch (error) {
       console.error("Reject update error:", error);
       const msg = error.response?.data?.message || "Failed to reject update";
-      toast.error(msg);
+      
       throw error;
     }
   };

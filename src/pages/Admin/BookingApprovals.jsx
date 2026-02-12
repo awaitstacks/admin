@@ -1,9 +1,19 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect, useState } from "react";
 import { TourAdminContext } from "../../context/TourAdminContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { format } from "date-fns";
-import { Search, Users, Loader2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Search,
+  RefreshCw,
+  Loader2,
+  Users,
+  ArrowRightLeft,
+  Calendar,
+} from "lucide-react";
 
 const BookingApprovals = () => {
   const {
@@ -16,419 +26,509 @@ const BookingApprovals = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredApprovals, setFilteredApprovals] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [expanded, setExpanded] = useState({});
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (aToken) getPendingApprovals();
-  }, [aToken, getPendingApprovals]);
+  }, [aToken]);
 
-  // Real-time filtering
   useEffect(() => {
-    if (!pendingApprovals.length) {
-      setFilteredApprovals([]);
-      return;
-    }
-
     const term = searchTerm.toLowerCase().trim();
     const filtered = pendingApprovals.filter((item) => {
       const traveller = item.travellers?.[0] || {};
-      const fullName = `${traveller.title || ""} ${traveller.firstName || ""} ${
-        traveller.lastName || ""
-      }`
+      const fullName = `${traveller.title || ""} ${traveller.firstName || ""} ${traveller.lastName || ""}`
         .toLowerCase()
         .trim();
       const mobile = (item.contact?.mobile || "").toLowerCase();
-
       return fullName.includes(term) || mobile.includes(term);
     });
-
     setFilteredApprovals(filtered);
   }, [pendingApprovals, searchTerm]);
 
-  const handleApprove = async (bookingId) => {
-    if (!window.confirm("Approve this booking update?")) return;
-
-    setIsLoading(true);
-    try {
-      const res = await approveBookingUpdate(bookingId);
-      if (res?.success) {
-        getPendingApprovals();
-      } else {
-        toast.error(res?.message || "Failed to approve");
-      }
-    } catch (err) {
-      toast.error("Something went wrong while approving");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+  const toggleExpand = (id) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleReject = async (bookingId) => {
-    if (!window.confirm("Reject this booking update request?")) return;
-
-    setIsLoading(true);
-    try {
-      const res = await rejectBookingUpdate(
-        bookingId,
-        "Update rejected by admin"
-      );
-      if (res?.success) {
-        getPendingApprovals();
-      } else {
-        toast.error(res?.message || "Failed to reject");
-      }
-    } catch (err) {
-      toast.error("Something went wrong while rejecting");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+  const getDiffColor = (oldVal, newVal) => {
+    if (oldVal === newVal || newVal === undefined) return "text-gray-800";
+    if (
+      (typeof newVal === "string" && newVal !== oldVal) ||
+      (typeof newVal === "number" && newVal > oldVal)
+    ) {
+      return "text-emerald-600 font-medium";
     }
+    return "text-rose-600 font-medium";
+  };
+
+  const renderPoint = (point) =>
+    point ? `${point.stationCode} - ${point.stationName}` : "—";
+
+  const getCancellationStatus = (traveller) => {
+    const byTraveller = traveller.cancelled?.byTraveller;
+    const byAdmin = traveller.cancelled?.byAdmin;
+
+    if (byTraveller && !byAdmin) {
+      return {
+        text: "Applied for Cancellation",
+        color: "bg-yellow-100 text-yellow-800 border-yellow-300",
+      };
+    }
+    if (byTraveller && byAdmin) {
+      return {
+        text: "Traveller Cancelled",
+        color: "bg-red-100 text-red-800 border-red-300",
+      };
+    }
+    if (byAdmin && !byTraveller) {
+      return {
+        text: "Traveller Rejected",
+        color: "bg-orange-100 text-orange-800 border-orange-300",
+      };
+    }
+    return null;
   };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await getPendingApprovals();
-    setTimeout(() => setIsRefreshing(false), 600);
+    setTimeout(() => setIsRefreshing(false), 800);
   };
 
-  const hasData = filteredApprovals.length > 0;
+  const handleApprove = async (bookingId) => {
+    if (!window.confirm("Approve these changes?")) return;
+
+    setActionLoading(true);
+    try {
+      const res = await approveBookingUpdate(bookingId);
+      if (res?.success) {
+        toast.success("Changes approved successfully 🌟");
+        getPendingApprovals();
+      } else {
+        toast.error(res?.message || "Approval failed");
+      }
+    } catch (err) {
+      toast.error("Error while approving");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async (bookingId) => {
+    if (!window.confirm("Reject this update request?")) return;
+
+    setActionLoading(true);
+    try {
+      const res = await rejectBookingUpdate(bookingId, "Rejected by admin");
+      if (res?.success) {
+        toast.success("Request rejected successfully");
+        getPendingApprovals();
+      } else {
+        toast.error(res?.message || "Rejection failed");
+      }
+    } catch (err) {
+      toast.error("Error while rejecting");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        {/* Toast Container */}
-        <ToastContainer
-          position="top-right"
-          autoClose={4000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          pauseOnHover
-          theme="light"
-          toastClassName="rounded-lg shadow-lg"
-        />
-
-        {/* Header */}
-        <div className="p-5 sm:p-6 lg:p-8 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 text-center mb-5">
-            Pending Booking Approvals
-          </h2>
-
-          {/* Search + Count + Refresh */}
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="w-full lg:w-96">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50/40 via-purple-50/20 to-white p-4 md:p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/70 overflow-hidden mb-8">
+          <div className="px-5 py-7 md:px-8 md:py-9 flex flex-col items-center">
+            {/* Icon + Title combo */}
+            <div className="flex items-center gap-3 md:gap-4 mb-5 md:mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search by name or mobile..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm sm:text-base"
-                />
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center shadow-sm">
+                  <Calendar className="text-indigo-600" size={40} />
+                </div>
               </div>
+
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800">
+                Pending Booking Approvals
+              </h1>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
-              <p className="text-sm sm:text-base font-medium text-gray-700">
-                {hasData
-                  ? `${filteredApprovals.length} pending approval${
-                      filteredApprovals.length > 1 ? "s" : ""
-                    }`
-                  : "No pending approvals"}
-              </p>
+            {/* Search + count + refresh */}
+            <div className="w-full max-w-4xl">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5 md:gap-6">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by name or mobile..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-11 pr-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl 
+                     text-gray-700 placeholder-gray-400 focus:outline-none 
+                     focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all shadow-sm"
+                  />
+                </div>
 
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl font-medium text-sm transition-all shadow-md"
-              >
-                {isRefreshing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Refreshing...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    Refresh List
-                  </>
-                )}
-              </button>
+                {/* Count + Refresh */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 justify-center md:justify-end">
+                  <div className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    {filteredApprovals.length === 0
+                      ? "No pending approvals"
+                      : `${filteredApprovals.length} pending approval${filteredApprovals.length !== 1 ? "s" : ""}`}
+                  </div>
+
+                  <button
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 
+                     disabled:bg-indigo-400 disabled:cursor-not-allowed
+                     text-white font-medium rounded-xl shadow-md transition-all"
+                  >
+                    {isRefreshing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4" />
+                        Refresh List
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Empty State */}
-        {!hasData ? (
-          <div className="text-center py-20 px-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 rounded-full mb-6">
-              <Users className="w-10 h-10 text-indigo-600" />
+        {/* Main content - cards */}
+        {!filteredApprovals.length ? (
+          <div className="bg-white/80 backdrop-blur rounded-3xl p-12 text-center shadow-lg border border-white/60">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-indigo-100 flex items-center justify-center">
+              <Users className="text-indigo-500" size={40} />
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-              No Pending Approvals
-            </h3>
-            <p className="text-gray-500 max-w-md mx-auto">
-              {searchTerm
-                ? `No results found for "${searchTerm}"`
-                : "Great job! All booking updates have been processed."}
+            <h3 className="text-2xl font-semibold text-gray-700 mb-3">All clear!</h3>
+            <p className="text-gray-500 text-lg">
+              No pending booking update requests right now 🌸
             </p>
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="mt-4 text-indigo-600 hover:text-indigo-800 font-medium underline"
-              >
-                Clear search
-              </button>
-            )}
           </div>
         ) : (
-          <>
-            {/* Mobile Cards */}
-            <div className="lg:hidden space-y-4 p-4 sm:p-6">
-              {filteredApprovals.map((item) => {
-                const traveller = item.travellers?.[0] || {};
-                const tour = item.tourId || {};
-                const original = item.bookingId || {};
-                const mobile = item.contact?.mobile || "—";
-                const oldAdv = original.payment?.advance?.amount || 0;
-                const oldBal = original.payment?.balance?.amount || 0;
-                const newAdv = item.updatedAdvance || 0;
-                const newBal = item.updatedBalance || 0;
+          <div className="space-y-6">
+            {filteredApprovals.map((req) => {
+              const orig = req.bookingId || {};
+              const lead = req.travellers?.[0] || {};
+              const isExpanded = expanded[req._id];
 
-                return (
+              return (
+                <div
+                  key={req._id}
+                  className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-lg border border-white/50 overflow-hidden transition-all hover:shadow-xl"
+                >
                   <div
-                    key={item._id}
-                    className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-5"
+                    onClick={() => toggleExpand(req._id)}
+                    className="px-5 py-5 cursor-pointer flex items-center justify-between bg-gradient-to-r from-indigo-50/70 to-purple-50/50 hover:from-indigo-100/60 hover:to-purple-100/60 transition-colors"
                   >
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl shadow-sm">
+                        {lead.firstName?.[0]?.toUpperCase() || "?"}
+                      </div>
                       <div>
-                        <h3 className="font-bold text-gray-900 text-base sm:text-lg">
-                          {traveller.title} {traveller.firstName}{" "}
-                          {traveller.lastName}
+                        <h3 className="font-semibold text-lg text-gray-800">
+                          {lead.title} {lead.firstName} {lead.lastName}
                         </h3>
-                        <p className="text-sm text-gray-600">
-                          Mobile: {mobile}
-                        </p>
-                      </div>
-                      <span className="text-xs bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full font-bold">
-                        {item.travellers?.length || 0} Travellers
-                      </span>
-                    </div>
-
-                    <p className="font-semibold text-gray-800 text-sm mb-3">
-                      {tour.title || "—"}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg text-sm mb-4">
-                      <div>
-                        <p className="text(xs font-medium text-gray-600">Old</p>
-                        <p className="text-xs">₹{oldAdv.toLocaleString()}</p>
-                        <p className="text-xs">₹{oldBal.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-green-600 font-medium text-xs">
-                          New
-                        </p>
-                        <p className="font-bold text-sm">
-                          ₹{newAdv.toLocaleString()}
-                        </p>
-                        <p className="font-bold text-sm">
-                          ₹{newBal.toLocaleString()}
-                        </p>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {req.contact?.mobile || "—"} • {req.travellers?.length || 1} traveller
+                          {req.travellers?.length !== 1 ? "s" : ""}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-xs text-gray-500 mb and Delimiters mb-4">
-                      <span>
-                        {format(new Date(item.bookingDate), "dd MMM yyyy")}
+                    <div className="flex items-center gap-4">
+                      <span className="hidden sm:inline text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full font-medium">
+                        {format(new Date(req.createdAt || Date.now()), "dd MMM • hh:mm a")}
                       </span>
-                      {" • "}
-                      <span>
-                        {format(new Date(item.bookingDate), "hh:mm a")}
-                      </span>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() =>
-                          handleApprove(item.bookingId?._id || item.bookingId)
-                        }
-                        disabled={isLoading}
-                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg font-medium text-sm transition shadow-sm"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleReject(item.bookingId?._id || item.bookingId)
-                        }
-                        disabled={isLoading}
-                        className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-lg font-medium text-sm transition shadow-sm"
-                      >
-                        Reject
-                      </button>
+                      {isExpanded ? (
+                        <ChevronUp className="text-gray-600" size={22} />
+                      ) : (
+                        <ChevronDown className="text-gray-600" size={22} />
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
 
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-indigo-50 to-purple-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Lead Traveller
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Tour
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Old Amounts
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      New Amounts
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Travellers
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Requested On
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {filteredApprovals.map((item) => {
-                    const traveller = item.travellers?.[0] || {};
-                    const tour = item.tourId || {};
-                    const original = item.bookingId || {};
-                    const mobile = item.contact?.mobile || "—";
-                    const oldAdv = original.payment?.advance?.amount || 0;
-                    const oldBal = original.payment?.balance?.amount || 0;
-                    const newAdv = item.updatedAdvance || 0;
-                    const newBal = item.updatedBalance || 0;
+                  {isExpanded && (
+                    <div className="p-5 md:p-6 lg:grid lg:grid-cols-2 lg:gap-10">
+                      {/* Original */}
+                      <div className="pb-8 lg:pb-0 lg:pr-8">
+                        <h4 className="text-lg font-semibold text-gray-700 mb-5 flex items-center gap-2.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                          Current Booking
+                        </h4>
 
-                    return (
-                      <tr
-                        key={item._id}
-                        className="hover:bg-gray-50 transition"
-                      >
-                        <td className="px-6 py-4">
+                        <div className="space-y-6">
+                          <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-100">
+                            <div className="font-medium text-gray-700 mb-3">Payment</div>
+                            <div className="grid grid-cols-2 gap-6 text-sm">
+                              <div>
+                                Advance:{" "}
+                                <span className="font-semibold">
+                                  ₹{(orig.payment?.advance?.amount || 0).toLocaleString()}
+                                </span>
+                              </div>
+                              <div>
+                                Balance:{" "}
+                                <span className="font-semibold">
+                                  ₹{(orig.payment?.balance?.amount || 0).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
                           <div>
-                            <p className="font-semibold text-gray-900">
-                              {traveller.title} {traveller.firstName}{" "}
-                              {traveller.lastName}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Mobile: {mobile}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="font-medium text-gray-900">
-                            {tour.title || "—"}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {tour.destination || "—"}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4 text-sm space-y-1">
-                          <p>Advance: ₹{oldAdv.toLocaleString()}</p>
-                          <p>Balance: ₹{oldBal.toLocaleString()}</p>
-                        </td>
-                        <td className="px-6 py-4 text-sm space-y-1">
-                          <p
-                            className={
-                              newAdv !== oldAdv
-                                ? "text-green-600 font-bold"
-                                : ""
-                            }
-                          >
-                            Advance: ₹{newAdv.toLocaleString()}
-                          </p>
-                          <p
-                            className={
-                              newBal !== oldBal ? "text-blue-600 font-bold" : ""
-                            }
-                          >
-                            Balance: ₹{newBal.toLocaleString()}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-                            {item.travellers?.length || 0}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {format(new Date(item.bookingDate), "dd MMM yyyy")}
-                          <br />
-                          <span className="text-xs">
-                            {format(new Date(item.bookingDate), "hh:mm a")}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center gap-3">
-                            <button
-                              onClick={() =>
-                                handleApprove(
-                                  item.bookingId?._id || item.bookingId
-                                )
-                              }
-                              disabled={isLoading}
-                              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition shadow"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleReject(
-                                  item.bookingId?._id || item.bookingId
-                                )
-                              }
-                              disabled={isLoading}
-                              className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition shadow"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                            <div className="font-medium text-gray-700 mb-4">
+                              Travellers ({orig.travellers?.length || 0})
+                            </div>
+                            {orig.travellers?.map((t, i) => {
+                              const status = getCancellationStatus(t);
+                              return (
+                                <div
+                                  key={i}
+                                  className="mb-5 last:mb-0 p-5 bg-gray-50/50 rounded-2xl border border-gray-100 relative"
+                                >
+                                  <div className="font-medium text-gray-800 mb-3">
+                                    {t.title} {t.firstName} {t.lastName}
+                                  </div>
 
-        {/* Footer Note */}
-        {hasData && (
-          <div className="p-5 bg-amber-50 border-t border-amber-200 text-sm text-amber-800 text-center">
-            <p className="font-semibold">Note:</p>
-            <p className="text-amber-700">
-              Approving applies changes • Rejecting discards request
-            </p>
+                                  {status && (
+                                    <span
+                                      className={`absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full font-medium border ${status.color}`}
+                                    >
+                                      {status.text}
+                                    </span>
+                                  )}
+
+                                  <div className="grid grid-cols-2 gap-x-5 gap-y-3 text-sm text-gray-600">
+                                    <div>Age: {t.age || "—"}</div>
+                                    <div>Gender: {t.gender || "—"}</div>
+                                    <div>
+                                      Package:{" "}
+                                      {t.packageType === "main"
+                                        ? "Main Package"
+                                        : `Variant ${t.variantPackageIndex ?? "?"}`}
+                                    </div>
+                                    <div>Sharing: {t.sharingType || "—"}</div>
+                                    <div>Boarding: {renderPoint(t.boardingPoint)}</div>
+                                    <div>Deboarding: {renderPoint(t.deboardingPoint)}</div>
+                                    <div>Add-on: {t.selectedAddon?.name || "None"}</div>
+                                    <div className="col-span-2">
+                                      Remarks: {t.remarks || "—"}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Requested */}
+                      <div className="pt-8 lg:pt-0 lg:pl-8">
+                        <h4 className="text-lg font-semibold text-indigo-700 mb-5 flex items-center gap-2.5">
+                          <ArrowRightLeft className="text-indigo-400" size={20} />
+                          Requested Changes
+                        </h4>
+
+                        <div className="space-y-6">
+                          <div className="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100/60">
+                            <div className="font-medium text-indigo-700 mb-3">Payment Update</div>
+                            <div className="grid grid-cols-2 gap-6 text-sm">
+                              <div>
+                                Advance:{" "}
+                                <span
+                                  className={getDiffColor(
+                                    orig.payment?.advance?.amount || 0,
+                                    req.updatedAdvance
+                                  )}
+                                >
+                                  ₹{(req.updatedAdvance || 0).toLocaleString()}
+                                </span>
+                              </div>
+                              <div>
+                                Balance:{" "}
+                                <span
+                                  className={getDiffColor(
+                                    orig.payment?.balance?.amount || 0,
+                                    req.updatedBalance
+                                  )}
+                                >
+                                  ₹{(req.updatedBalance || 0).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="font-medium text-indigo-700 mb-4">
+                              Travellers ({req.travellers?.length || 0})
+                            </div>
+
+                            {req.travellers?.map((t, i) => {
+                              const ot = orig.travellers?.[i] || {};
+
+                              const nameOld = `${ot.title || ""} ${ot.firstName || ""} ${ot.lastName || ""}`.trim();
+                              const nameNew = `${t.title || ""} ${t.firstName || ""} ${t.lastName || ""}`.trim();
+                              const nameChanged = nameOld !== nameNew;
+
+                              const status = getCancellationStatus(t);
+
+                              return (
+                                <div
+                                  key={i}
+                                  className="mb-5 last:mb-0 p-5 bg-purple-50/30 rounded-2xl border border-purple-100/50 relative"
+                                >
+                                  <div className="flex items-center gap-3 mb-4">
+                                    <div className="font-semibold text-gray-800 text-base">
+                                      {nameChanged ? (
+                                        <span className="text-emerald-600">
+                                          {t.title} {t.firstName} {t.lastName}
+                                        </span>
+                                      ) : (
+                                        <>
+                                          {t.title} {t.firstName} {t.lastName}
+                                        </>
+                                      )}
+                                    </div>
+                                    {nameChanged && (
+                                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+                                        Name changed
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {status && (
+                                    <span
+                                      className={`absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full font-medium border ${status.color}`}
+                                    >
+                                      {status.text}
+                                    </span>
+                                  )}
+
+                                  <div className="grid grid-cols-2 gap-x-5 gap-y-3 text-sm text-gray-600">
+                                    <div>
+                                      Age:{" "}
+                                      <span className={getDiffColor(ot.age, t.age)}>
+                                        {t.age || "—"}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Gender:{" "}
+                                      <span className={getDiffColor(ot.gender, t.gender)}>
+                                        {t.gender || "—"}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Package:{" "}
+                                      <span
+                                        className={getDiffColor(ot.packageType, t.packageType)}
+                                      >
+                                        {t.packageType === "main"
+                                          ? "Main Package"
+                                          : `Variant ${t.variantPackageIndex ?? "?"}`}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Sharing:{" "}
+                                      <span
+                                        className={getDiffColor(ot.sharingType, t.sharingType)}
+                                      >
+                                        {t.sharingType || "—"}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Boarding:{" "}
+                                      <span
+                                        className={getDiffColor(
+                                          renderPoint(ot.boardingPoint),
+                                          renderPoint(t.boardingPoint)
+                                        )}
+                                      >
+                                        {renderPoint(t.boardingPoint)}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Deboarding:{" "}
+                                      <span
+                                        className={getDiffColor(
+                                          renderPoint(ot.deboardingPoint),
+                                          renderPoint(t.deboardingPoint)
+                                        )}
+                                      >
+                                        {renderPoint(t.deboardingPoint)}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Add-on:{" "}
+                                      <span
+                                        className={getDiffColor(
+                                          ot.selectedAddon?.name,
+                                          t.selectedAddon?.name
+                                        )}
+                                      >
+                                        {t.selectedAddon?.name || "None"}
+                                      </span>
+                                    </div>
+                                    <div className="col-span-2">
+                                      Remarks:{" "}
+                                      <span className={getDiffColor(ot.remarks, t.remarks)}>
+                                        {t.remarks || "—"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="mt-10 flex flex-col sm:flex-row gap-4">
+                          <button
+                            onClick={() => handleApprove(req.bookingId?._id || req.bookingId)}
+                            disabled={actionLoading}
+                            className="flex-1 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl font-medium shadow-md hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-60 transition-all"
+                          >
+                            Approve Changes
+                          </button>
+                          <button
+                            onClick={() => handleReject(req.bookingId?._id || req.bookingId)}
+                            disabled={actionLoading}
+                            className="flex-1 py-4 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-2xl font-medium shadow-md hover:from-rose-600 hover:to-rose-700 disabled:opacity-60 transition-all"
+                          >
+                            Reject Request
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
+
+        <ToastContainer
+          position="top-center"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </div>
     </div>
   );
