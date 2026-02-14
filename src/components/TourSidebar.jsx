@@ -157,14 +157,19 @@ const adminMenuItems = [
 ];
 
 const tourMenuItems = [
-  { to: "/task-dashboard", icon: LucideThermometerSnowflake, label: "Task Dashboard" },
-   {
+  {
+    to: "/task-dashboard",
+    icon: LucideThermometerSnowflake,
+    label: "Task Dashboard",
+  },
+  {
     to: "/tour-allbookings",
     icon: Calendar,
     label: "All Bookings",
   },
   { to: "/tour-dashboard", icon: Info, label: "Tour info" },
   { to: "/tour-bookings", icon: BookImage, label: "Tour Bookings" },
+  { to: "/add-tourDetail", icon: Plus, label: "Add Tour" },
   { to: "/tour-profile", icon: User, label: "Tour profile" },
   { to: "/tour-namelist", icon: FileText, label: "Tour Name List" },
   {
@@ -183,8 +188,6 @@ const tourMenuItems = [
     icon: CalendarCheck,
     label: "Booking controller",
   },
- 
-  
 ];
 
 export default TourSidebar;

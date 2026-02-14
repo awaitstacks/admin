@@ -31,6 +31,7 @@ import ManageBooking from "./pages/Doctor/ManageBooking.jsx";
 import TourRoomList from "./pages/Doctor/TourRoomList.jsx";
 import AllTourBookings from "./pages/Doctor/AllTourBookings.jsx";
 import TaskDashboard from "./pages/Doctor/TaskDashboard.jsx";
+import AddTourDetail from "./pages/Doctor/AddTourDetail.jsx";
 
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
@@ -72,6 +73,7 @@ const TourApp = () => {
             <Route path="/tour-managebooking" element={<ManageBooking />} />
             <Route path="/tour-roomlist" element={<TourRoomList />} />
             <Route path="/tour-allbookings" element={<AllTourBookings />} />
+            <Route path="/add-tourDetail" element={<AddTourDetail />} />
           </Routes>
         </main>
       </div>

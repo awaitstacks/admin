@@ -3,8 +3,9 @@ import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { TourAdminContext } from "../../context/TourAdminContext";
+
 import { useNavigate } from "react-router-dom";
+import { TourContext } from "../../context/TourContext";
 import { IndianRupee } from "lucide-react";
 
 // Error Boundary Component
@@ -29,8 +30,8 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const AddTour = () => {
-  const { backendUrl, aToken } = useContext(TourAdminContext);
+const AddTourDetail = () => {
+  const { backendUrl, ttoken } = useContext(TourContext);
   const navigate = useNavigate();
 
   const defaultTrain = {
@@ -123,10 +124,9 @@ const AddTour = () => {
   const [formIsDirty, setFormIsDirty] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
 
-  // ─── New states for Upgrade Class Fare Calculator ───
-  const [packageIncludedFare, setPackageIncludedFare] = useState(""); // A - package included
-  const [clientUpgradeFare, setClientUpgradeFare] = useState(""); // B - client paying
-  const [suggestedGvExtra, setSuggestedGvExtra] = useState(""); // Suggested extra amount
+  const [packageIncludedFare, setPackageIncludedFare] = useState(""); // A - e.g. 820
+  const [clientUpgradeFare, setClientUpgradeFare] = useState(""); // B - e.g. 2200
+  const [suggestedGvExtra, setSuggestedGvExtra] = useState("");
 
   // Detect unsaved changes
   useEffect(() => {
@@ -157,11 +157,10 @@ const AddTour = () => {
     };
   }, [formIsDirty]);
 
-  // Custom back/swipe protection (push history to trap back action)
+  // Custom back/swipe protection
   useEffect(() => {
     if (!formIsDirty) return;
 
-    // Create a history entry so back button triggers popstate
     window.history.pushState(null, null, window.location.href);
 
     const handlePopState = (event) => {
@@ -175,8 +174,6 @@ const AddTour = () => {
       window.removeEventListener("popstate", handlePopState);
     };
   }, [formIsDirty]);
-
-  // ─── Train Fare Calculator Logic ───
   useEffect(() => {
     if (
       !packageIncludedFare ||
@@ -198,29 +195,31 @@ const AddTour = () => {
       return;
     }
 
-    const rawExtra = B - A;
+    const rawExtra = B - A; // e.g. 1409 - 350 = 1059
 
-    // Step 1: Try multiples of 50 first
+    // ─── Step 1: Try multiples of 50 first ───
     const multiplesOf50 = [];
     let current = Math.ceil(rawExtra / 50) * 50;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
+      // look at next 6 candidates
       if (current > rawExtra) multiplesOf50.push(current);
       current += 50;
     }
 
+    // Filter those that give hike ≥ 90
     const good50s = multiplesOf50.filter((c) => c - rawExtra >= 90);
 
     let best = rawExtra;
 
     if (good50s.length > 0) {
-      // Prefer closest to +145 (bias toward decent margin)
+      // Among good 50s, pick closest to +135 (middle-high bias)
       best = good50s.reduce((prev, curr) => {
-        const distPrev = Math.abs(prev - rawExtra - 145);
-        const distCurr = Math.abs(curr - rawExtra - 145);
+        const distPrev = Math.abs(prev - rawExtra - 135);
+        const distCurr = Math.abs(curr - rawExtra - 135);
         return distCurr < distPrev ? curr : prev;
       });
     } else {
-      // Step 2: Fall back to multiples of 100
+      // ─── Step 2: Fall back to multiples of 100 ───
       const floor100 = Math.floor(rawExtra / 100) * 100;
       const round100 = Math.round(rawExtra / 100) * 100;
       const ceil100 = Math.ceil(rawExtra / 100) * 100;
@@ -234,11 +233,12 @@ const AddTour = () => {
 
       if (good100s.length > 0) {
         best = good100s.reduce((prev, curr) => {
-          const distPrev = Math.abs(prev - rawExtra - 145);
-          const distCurr = Math.abs(curr - rawExtra - 145);
+          const distPrev = Math.abs(prev - rawExtra - 135);
+          const distCurr = Math.abs(curr - rawExtra - 135);
           return distCurr < distPrev ? curr : prev;
         });
       } else {
+        // Force the next safe 100
         best = Math.ceil(rawExtra / 100 + 1) * 100;
       }
     }
@@ -284,11 +284,9 @@ const AddTour = () => {
       if (images.mapImage) data.append("mapImage", images.mapImage);
       images.galleryImages.forEach((img) => data.append("galleryImages", img));
 
-      const res = await axios.post(
-        `${backendUrl}/api/touradmin/add-tour`,
-        data,
-        { headers: { aToken } },
-      );
+      const res = await axios.post(`${backendUrl}/api/tour/add-tour`, data, {
+        headers: { ttoken: ttoken },
+      });
 
       if (res.data.success) {
         toast.success("Tour added successfully!");
@@ -315,7 +313,7 @@ const AddTour = () => {
   };
 
   // ──────────────────────────────────────────────
-  // Handlers (full original handlers)
+  // Handlers (unchanged from your original code)
   // ──────────────────────────────────────────────
 
   const handleChange = (
@@ -575,7 +573,6 @@ const AddTour = () => {
               required
             />
           </div>
-
           {/* Batch / Category */}
           <div>
             <label className="block font-semibold mb-1">
@@ -599,7 +596,6 @@ const AddTour = () => {
               <option value="International">International</option>
             </select>
           </div>
-
           {/* Duration */}
           <div>
             <label className="block font-semibold mb-1">Duration</label>
@@ -632,7 +628,6 @@ const AddTour = () => {
               />
             </div>
           </div>
-
           {/* Advance Amount */}
           <div>
             <label className="block font-semibold mb-1">Advance Amount</label>
@@ -670,7 +665,6 @@ const AddTour = () => {
               />
             </div>
           </div>
-
           {/* Prices */}
           <div>
             <label className="block font-semibold mb-1">Prices</label>
@@ -733,89 +727,7 @@ const AddTour = () => {
               />
             </div>
           </div>
-
-          {/* ─── UPGRADE CLASS FARE CALCULATOR (NEW) ─── */}
-          <div className="mt-10 p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold mb-5 text-gray-800 flex items-center gap-2">
-              <IndianRupee size={20} className="text-green-600" />
-              Upgrade Class Fare Calculator (View Only)
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Package Included Fare */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Package Included Train Fare (₹)
-                </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 820 (Sleeper class included)"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
-                  value={packageIncludedFare}
-                  onChange={(e) =>
-                    setPackageIncludedFare(
-                      e.target.value ? Number(e.target.value) : "",
-                    )
-                  }
-                  min="0"
-                />
-              </div>
-
-              {/* Client Paying Fare */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client Paying Fare (Higher Class) (₹)
-                </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 1409"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
-                  value={clientUpgradeFare}
-                  onChange={(e) =>
-                    setClientUpgradeFare(
-                      e.target.value ? Number(e.target.value) : "",
-                    )
-                  }
-                  min="0"
-                />
-              </div>
-
-              {/* Suggested GV Extra */}
-              <div>
-                <label className="block text-sm font-medium text-blue-700 mb-2 font-semibold">
-                  Suggested GV Extra Amount (₹)
-                </label>
-                <div className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 font-bold text-xl text-center">
-                  {suggestedGvExtra
-                    ? `₹${suggestedGvExtra}`
-                    : packageIncludedFare && clientUpgradeFare
-                      ? "Enter valid fares"
-                      : "—"}
-                </div>
-              </div>
-            </div>
-
-            {/* Summary */}
-            {suggestedGvExtra && packageIncludedFare && clientUpgradeFare && (
-              <div className="mt-5 text-sm text-gray-600 text-center">
-                Raw extra paid by client:{" "}
-                <span className="font-medium">
-                  ₹{Number(clientUpgradeFare) - Number(packageIncludedFare)}
-                </span>
-                    → We suggest charging:{" "}
-                <span className="font-medium text-green-700">
-                  ₹{suggestedGvExtra}
-                </span>
-                    (rounded up by +
-                {suggestedGvExtra -
-                  (Number(clientUpgradeFare) -
-                    Number(packageIncludedFare))}{" "}
-                ₹)
-              </div>
-            )}
-          </div>
-
-          {/* Dynamic Arrays - Destination, Sightseeing, etc. */}
+          {/* Dynamic Arrays */}
           {[
             "destination",
             "sightseeing",
@@ -853,7 +765,6 @@ const AddTour = () => {
               </button>
             </div>
           ))}
-
           {/* Train & Flight Details */}
           {["trainDetails", "flightDetails"].map((type) => (
             <div key={type}>
@@ -903,7 +814,6 @@ const AddTour = () => {
               </button>
             </div>
           ))}
-
           {/* Boarding Points */}
           <div>
             <label className="block font-semibold mb-1">Boarding Points</label>
@@ -944,7 +854,6 @@ const AddTour = () => {
               + Add Boarding Point
             </button>
           </div>
-
           {/* Deboarding Points */}
           <div>
             <label className="block font-semibold mb-1">
@@ -987,7 +896,6 @@ const AddTour = () => {
               + Add Deboarding Point
             </button>
           </div>
-
           {/* Remarks */}
           <div>
             <label className="block font-semibold mb-1">Remarks</label>
@@ -1000,7 +908,6 @@ const AddTour = () => {
               }
             />
           </div>
-
           {/* Images */}
           <div className="space-y-4">
             <div>
@@ -1037,7 +944,6 @@ const AddTour = () => {
               />
             </div>
           </div>
-
           {/* Add-ons */}
           <div>
             <label className="block font-semibold mb-1">Add-ons</label>
@@ -1080,7 +986,6 @@ const AddTour = () => {
               + Add Add-on
             </button>
           </div>
-
           {/* Last Booking Date & Completed Trips */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -1115,7 +1020,85 @@ const AddTour = () => {
               />
             </div>
           </div>
+          <div className="mt-10 p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold mb-5 text-gray-800 flex items-center gap-2">
+              <IndianRupee size={20} className="text-green-600" />
+              Upgrade Class Fare Calculator (View Only)
+            </h3>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* A - Package Included */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Package Included Train Fare (₹)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 820 (Sleeper class included)"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                  value={packageIncludedFare}
+                  onChange={(e) =>
+                    setPackageIncludedFare(
+                      e.target.value ? Number(e.target.value) : "",
+                    )
+                  }
+                  min="0"
+                />
+              </div>
+
+              {/* B - Client Paying */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Paying Fare (Higher Class) (₹)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 2200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                  value={clientUpgradeFare}
+                  onChange={(e) =>
+                    setClientUpgradeFare(
+                      e.target.value ? Number(e.target.value) : "",
+                    )
+                  }
+                  min="0"
+                />
+              </div>
+
+              {/* Suggested GV Extra */}
+              <div>
+                <label className="block text-sm font-medium text-blue-700 mb-2 font-semibold">
+                  Suggested GV Extra Amount (₹)
+                </label>
+                <div className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 font-bold text-xl text-center">
+                  {suggestedGvExtra
+                    ? `₹${suggestedGvExtra}`
+                    : packageIncludedFare && clientUpgradeFare
+                      ? "Enter valid fares"
+                      : "—"}
+                </div>
+              </div>
+            </div>
+
+            {/* Summary */}
+            {suggestedGvExtra && packageIncludedFare && clientUpgradeFare && (
+              <div className="mt-5 text-sm text-gray-600 text-center">
+                Raw extra paid by client:{" "}
+                <span className="font-medium">
+                  ₹{Number(clientUpgradeFare) - Number(packageIncludedFare)}
+                </span>
+                    → We suggest charging:{" "}
+                <span className="font-medium text-green-700">
+                  ₹{suggestedGvExtra}
+                </span>
+                    (rounded up by +
+                {suggestedGvExtra -
+                  (Number(clientUpgradeFare) -
+                    Number(packageIncludedFare))}{" "}
+                ₹)
+              </div>
+            )}
+          </div>
           {/* Variant Packages */}
           <div>
             <label className="block font-semibold mb-1">Variant Packages</label>
@@ -1605,7 +1588,6 @@ const AddTour = () => {
               + Add Variant Package
             </button>
           </div>
-
           {/* Submit Button */}
           <button
             type="submit"
@@ -1657,7 +1639,6 @@ const AddTour = () => {
           </div>
         )}
 
-        {/* Save Confirmation Popup */}
         {showConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-2xl w-full max-w-md text-center">
@@ -1699,4 +1680,4 @@ const AddTour = () => {
   );
 };
 
-export default AddTour;
+export default AddTourDetail;

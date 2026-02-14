@@ -5,16 +5,15 @@ import axios from "axios";
 import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
+import { IndianRupee } from "lucide-react";
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
-
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
-
   render() {
     if (this.state.hasError) {
       return (
@@ -39,6 +38,7 @@ const TourProfile = () => {
     getProfileData,
   } = useContext(TourContext);
   const location = useLocation();
+  // const navigate = useNavigate();
 
   const defaultTrain = {
     trainNo: "",
@@ -52,7 +52,6 @@ const TourProfile = () => {
     arrivalTime: "",
     ticketOpenDate: "",
   };
-
   const defaultFlight = {
     airline: "",
     flightNo: "",
@@ -64,9 +63,7 @@ const TourProfile = () => {
     departureTime: "",
     arrivalTime: "",
   };
-
   const defaultStationPoint = { stationCode: "", stationName: "" };
-
   const defaultVariantPackage = {
     duration: { days: "", nights: "" },
     price: {
@@ -89,7 +86,6 @@ const TourProfile = () => {
     deboardingPoints: [defaultStationPoint],
     lastBookingDate: "",
   };
-
   const initialForm = {
     title: "",
     batch: "",
@@ -137,55 +133,61 @@ const TourProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [addingTransport, setAddingTransport] = useState({});
   const [fetchCount, setFetchCount] = useState(0);
-  const [showConfirm, setShowConfirm] = useState(false);
-    const [formIsDirty, setFormIsDirty] = useState(false);
-    const [showBackConfirm, setShowBackConfirm] = useState(false);
-  
-    // Detect unsaved changes
-    useEffect(() => {
-      const formChanged = JSON.stringify(formData) !== JSON.stringify(initialForm);
-      const imagesChanged =
-        images.titleImage !== null ||
-        images.mapImage !== null ||
-        images.galleryImages.length > 0;
-  
-      setFormIsDirty(formChanged || imagesChanged);
-    }, [formData, images]);
-  
-    // Browser protection (refresh, back arrow, back swipe, tab close)
-    useEffect(() => {
-      if (!formIsDirty) return;
-  
-      const handleBeforeUnload = (event) => {
-        event.preventDefault();
-        event.returnValue = "Unsaved changes இருக்கு. Sure ah leave பண்ணுறீங்களா?";
-      };
-  
-      window.addEventListener("beforeunload", handleBeforeUnload);
-  
-      return () => {
-        window.removeEventListener("beforeunload", handleBeforeUnload);
-      };
-    }, [formIsDirty]);
-  
-    // Custom back/swipe protection (push history to trap back action)
-    useEffect(() => {
-      if (!formIsDirty) return;
-  
-      // Create a history entry so back button triggers popstate
-      window.history.pushState(null, null, window.location.href);
-  
-      const handlePopState = (event) => {
-        event.preventDefault();
-        setShowBackConfirm(true);
-      };
-  
-      window.addEventListener("popstate", handlePopState);
-  
-      return () => {
-        window.removeEventListener("popstate", handlePopState);
-      };
-    }, [formIsDirty]);
+  // const [showConfirm, setShowConfirm] = useState(false);
+  const [formIsDirty, setFormIsDirty] = useState(false);
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
+
+  // ─── New states for Upgrade Class Fare Calculator ───
+  const [packageIncludedFare, setPackageIncludedFare] = useState(""); // A - package included
+  const [clientUpgradeFare, setClientUpgradeFare] = useState(""); // B - client paying
+  const [suggestedGvExtra, setSuggestedGvExtra] = useState(""); // Suggested extra amount
+
+  // Detect unsaved changes
+  useEffect(() => {
+    const formChanged =
+      JSON.stringify(formData) !== JSON.stringify(initialForm);
+    const imagesChanged =
+      images.titleImage !== null ||
+      images.mapImage !== null ||
+      images.galleryImages.length > 0;
+
+    setFormIsDirty(formChanged || imagesChanged);
+  }, [formData, images]);
+
+  // Browser protection (refresh, back arrow, back swipe, tab close)
+  useEffect(() => {
+    if (!formIsDirty) return;
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue =
+        "Unsaved changes இருக்கு. Sure ah leave பண்ணுறீங்களா?";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [formIsDirty]);
+
+  // Custom back/swipe protection
+  useEffect(() => {
+    if (!formIsDirty) return;
+
+    window.history.pushState(null, null, window.location.href);
+
+    const handlePopState = (event) => {
+      event.preventDefault();
+      setShowBackConfirm(true);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [formIsDirty]);
 
   // Clear toasts on route change
   useEffect(() => {
@@ -193,6 +195,76 @@ const TourProfile = () => {
       toast.dismiss();
     };
   }, [location]);
+
+  // ─── Train Fare Calculator Logic (same as AddTourDetail) ───
+  useEffect(() => {
+    if (
+      !packageIncludedFare ||
+      !clientUpgradeFare ||
+      isNaN(packageIncludedFare) ||
+      isNaN(clientUpgradeFare) ||
+      Number(packageIncludedFare) <= 0 ||
+      Number(clientUpgradeFare) <= 0
+    ) {
+      setSuggestedGvExtra("");
+      return;
+    }
+
+    const A = Number(packageIncludedFare);
+    const B = Number(clientUpgradeFare);
+
+    if (B <= A) {
+      setSuggestedGvExtra("Upgrade fare must be higher than package fare");
+      return;
+    }
+
+    const rawExtra = B - A;
+
+    // Step 1: Try multiples of 50 first
+    const multiplesOf50 = [];
+    let current = Math.ceil(rawExtra / 50) * 50;
+    for (let i = 0; i < 8; i++) {
+      if (current > rawExtra) multiplesOf50.push(current);
+      current += 50;
+    }
+
+    const good50s = multiplesOf50.filter((c) => c - rawExtra >= 90);
+
+    let best = rawExtra;
+
+    if (good50s.length > 0) {
+      // Prefer closest to +145 (bias toward decent margin)
+      best = good50s.reduce((prev, curr) => {
+        const distPrev = Math.abs(prev - rawExtra - 145);
+        const distCurr = Math.abs(curr - rawExtra - 145);
+        return distCurr < distPrev ? curr : prev;
+      });
+    } else {
+      // Step 2: Fall back to multiples of 100
+      const floor100 = Math.floor(rawExtra / 100) * 100;
+      const round100 = Math.round(rawExtra / 100) * 100;
+      const ceil100 = Math.ceil(rawExtra / 100) * 100;
+      const next100 = Math.ceil(rawExtra / 100 + 1) * 100;
+
+      const candidates100 = [floor100, round100, ceil100, next100].filter(
+        (v) => v > 0,
+      );
+
+      const good100s = candidates100.filter((c) => c - rawExtra >= 90);
+
+      if (good100s.length > 0) {
+        best = good100s.reduce((prev, curr) => {
+          const distPrev = Math.abs(prev - rawExtra - 145);
+          const distCurr = Math.abs(curr - rawExtra - 145);
+          return distCurr < distPrev ? curr : prev;
+        });
+      } else {
+        best = Math.ceil(rawExtra / 100 + 1) * 100;
+      }
+    }
+
+    setSuggestedGvExtra(Math.round(best));
+  }, [packageIncludedFare, clientUpgradeFare]);
 
   // Handle API responses
   const handleApiResponse = useCallback(
@@ -211,14 +283,14 @@ const TourProfile = () => {
         return false;
       }
     },
-    []
+    [],
   );
 
   // Fetch tours for dropdown
   useEffect(() => {
     console.log(
       "Fetching tour list at",
-      new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+      new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
     );
     setIsLoading(true);
     getTourList()
@@ -226,7 +298,7 @@ const TourProfile = () => {
         handleApiResponse(
           response,
           "Tour list fetched successfully",
-          "Failed to fetch tour list"
+          "Failed to fetch tour list",
         );
         console.log("Tour list fetched, count:", fetchCount + 1);
         setFetchCount((prev) => prev + 1);
@@ -248,7 +320,7 @@ const TourProfile = () => {
         "Fetching profile for tourId:",
         selectedTourId,
         "at",
-        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
       );
       setIsLoading(true);
       getProfileData(selectedTourId)
@@ -256,13 +328,13 @@ const TourProfile = () => {
           handleApiResponse(
             response,
             "Profile data fetched successfully",
-            "Failed to fetch profile data"
+            "Failed to fetch profile data",
           );
           console.log(
             "Profile data fetched for tourId:",
             selectedTourId,
             "count:",
-            fetchCount + 1
+            fetchCount + 1,
           );
           setFetchCount((prev) => prev + 1);
         })
@@ -270,7 +342,7 @@ const TourProfile = () => {
           console.error(
             "Profile fetch error for tourId:",
             selectedTourId,
-            error
+            error,
           );
           toast.error("Failed to fetch profile data: " + error.message);
         })
@@ -285,7 +357,7 @@ const TourProfile = () => {
         "Updating formData with profileData:",
         profileData,
         "at",
-        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
       );
       const shouldUpdate = !formData._id || formData._id !== profileData._id;
       if (shouldUpdate) {
@@ -341,7 +413,7 @@ const TourProfile = () => {
             balanceTriple: variant.balanceTriple || "",
             balanceChildWithBerth: variant.balanceChildWithBerth || "",
             balanceChildWithoutBerth: variant.balanceChildWithoutBerth || "",
-          })) || []
+          })) || [],
         );
       }
     }
@@ -380,7 +452,7 @@ const TourProfile = () => {
           balanceChildWithoutBerth:
             Number(variant.price?.childWithoutBerth || 0) - childAdvance || "",
         };
-      })
+      }),
     );
   }, [formData.variantPackage]);
 
@@ -391,7 +463,7 @@ const TourProfile = () => {
       nestedField = null,
       index = null,
       subField = null,
-      variantIndex = null
+      variantIndex = null,
     ) => {
       const value = e.target.value;
       console.log("Changing field:", {
@@ -477,7 +549,7 @@ const TourProfile = () => {
         setFormData((prev) => ({ ...prev, [field]: value }));
       }
     },
-    []
+    [],
   );
 
   const addField = useCallback((field, template = "", variantIndex = null) => {
@@ -507,7 +579,7 @@ const TourProfile = () => {
         updatedVariants[variantIndex] = {
           ...updatedVariants[variantIndex],
           [field]: (updatedVariants[variantIndex][field] || []).filter(
-            (_, i) => i !== index
+            (_, i) => i !== index,
           ),
         };
         return { ...prev, variantPackage: updatedVariants };
@@ -539,7 +611,7 @@ const TourProfile = () => {
           };
           console.log(
             `Added ${field} to variant ${variantIndex}:`,
-            updatedVariants[variantIndex][field]
+            updatedVariants[variantIndex][field],
           );
           return { ...prev, variantPackage: updatedVariants };
         });
@@ -566,7 +638,7 @@ const TourProfile = () => {
         }, 500);
       }
     },
-    []
+    [],
   );
 
   const removeTransportDetail = useCallback(
@@ -578,12 +650,12 @@ const TourProfile = () => {
           updatedVariants[variantIndex] = {
             ...updatedVariants[variantIndex],
             [field]: (updatedVariants[variantIndex][field] || []).filter(
-              (_, i) => i !== index
+              (_, i) => i !== index,
             ),
           };
           console.log(
             `Removed ${field} at index ${index} from variant ${variantIndex}:`,
-            updatedVariants[variantIndex][field]
+            updatedVariants[variantIndex][field],
           );
           return { ...prev, variantPackage: updatedVariants };
         });
@@ -594,7 +666,7 @@ const TourProfile = () => {
         }));
       }
     },
-    []
+    [],
   );
 
   const handleImageChange = useCallback((e, field) => {
@@ -650,18 +722,16 @@ const TourProfile = () => {
       "advanceAmount.child": formData.advanceAmount.child,
       completedTripsCount: formData.completedTripsCount,
     };
-
     for (const [key, value] of Object.entries(numberFields)) {
       if (value && isNaN(Number(value))) {
         toast.error(
           `${key
             .replace(".", " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase())} must be a number`
+            .replace(/\b\w/g, (c) => c.toUpperCase())} must be a number`,
         );
         return false;
       }
     }
-
     for (let i = 0; i < formData.variantPackage.length; i++) {
       const variant = formData.variantPackage[i];
       const variantNumberFields = {
@@ -685,13 +755,12 @@ const TourProfile = () => {
           toast.error(
             `${key
               .replace(".", " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase())} must be a number`
+              .replace(/\b\w/g, (c) => c.toUpperCase())} must be a number`,
           );
           return false;
         }
       }
     }
-
     if (images.galleryImages.length > 0 && images.galleryImages.length !== 3) {
       toast.error("Please upload exactly 3 gallery images");
       return false;
@@ -711,6 +780,10 @@ const TourProfile = () => {
     });
     setVariantBalances([]);
     setAddingTransport({});
+    // Also reset calculator fields
+    setPackageIncludedFare("");
+    setClientUpgradeFare("");
+    setSuggestedGvExtra("");
   }, []);
 
   const handleSubmit = async (e) => {
@@ -721,23 +794,20 @@ const TourProfile = () => {
       return;
     }
     if (!validateFormData()) return;
-
     setIsLoading(true);
     try {
       const data = new FormData();
       data.append("tourId", selectedTourId);
-
       const fieldsToAppend = {
         title: formData.title,
         batch: formData.batch,
         lastBookingDate: formData.lastBookingDate,
         completedTripsCount: formData.completedTripsCount,
-        remarks: formData.remarks || "", // Ensure remarks is sent even if empty
+        remarks: formData.remarks || "",
       };
       for (const [key, value] of Object.entries(fieldsToAppend)) {
         data.append(key, value || "");
       }
-
       const objectsToAppend = {
         duration: formData.duration,
         price: formData.price,
@@ -747,7 +817,6 @@ const TourProfile = () => {
       for (const [key, value] of Object.entries(objectsToAppend)) {
         data.append(key, JSON.stringify(value));
       }
-
       if (!isNaN(balances.balanceDouble))
         data.append("balanceDouble", balances.balanceDouble);
       if (!isNaN(balances.balanceTriple))
@@ -757,9 +826,8 @@ const TourProfile = () => {
       if (!isNaN(balances.balanceChildWithoutBerth))
         data.append(
           "balanceChildWithoutBerth",
-          balances.balanceChildWithoutBerth
+          balances.balanceChildWithoutBerth,
         );
-
       const arraysToAppend = {
         destination: formData.destination,
         sightseeing: formData.sightseeing,
@@ -775,17 +843,14 @@ const TourProfile = () => {
       for (const [key, value] of Object.entries(arraysToAppend)) {
         data.append(key, JSON.stringify(value));
       }
-
       if (images.titleImage) data.append("titleImage", images.titleImage);
       if (images.mapImage) data.append("mapImage", images.mapImage);
       if (images.galleryImages.length > 0) {
         images.galleryImages.forEach((img) =>
-          data.append("galleryImages", img)
+          data.append("galleryImages", img),
         );
       }
-
       console.log("FormData being sent:", Object.fromEntries(data));
-
       const res = await axios.put(
         `${backendUrl}/api/tour/update-tourprofile`,
         data,
@@ -794,15 +859,13 @@ const TourProfile = () => {
             ttoken,
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
-
       console.log("Update tour profile response:", res.data);
       toast.dismiss();
       if (handleApiResponse(res.data, "Tour profile updated successfully")) {
         resetForm();
         getTourList();
-        // Re-fetch profile data to reflect updates
         if (selectedTourId) {
           getProfileData(selectedTourId);
         }
@@ -812,7 +875,7 @@ const TourProfile = () => {
       console.error(
         "Update Error at",
         new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-        error
+        error,
       );
       const errorMessage =
         error.response?.data?.message ||
@@ -841,6 +904,7 @@ const TourProfile = () => {
         <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-center mb-6 text-gray-800">
           Update Tour Profile
         </h1>
+
         <div className="mb-6">
           <label className="block font-semibold mb-1">
             Select a Tour to Edit
@@ -1080,6 +1144,87 @@ const TourProfile = () => {
             </div>
           </div>
 
+          {/* ─── UPGRADE CLASS FARE CALCULATOR (NEW) ─── */}
+          <div className="mt-10 p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold mb-5 text-gray-800 flex items-center gap-2">
+              <IndianRupee size={20} className="text-green-600" />
+              Upgrade Class Fare Calculator (View Only)
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Package Included Fare */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Package Included Train Fare (₹)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 820 (Sleeper class included)"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                  value={packageIncludedFare}
+                  onChange={(e) =>
+                    setPackageIncludedFare(
+                      e.target.value ? Number(e.target.value) : "",
+                    )
+                  }
+                  min="0"
+                />
+              </div>
+
+              {/* Client Paying Fare */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Paying Fare (Higher Class) (₹)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 1409"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                  value={clientUpgradeFare}
+                  onChange={(e) =>
+                    setClientUpgradeFare(
+                      e.target.value ? Number(e.target.value) : "",
+                    )
+                  }
+                  min="0"
+                />
+              </div>
+
+              {/* Suggested GV Extra */}
+              <div>
+                <label className="block text-sm font-medium text-blue-700 mb-2 font-semibold">
+                  Suggested GV Extra Amount (₹)
+                </label>
+                <div className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 font-bold text-xl text-center">
+                  {suggestedGvExtra
+                    ? `₹${suggestedGvExtra}`
+                    : packageIncludedFare && clientUpgradeFare
+                      ? "Enter valid fares"
+                      : "—"}
+                </div>
+              </div>
+            </div>
+
+            {/* Summary */}
+            {suggestedGvExtra && packageIncludedFare && clientUpgradeFare && (
+              <div className="mt-5 text-sm text-gray-600 text-center">
+                Raw extra paid by client:{" "}
+                <span className="font-medium">
+                  ₹{Number(clientUpgradeFare) - Number(packageIncludedFare)}
+                </span>
+                    → We suggest charging:{" "}
+                <span className="font-medium text-green-700">
+                  ₹{suggestedGvExtra}
+                </span>
+                    (rounded up by +
+                {suggestedGvExtra -
+                  (Number(clientUpgradeFare) -
+                    Number(packageIncludedFare))}{" "}
+                ₹)
+              </div>
+            )}
+          </div>
+
           {/* Dynamic Arrays */}
           {[
             "destination",
@@ -1156,12 +1301,12 @@ const TourProfile = () => {
                               disabled={isLoading}
                             />
                           </label>
-                        )
+                        ),
                     )}
                   </div>
                   <button
                     type="button"
-                    className="bg-red-500 text-white px-2 py-1 rounded text-sm mt-2 w-full sm:w-auto"
+                    className="bg-red-500 text-white px-3 py-2 mt-2 rounded text-sm w-full sm:w-auto"
                     onClick={() => removeTransportDetail(type, index)}
                     disabled={isLoading}
                   >
@@ -1176,7 +1321,7 @@ const TourProfile = () => {
                 onClick={() =>
                   addTransportDetail(
                     type,
-                    type === "trainDetails" ? defaultTrain : defaultFlight
+                    type === "trainDetails" ? defaultTrain : defaultFlight,
                   )
                 }
                 disabled={isLoading}
@@ -1205,7 +1350,7 @@ const TourProfile = () => {
                       null,
                       "boardingPoints",
                       index,
-                      "stationCode"
+                      "stationCode",
                     )
                   }
                   disabled={isLoading}
@@ -1221,7 +1366,7 @@ const TourProfile = () => {
                       null,
                       "boardingPoints",
                       index,
-                      "stationName"
+                      "stationName",
                     )
                   }
                   disabled={isLoading}
@@ -1301,7 +1446,7 @@ const TourProfile = () => {
                       null,
                       "deboardingPoints",
                       index,
-                      "stationCode"
+                      "stationCode",
                     )
                   }
                   disabled={isLoading}
@@ -1317,7 +1462,7 @@ const TourProfile = () => {
                       null,
                       "deboardingPoints",
                       index,
-                      "stationName"
+                      "stationName",
                     )
                   }
                   disabled={isLoading}
@@ -1535,7 +1680,7 @@ const TourProfile = () => {
               }
               console.log(
                 `Rendering variant ${variantIndex} boardingPoints:`,
-                variant.boardingPoints
+                variant.boardingPoints,
               );
               return (
                 <div key={variantIndex} className="border p-4 rounded mb-4">
@@ -1567,7 +1712,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1584,7 +1729,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1608,7 +1753,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1625,7 +1770,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1642,7 +1787,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1659,7 +1804,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1685,7 +1830,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1702,7 +1847,7 @@ const TourProfile = () => {
                             null,
                             null,
                             null,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1753,7 +1898,7 @@ const TourProfile = () => {
                           value={
                             isNaN(
                               variantBalances[variantIndex]
-                                ?.balanceChildWithBerth
+                                ?.balanceChildWithBerth,
                             )
                               ? "N/A"
                               : variantBalances[variantIndex]
@@ -1771,7 +1916,7 @@ const TourProfile = () => {
                           value={
                             isNaN(
                               variantBalances[variantIndex]
-                                ?.balanceChildWithoutBerth
+                                ?.balanceChildWithoutBerth,
                             )
                               ? "N/A"
                               : variantBalances[variantIndex]
@@ -1811,7 +1956,7 @@ const TourProfile = () => {
                                 null,
                                 index,
                                 null,
-                                variantIndex
+                                variantIndex,
                               )
                             }
                             disabled={isLoading}
@@ -1862,7 +2007,7 @@ const TourProfile = () => {
                                     placeholder={key
                                       .replace(/([A-Z])/g, " $1")
                                       .replace(/^./, (str) =>
-                                        str.toUpperCase()
+                                        str.toUpperCase(),
                                       )}
                                     className="p-3 border w-full"
                                     onChange={(e) =>
@@ -1872,12 +2017,12 @@ const TourProfile = () => {
                                         type,
                                         index,
                                         key,
-                                        variantIndex
+                                        variantIndex,
                                       )
                                     }
                                     disabled={isLoading}
                                   />
-                                )
+                                ),
                             )}
                           </div>
                           <button
@@ -1902,7 +2047,7 @@ const TourProfile = () => {
                             type === "trainDetails"
                               ? defaultTrain
                               : defaultFlight,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={isLoading}
@@ -1934,7 +2079,7 @@ const TourProfile = () => {
                               "boardingPoints",
                               index,
                               "stationCode",
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
@@ -1951,7 +2096,7 @@ const TourProfile = () => {
                               "boardingPoints",
                               index,
                               "stationName",
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
@@ -1963,7 +2108,7 @@ const TourProfile = () => {
                             removeTransportDetail(
                               "boardingPoints",
                               index,
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
@@ -1984,7 +2129,7 @@ const TourProfile = () => {
                           addTransportDetail(
                             "boardingPoints",
                             defaultStationPoint,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={
@@ -2044,7 +2189,7 @@ const TourProfile = () => {
                               "deboardingPoints",
                               index,
                               "stationCode",
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
@@ -2061,7 +2206,7 @@ const TourProfile = () => {
                               "deboardingPoints",
                               index,
                               "stationName",
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
@@ -2073,7 +2218,7 @@ const TourProfile = () => {
                             removeTransportDetail(
                               "deboardingPoints",
                               index,
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
@@ -2094,7 +2239,7 @@ const TourProfile = () => {
                           addTransportDetail(
                             "deboardingPoints",
                             defaultStationPoint,
-                            variantIndex
+                            variantIndex,
                           )
                         }
                         disabled={
@@ -2152,7 +2297,7 @@ const TourProfile = () => {
                               "addons",
                               index,
                               "name",
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
@@ -2169,14 +2314,14 @@ const TourProfile = () => {
                               "addons",
                               index,
                               "amount",
-                              variantIndex
+                              variantIndex,
                             )
                           }
                           disabled={isLoading}
                         />
                         <button
                           type="button"
-                          className="bg-red-500 text-white px-3 py-2 mt-2 sm:mt-0 rounded text-sm w-full sm:w-auto"
+                          className="bg-red-500 text-white px-3 py-2 rounded text-sm w-full sm:w-auto"
                           onClick={() =>
                             removeTransportDetail("addons", index, variantIndex)
                           }
@@ -2193,7 +2338,7 @@ const TourProfile = () => {
                         addTransportDetail(
                           "addons",
                           { name: "", amount: "" },
-                          variantIndex
+                          variantIndex,
                         )
                       }
                       disabled={isLoading}
@@ -2216,7 +2361,7 @@ const TourProfile = () => {
                           null,
                           null,
                           null,
-                          variantIndex
+                          variantIndex,
                         )
                       }
                       disabled={isLoading}
@@ -2239,7 +2384,7 @@ const TourProfile = () => {
                           null,
                           null,
                           null,
-                          variantIndex
+                          variantIndex,
                         )
                       }
                       disabled={isLoading}
@@ -2295,9 +2440,8 @@ const TourProfile = () => {
             )}
           </div>
         </form>
-        
 
-        {/* Back/Swipe/Leave Confirmation Popup - centered */}
+        {/* Back/Swipe/Leave Confirmation Popup */}
         {showBackConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
             <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
@@ -2305,8 +2449,10 @@ const TourProfile = () => {
                 Unsaved Changes
               </h2>
               <p className="text-gray-600 mb-6">
-                You have unsaved changes.<br />
-                Going back will reload the page and you will lose them.<br />
+                You have unsaved changes.
+                <br />
+                Going back will reload the page and you will lose them.
+                <br />
                 Are you sure you want to go back?
               </p>
               <div className="flex justify-center gap-6">
@@ -2332,11 +2478,9 @@ const TourProfile = () => {
             </div>
           </div>
         )}
-        
       </div>
     </ErrorBoundary>
   );
 };
 
 export default TourProfile;
-

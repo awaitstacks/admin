@@ -54,7 +54,6 @@ const TourContextProvider = (props) => {
   // 1. taskMarkAdvanceReceiptSent
   const taskMarkAdvanceReceiptSent = async (bookingId) => {
     try {
-      
       const { data } = await axios.put(
         `${backendUrl}/api/tour/task/mark-advance-receipt-sent`,
         { bookingId },
@@ -63,7 +62,7 @@ const TourContextProvider = (props) => {
           timeout: 10000, // 10 seconds timeout to prevent stuck
         },
       );
-      
+
       if (data.success) {
         setAllBookings((prev) =>
           prev.map((b) =>
@@ -108,7 +107,6 @@ const TourContextProvider = (props) => {
   // 2. taskMarkBalanceReceiptSent
   const taskMarkBalanceReceiptSent = async (bookingId) => {
     try {
-      
       const { data } = await axios.put(
         `${backendUrl}/api/tour/task/mark-balance-receipt-sent`,
         { bookingId },
@@ -117,7 +115,7 @@ const TourContextProvider = (props) => {
           timeout: 10000,
         },
       );
-      
+
       if (data.success) {
         setAllBookings((prev) =>
           prev.map((b) =>
@@ -162,7 +160,6 @@ const TourContextProvider = (props) => {
   // 3. taskMarkModifyReceipt
   const taskMarkModifyReceipt = async (bookingId) => {
     try {
-      
       const { data } = await axios.put(
         `${backendUrl}/api/tour/task/modify-receipt`,
         { bookingId },
@@ -171,7 +168,7 @@ const TourContextProvider = (props) => {
           timeout: 10000,
         },
       );
-      
+
       if (data.success) {
         setAllBookings((prev) =>
           prev.map((b) =>
@@ -198,7 +195,6 @@ const TourContextProvider = (props) => {
   // 4. taskCompleteBooking
   const taskCompleteBooking = async (bookingId) => {
     try {
-      
       const { data } = await axios.put(
         `${backendUrl}/api/tour/task/complete-booking`,
         { bookingId },
@@ -207,7 +203,7 @@ const TourContextProvider = (props) => {
           timeout: 10000,
         },
       );
-      
+
       if (data.success) {
         setAllBookings((prev) =>
           prev.map((b) =>
@@ -246,7 +242,6 @@ const TourContextProvider = (props) => {
   // 5. taskMarkCancellationReceiptSent
   const taskMarkCancellationReceiptSent = async (bookingId) => {
     try {
-      
       const { data } = await axios.put(
         `${backendUrl}/api/tour/task/mark-cancellation-receipt-sent`,
         { bookingId },
@@ -255,20 +250,16 @@ const TourContextProvider = (props) => {
           timeout: 10000,
         },
       );
-      
+
       if (data.success) {
         setAllBookings((prev) =>
           prev.map((b) =>
-            b._id === bookingId
-              ? { ...b, cancellationReceipt: true }
-              : b,
+            b._id === bookingId ? { ...b, cancellationReceipt: true } : b,
           ),
         );
         setBookings((prev) =>
           prev.map((b) =>
-            b._id === bookingId
-              ? { ...b, cancellationReceipt: true }
-              : b,
+            b._id === bookingId ? { ...b, cancellationReceipt: true } : b,
           ),
         );
         if (singleBooking?._id === bookingId) {
@@ -292,7 +283,6 @@ const TourContextProvider = (props) => {
   // 6. taskMarkManageBookingReceiptSent
   const taskMarkManageBookingReceiptSent = async (bookingId) => {
     try {
-      
       const { data } = await axios.put(
         `${backendUrl}/api/tour/task/mark-managebooking-receipt-sent`,
         { bookingId },
@@ -301,20 +291,16 @@ const TourContextProvider = (props) => {
           timeout: 10000,
         },
       );
-      
+
       if (data.success) {
         setAllBookings((prev) =>
           prev.map((b) =>
-            b._id === bookingId
-              ? { ...b, manageBookingReceipt: true }
-              : b,
+            b._id === bookingId ? { ...b, manageBookingReceipt: true } : b,
           ),
         );
         setBookings((prev) =>
           prev.map((b) =>
-            b._id === bookingId
-              ? { ...b, manageBookingReceipt: true }
-              : b,
+            b._id === bookingId ? { ...b, manageBookingReceipt: true } : b,
           ),
         );
         if (singleBooking?._id === bookingId) {
@@ -390,7 +376,6 @@ const TourContextProvider = (props) => {
         );
         if (data.success) {
           setDashData(data.data);
-          
         }
         return data;
       } catch (error) {
@@ -407,11 +392,8 @@ const TourContextProvider = (props) => {
   const viewBooking = useCallback(
     async (bookingId) => {
       if (!bookingId) {
-        
         return { success: false, message: "Booking ID is required" };
       }
-
-      
 
       try {
         const { data } = await axios.get(
@@ -419,11 +401,9 @@ const TourContextProvider = (props) => {
           { headers: { ttoken } },
         );
 
-        
-
         if (data.success) {
           setSingleBooking(data.data);
-          
+
           return { success: true, booking: data.data };
         } else {
           console.warn("API failed:", data.message);
@@ -975,7 +955,7 @@ const TourContextProvider = (props) => {
 
         if (data.saved || data.roomAllocations) {
           setRoomAllocation(data);
-          
+
           return { success: true, data };
         } else {
           setRoomAllocation(null);
