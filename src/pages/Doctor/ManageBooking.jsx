@@ -129,7 +129,7 @@ const ManageBooking = () => {
 
     // Only show serious warning if this is an EXISTING traveller (has _id)
     if (travellerToRemove._id) {
-      const warningMessage = 
+      const warningMessage =
         "WARNING: Removing this existing traveller will reset all advance and balance payments for the entire booking.\n\n" +
         "This action effectively treats the booking as new — no prior payment history, calculations, or records will be carried forward for this traveller.\n\n" +
         "Please consult with the admin team before proceeding to avoid unintended financial adjustments.\n\n" +
@@ -231,7 +231,7 @@ const ManageBooking = () => {
     const pkg =
       t.packageType === "main"
         ? tour
-        : tour.variantPackage?.[t.variantPackageIndex] ?? tour;
+        : (tour.variantPackage?.[t.variantPackageIndex] ?? tour);
 
     let base = 0;
     switch (t.sharingType) {
@@ -312,7 +312,9 @@ const ManageBooking = () => {
           packageType: t.packageType || "main",
           variantPackageIndex: t.variantPackageIndex ?? null,
           sharingType: t.sharingType || "",
-          selectedAddon: t.selectedAddon ? { name: t.selectedAddon.name, price: t.selectedAddon.price } : null,
+          selectedAddon: t.selectedAddon
+            ? { name: t.selectedAddon.name, price: t.selectedAddon.price }
+            : null,
           boardingPoint: t.boardingPoint ? { ...t.boardingPoint } : null,
           deboardingPoint: t.deboardingPoint ? { ...t.deboardingPoint } : null,
           remarks: t.remarks?.trim() || "",
@@ -329,15 +331,25 @@ const ManageBooking = () => {
         updates.contact.mobile = booking.contact.mobile?.trim();
       }
 
-      const billingFields = ["addressLine1", "addressLine2", "city", "state", "pincode", "country"];
+      const billingFields = [
+        "addressLine1",
+        "addressLine2",
+        "city",
+        "state",
+        "pincode",
+        "country",
+      ];
       billingFields.forEach((f) => {
-        if (booking.billingAddress?.[f] !== originalBooking?.billingAddress?.[f]) {
+        if (
+          booking.billingAddress?.[f] !== originalBooking?.billingAddress?.[f]
+        ) {
           updates.billingAddress[f] = booking.billingAddress[f]?.trim() || "";
         }
       });
 
       if (!Object.keys(updates.contact).length) delete updates.contact;
-      if (!Object.keys(updates.billingAddress).length) delete updates.billingAddress;
+      if (!Object.keys(updates.billingAddress).length)
+        delete updates.billingAddress;
 
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/tour/manage-booking-balance/${booking._id}`,
@@ -348,13 +360,15 @@ const ManageBooking = () => {
             ttoken: localStorage.getItem("ttoken"),
           },
           body: JSON.stringify({ updates }),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (result.success) {
-        toast.success("Update request raised! Boarding/De-boarding updated (fully paid booking).");
+        toast.success(
+          "Update request raised! Boarding/De-boarding updated (fully paid booking).",
+        );
 
         setBalanceInfo({
           gvPool: result.data?.gvCancellationPool,
@@ -367,7 +381,8 @@ const ManageBooking = () => {
         if (res.success && Array.isArray(res.data)) {
           const filtered = res.data
             .filter(
-              (e) => e.originalBooking?._id?.toString() === booking._id.toString()
+              (e) =>
+                e.originalBooking?._id?.toString() === booking._id.toString(),
             )
             .sort((a, b) => {
               const dateA = new Date(a.raisedAt || a.createdAt || 0);
@@ -401,7 +416,8 @@ const ManageBooking = () => {
         if (res.success && Array.isArray(res.data)) {
           const filtered = res.data
             .filter(
-              (e) => e.originalBooking?._id?.toString() === booking._id.toString()
+              (e) =>
+                e.originalBooking?._id?.toString() === booking._id.toString(),
             )
             .sort((a, b) => {
               const dateA = new Date(a.raisedAt || a.createdAt || 0);
@@ -478,12 +494,12 @@ const ManageBooking = () => {
 
       <div className="max-w-2xl mx-auto mb-10">
         <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Enter Booking ID
+          Enter TNR
         </label>
         <div className="flex flex-col sm:flex-row gap-4">
           <input
             type="text"
-            placeholder="Paste Booking ID here..."
+            placeholder="Paste TNR here..."
             value={bookingId}
             onChange={(e) => setBookingId(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleGetDetails()}
@@ -520,7 +536,8 @@ const ManageBooking = () => {
               This booking is FULLY PAID
               <br />
               <span className="text-base font-medium">
-                All fields are LOCKED except Boarding Point & De-boarding Point.<br />
+                All fields are LOCKED except Boarding Point & De-boarding Point.
+                <br />
                 You can only change boarding/de-boarding locations.
               </span>
             </div>
@@ -529,11 +546,11 @@ const ManageBooking = () => {
           <div className="grid md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-xl">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Booking ID
+                TNR
               </label>
               <input
                 type="text"
-                value={booking._id}
+                value={booking.tnr}
                 disabled
                 className="mt-2 w-full px-4 py-3 border rounded-lg bg-gray-100 font-mono text-sm"
               />
@@ -576,7 +593,9 @@ const ManageBooking = () => {
                     <div
                       key={i}
                       className={`p-4 rounded-lg text-sm font-medium border ${
-                        isNegative ? "bg-red-50 text-red-800 border-red-200" : "bg-green-50 text-green-800 border-green-200"
+                        isNegative
+                          ? "bg-red-50 text-red-800 border-red-200"
+                          : "bg-green-50 text-green-800 border-green-200"
                       }`}
                     >
                       <div className="flex justify-between items-center">
@@ -636,7 +655,9 @@ const ManageBooking = () => {
                   if (res.success && Array.isArray(res.data)) {
                     const filtered = res.data
                       .filter(
-                        (e) => e.originalBooking?._id?.toString() === booking._id.toString()
+                        (e) =>
+                          e.originalBooking?._id?.toString() ===
+                          booking._id.toString(),
                       )
                       .sort((a, b) => {
                         const dateA = new Date(a.raisedAt || a.createdAt || 0);
@@ -743,7 +764,9 @@ const ManageBooking = () => {
 
                       {entry.adminRemarks?.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-gray-300">
-                          <p className="font-medium text-sm mb-2">Admin Remarks:</p>
+                          <p className="font-medium text-sm mb-2">
+                            Admin Remarks:
+                          </p>
                           {entry.adminRemarks.map((r, i) => (
                             <div key={i} className="text-sm">
                               {r.amount ? (
@@ -765,6 +788,43 @@ const ManageBooking = () => {
               </div>
             )}
           </div>
+          <div className="p-6 bg-blue-50 rounded-xl">
+            <h3 className="flex items-center gap-2 font-bold mb-5 text-blue-800 text-lg">
+              <Mail className="w-6 h-6" /> Contact
+            </h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Advance amount
+                </label>
+                <input
+                  value={booking.payment?.advance?.amount || ""}
+                  disabled={true}
+                  className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                />
+                <input
+                  value={booking.payment?.advance?.paid || "Not paid"}
+                  disabled={true}
+                  className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Balance amount
+                </label>
+                <input
+                  value={booking.payment?.balance?.amount || ""}
+                  disabled={true}
+                  className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                />
+                <input
+                  value={booking.payment?.balance?.paid || "Not paid"}
+                  disabled={true}
+                  className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="p-6 bg-blue-50 rounded-xl">
             <h3 className="flex items-center gap-2 font-bold mb-5 text-blue-800 text-lg">
@@ -772,21 +832,29 @@ const ManageBooking = () => {
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
                 <input
                   type="email"
                   value={booking.contact?.email || ""}
-                  onChange={(e) => updateNested("contact.email", e.target.value)}
+                  onChange={(e) =>
+                    updateNested("contact.email", e.target.value)
+                  }
                   disabled={isFullyPaid}
                   className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Mobile</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Mobile
+                </label>
                 <input
                   type="text"
                   value={booking.contact?.mobile || ""}
-                  onChange={(e) => updateNested("contact.mobile", e.target.value)}
+                  onChange={(e) =>
+                    updateNested("contact.mobile", e.target.value)
+                  }
                   disabled={isFullyPaid}
                   className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                 />
@@ -799,7 +867,14 @@ const ManageBooking = () => {
               <MapPin className="w-6 h-6" /> Billing Address
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
-              {["addressLine1", "addressLine2", "city", "state", "pincode", "country"].map((f) => (
+              {[
+                "addressLine1",
+                "addressLine2",
+                "city",
+                "state",
+                "pincode",
+                "country",
+              ].map((f) => (
                 <div key={f}>
                   <label className="block text-sm font-medium text-gray-700 capitalize">
                     {f.replace(/([A-Z])/g, " $1").trim()}
@@ -807,7 +882,9 @@ const ManageBooking = () => {
                   <input
                     type="text"
                     value={booking.billingAddress?.[f] || ""}
-                    onChange={(e) => updateNested(`billingAddress.${f}`, e.target.value)}
+                    onChange={(e) =>
+                      updateNested(`billingAddress.${f}`, e.target.value)
+                    }
                     disabled={isFullyPaid}
                     className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                   />
@@ -820,7 +897,9 @@ const ManageBooking = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <h3 className="flex items-center gap-3 font-bold text-gray-800 text-xl">
                 <Users className="w-8 h-8" /> Travellers
-                <span className="text-lg text-gray-600">({booking.travellers.length})</span>
+                <span className="text-lg text-gray-600">
+                  ({booking.travellers.length})
+                </span>
               </h3>
 
               {!isFullyPaid && (
@@ -835,11 +914,21 @@ const ManageBooking = () => {
             </div>
 
             {booking.travellers.map((t, idx) => {
-              const isCancelled = t.cancelled?.byAdmin || t.cancelled?.byTraveller;
+              const isCancelled =
+                t.cancelled?.byAdmin || t.cancelled?.byTraveller;
               const pkg = getPackage(t);
-              const boardingOpts = t.packageType === "main" ? tour.boardingPoints || [] : pkg?.boardingPoints || [];
-              const deboardingOpts = t.packageType === "main" ? tour.deboardingPoints || [] : pkg?.deboardingPoints || [];
-              const addonOpts = t.packageType === "main" ? tour.addons || [] : pkg?.addons || [];
+              const boardingOpts =
+                t.packageType === "main"
+                  ? tour.boardingPoints || []
+                  : pkg?.boardingPoints || [];
+              const deboardingOpts =
+                t.packageType === "main"
+                  ? tour.deboardingPoints || []
+                  : pkg?.deboardingPoints || [];
+              const addonOpts =
+                t.packageType === "main"
+                  ? tour.addons || []
+                  : pkg?.addons || [];
 
               const errKey = `traveller_${idx}`;
               const fieldErrors = validationErrors[errKey] || [];
@@ -858,7 +947,11 @@ const ManageBooking = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-bold text-gray-800">
                       Traveller {idx + 1}
-                      {isNew && <span className="ml-2 text-sm text-indigo-600 font-medium">(New)</span>}
+                      {isNew && (
+                        <span className="ml-2 text-sm text-indigo-600 font-medium">
+                          (New)
+                        </span>
+                      )}
                     </h4>
 
                     <div className="flex items-center gap-4">
@@ -894,9 +987,15 @@ const ManageBooking = () => {
 
                   <div className="grid md:grid-cols-3 gap-5">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Package *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Package *
+                      </label>
                       <select
-                        value={t.packageType === "main" ? "main" : t.variantPackageIndex ?? ""}
+                        value={
+                          t.packageType === "main"
+                            ? "main"
+                            : (t.variantPackageIndex ?? "")
+                        }
                         onChange={(e) => {
                           const v = e.target.value;
                           if (v === "main") {
@@ -904,7 +1003,11 @@ const ManageBooking = () => {
                             updateTraveller(idx, "variantPackageIndex", null);
                           } else {
                             updateTraveller(idx, "packageType", "variant");
-                            updateTraveller(idx, "variantPackageIndex", Number(v));
+                            updateTraveller(
+                              idx,
+                              "variantPackageIndex",
+                              Number(v),
+                            );
                           }
                         }}
                         disabled={!isTravellerEditable}
@@ -920,10 +1023,14 @@ const ManageBooking = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Title</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Title
+                      </label>
                       <select
                         value={t.title || ""}
-                        onChange={(e) => updateTraveller(idx, "title", e.target.value)}
+                        onChange={(e) =>
+                          updateTraveller(idx, "title", e.target.value)
+                        }
                         disabled={!isTravellerEditable}
                         className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                       >
@@ -935,43 +1042,59 @@ const ManageBooking = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">First Name *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        First Name *
+                      </label>
                       <input
                         type="text"
                         value={t.firstName || ""}
-                        onChange={(e) => updateTraveller(idx, "firstName", e.target.value)}
+                        onChange={(e) =>
+                          updateTraveller(idx, "firstName", e.target.value)
+                        }
                         disabled={!isTravellerEditable}
                         className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Last Name
+                      </label>
                       <input
                         type="text"
                         value={t.lastName || ""}
-                        onChange={(e) => updateTraveller(idx, "lastName", e.target.value)}
+                        onChange={(e) =>
+                          updateTraveller(idx, "lastName", e.target.value)
+                        }
                         disabled={!isTravellerEditable}
                         className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Age *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Age *
+                      </label>
                       <input
                         type="number"
                         value={t.age || ""}
-                        onChange={(e) => updateTraveller(idx, "age", Number(e.target.value))}
+                        onChange={(e) =>
+                          updateTraveller(idx, "age", Number(e.target.value))
+                        }
                         disabled={!isTravellerEditable}
                         className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Gender</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Gender
+                      </label>
                       <select
                         value={t.gender || ""}
-                        onChange={(e) => updateTraveller(idx, "gender", e.target.value)}
+                        onChange={(e) =>
+                          updateTraveller(idx, "gender", e.target.value)
+                        }
                         disabled={!isTravellerEditable}
                         className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                       >
@@ -983,10 +1106,14 @@ const ManageBooking = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Sharing *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Sharing *
+                      </label>
                       <select
                         value={t.sharingType || ""}
-                        onChange={(e) => updateTraveller(idx, "sharingType", e.target.value)}
+                        onChange={(e) =>
+                          updateTraveller(idx, "sharingType", e.target.value)
+                        }
                         disabled={!isTravellerEditable}
                         className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                       >
@@ -999,18 +1126,24 @@ const ManageBooking = () => {
                         ) : Number(t.age) >= 6 && Number(t.age) <= 10 ? (
                           <>
                             <option value="withBerth">Child with Berth</option>
-                            <option value="withoutBerth">Child without Berth</option>
+                            <option value="withoutBerth">
+                              Child without Berth
+                            </option>
                           </>
                         ) : null}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Boarding Point *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Boarding Point *
+                      </label>
                       <select
                         value={t.boardingPoint?.stationCode || ""}
                         onChange={(e) => {
-                          const p = boardingOpts.find((x) => x.stationCode === e.target.value);
+                          const p = boardingOpts.find(
+                            (x) => x.stationCode === e.target.value,
+                          );
                           updateTraveller(idx, "boardingPoint", p || null);
                         }}
                         disabled={!isBoardingEditable}
@@ -1026,11 +1159,15 @@ const ManageBooking = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">De-boarding Point *</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        De-boarding Point *
+                      </label>
                       <select
                         value={t.deboardingPoint?.stationCode || ""}
                         onChange={(e) => {
-                          const p = deboardingOpts.find((x) => x.stationCode === e.target.value);
+                          const p = deboardingOpts.find(
+                            (x) => x.stationCode === e.target.value,
+                          );
                           updateTraveller(idx, "deboardingPoint", p || null);
                         }}
                         disabled={!isBoardingEditable}
@@ -1046,11 +1183,15 @@ const ManageBooking = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Add-on</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Add-on
+                      </label>
                       <select
                         value={t.selectedAddon?.name || ""}
                         onChange={(e) => {
-                          const a = addonOpts.find((x) => x.name === e.target.value);
+                          const a = addonOpts.find(
+                            (x) => x.name === e.target.value,
+                          );
                           updateTraveller(idx, "selectedAddon", {
                             name: a?.name || "",
                             price: a?.amount || 0,
@@ -1069,10 +1210,14 @@ const ManageBooking = () => {
                     </div>
 
                     <div className="md:col-span-3">
-                      <label className="block text-sm font-medium text-gray-700">Remarks (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Remarks (optional)
+                      </label>
                       <textarea
                         value={t.remarks || ""}
-                        onChange={(e) => updateTraveller(idx, "remarks", e.target.value)}
+                        onChange={(e) =>
+                          updateTraveller(idx, "remarks", e.target.value)
+                        }
                         disabled={!isTravellerEditable}
                         className="mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
                         rows={3}

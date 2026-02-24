@@ -1,5 +1,13 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useContext, useEffect, useState, useCallback } from "react";
+/* eslint-disable no-unused-vars */
+// /* eslint-disable react-hooks/exhaustive-deps */
+
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { useLocation } from "react-router-dom";
 import { TourAdminContext } from "../../context/TourAdminContext";
 import { toast, ToastContainer } from "react-toastify";
@@ -18,6 +26,7 @@ import {
   Clock,
   FileCheck,
   Briefcase,
+  MapPin,
 } from "lucide-react";
 
 const TourAdminDashboard = () => {
@@ -114,10 +123,8 @@ const TourAdminDashboard = () => {
         (t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin,
       ),
 
-    // Fixed: removed unnecessary active traveller check
     cancellationReceipt: (b) => b?.cancellationReceipt === true,
 
-    // Fixed: removed unnecessary active traveller check
     manageBookingReceipt: (b) => b?.manageBookingReceipt === true,
   };
 
@@ -152,10 +159,10 @@ const TourAdminDashboard = () => {
     bookings.map((b) => b.userData?._id || b.contact?.email),
   ).size;
 
-  const toggleExpand = (category, id) => {
+  const toggleExpand = (category, tnr) => {
     setExpanded((prev) => ({
       ...prev,
-      [category]: { ...prev[category], [id]: !prev[category]?.[id] },
+      [category]: { ...prev[category], [tnr]: !prev[category]?.[tnr] },
     }));
   };
 
@@ -163,29 +170,41 @@ const TourAdminDashboard = () => {
     setShowMore((prev) => ({ ...prev, [category]: !prev[category] }));
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(
-      () => toast.success("Booking ID copied!"),
-      () => toast.error("Failed to copy"),
-    );
-  };
-
-  const handleReleaseBooking = async (bookingId, travellerId) => {
-    if (!window.confirm("Reject this cancellation request?")) return;
-    setIsLoading(true);
-    try {
-      const res = await releaseBooking(bookingId, [travellerId]);
-      handleApiResponse(res, "Cancellation rejected", "Failed to reject");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Error");
-    } finally {
-      setIsLoading(false);
+  const copyToClipboard = (text, label = "TNR") => {
+    if (!text) {
+      toast.error(`No ${label} to copy`);
+      return;
     }
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(`${label} copied!`),
+      () => toast.error(`Failed to copy ${label}`),
+    );
   };
 
   const formatDate = (date) => {
     return date ? new Date(date).toLocaleString() : "—";
   };
+
+  // Reusable component for displaying TNR with copy button
+  const TnrDisplay = ({ tnr, color = "indigo" }) => (
+    <div className="flex items-center gap-2 text-sm mb-3">
+      <strong>TNR:</strong>
+      <code className="bg-gray-100 px-3 py-1 rounded font-mono font-bold">
+        {tnr || "N/A"}
+      </code>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          copyToClipboard(tnr);
+        }}
+        className={`flex items-center gap-1 text-${color}-600 hover:text-${color}-800`}
+        title="Copy TNR"
+      >
+        <Copy size={16} />
+        Copy
+      </button>
+    </div>
+  );
 
   const BookingItem = ({
     booking,
@@ -202,7 +221,7 @@ const TourAdminDashboard = () => {
     return (
       <div
         className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
-        onClick={() => toggleExpand(category, booking._id)}
+        onClick={() => toggleExpand(category, booking.tnr)}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -225,34 +244,43 @@ const TourAdminDashboard = () => {
           </span>
         </div>
 
-        {expanded[category]?.[booking._id] && (
+        {expanded[category]?.[booking.tnr] && (
           <div className="mt-4 pt-4 border-t border-gray-100 space-y-4 text-sm text-gray-700">
-            <div className="flex items-center gap-2">
-              <strong>Booking ID:</strong>
-              <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-                {booking._id}
-              </code>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  copyToClipboard(booking._id);
-                }}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium"
-              >
-                <Copy className="w-3 h-3" /> Copy
-              </button>
-            </div>
+            <TnrDisplay tnr={booking.tnr} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-              <p><strong>Email:</strong> {booking.contact?.email || "—"}</p>
-              <p><strong>Mobile:</strong> {booking.contact?.mobile || "—"}</p>
-              <p><strong>Booking Type:</strong> {booking.bookingType || "—"}</p>
-              <p><strong>Booking Date:</strong> {formatDate(booking.bookingDate)}</p>
-              <p><strong>Trip Completed:</strong> {booking.isTripCompleted ? "Yes" : "No"}</p>
-              <p><strong>Booking Completed:</strong> {booking.isBookingCompleted ? "Yes" : "No"}</p>
-              <p><strong>Manage Booking:</strong> {booking.manageBooking ? "Yes" : "No"}</p>
-              <p><strong>GV Cancellation Pool:</strong> {booking.gvCancellationPool || "—"}</p>
-              <p><strong>IRCTC Cancellation Pool:</strong> {booking.irctcCancellationPool || "—"}</p>
+              <p>
+                <strong>Email:</strong> {booking.contact?.email || "—"}
+              </p>
+              <p>
+                <strong>Mobile:</strong> {booking.contact?.mobile || "—"}
+              </p>
+              <p>
+                <strong>Booking Type:</strong> {booking.bookingType || "—"}
+              </p>
+              <p>
+                <strong>Booking Date:</strong> {formatDate(booking.bookingDate)}
+              </p>
+              <p>
+                <strong>Trip Completed:</strong>{" "}
+                {booking.isTripCompleted ? "Yes" : "No"}
+              </p>
+              <p>
+                <strong>Booking Completed:</strong>{" "}
+                {booking.isBookingCompleted ? "Yes" : "No"}
+              </p>
+              <p>
+                <strong>Manage Booking:</strong>{" "}
+                {booking.manageBooking ? "Yes" : "No"}
+              </p>
+              <p>
+                <strong>GV Cancellation Pool:</strong>{" "}
+                {booking.gvCancellationPool || "—"}
+              </p>
+              <p>
+                <strong>IRCTC Cancellation Pool:</strong>{" "}
+                {booking.irctcCancellationPool || "—"}
+              </p>
             </div>
 
             <div>
@@ -263,19 +291,27 @@ const TourAdminDashboard = () => {
                 {booking.travellers?.map((t, i) => (
                   <div
                     key={i}
-                    className="bg-gray-50 p-3 rounded-lg space-y-1 text-xs"
+                    className={`bg-gray-50 p-3 rounded-lg space-y-1 text-xs ${
+                      t.cancelled?.byTraveller || t.cancelled?.byAdmin
+                        ? "border-l-4 border-red-400"
+                        : ""
+                    }`}
                   >
-                    <p className="font-medium">
-                      {t.title} {t.firstName} {t.lastName} ({t.age} yrs, {t.gender || "—"})
+                    <p className="font-medium break-words whitespace-normal leading-snug">
+                      {t.title} {t.firstName} {t.lastName} ({t.age} yrs,{" "}
+                      {t.gender || "—"})
                     </p>
                     <p>Sharing Type: {t.sharingType || "—"}</p>
                     <p>
                       Package Type: {t.packageType || "—"}
-                      {t.variantPackageIndex !== null ? ` (Variant ${t.variantPackageIndex})` : ""}
+                      {t.variantPackageIndex !== null
+                        ? ` (Variant ${t.variantPackageIndex})`
+                        : ""}
                     </p>
                     {t.selectedAddon && (
                       <p>
-                        Addon: {t.selectedAddon.name || "—"} ({t.selectedAddon.price || 0})
+                        Addon: {t.selectedAddon.name || "—"} (
+                        {t.selectedAddon.price || 0})
                       </p>
                     )}
                     {t.boardingPoint && (
@@ -286,28 +322,40 @@ const TourAdminDashboard = () => {
                     )}
                     {t.deboardingPoint && (
                       <p>
-                        Deboarding Point: {t.deboardingPoint.stationName || "—"} (
-                        {t.deboardingPoint.stationCode || "—"})
+                        Deboarding Point: {t.deboardingPoint.stationName || "—"}{" "}
+                        ({t.deboardingPoint.stationCode || "—"})
                       </p>
                     )}
                     {t.trainSeats?.length > 0 && (
                       <p>
-                        Train Seats: {t.trainSeats.map(s => `${s.trainName || "—"}: ${s.seatNo || "—"}`).join(", ")}
+                        Train Seats:{" "}
+                        {t.trainSeats
+                          .map(
+                            (s) => `${s.trainName || "—"}: ${s.seatNo || "—"}`,
+                          )
+                          .join(", ")}
                       </p>
                     )}
                     {t.flightSeats?.length > 0 && (
                       <p>
-                        Flight Seats: {t.flightSeats.map(s => `${s.flightName || "—"}: ${s.seatNo || "—"}`).join(", ")}
+                        Flight Seats:{" "}
+                        {t.flightSeats
+                          .map(
+                            (s) => `${s.flightName || "—"}: ${s.seatNo || "—"}`,
+                          )
+                          .join(", ")}
                       </p>
                     )}
                     <p>Staff Remarks: {t.staffRemarks || "—"}</p>
                     <p>Remarks: {t.remarks || "—"}</p>
                     {(t.cancelled?.byTraveller || t.cancelled?.byAdmin) && (
                       <p className="text-red-600">
-                        Cancelled by {t.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
+                        Cancelled by{" "}
+                        {t.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
                         {formatDate(t.cancelled.cancelledAt)}
-                        {t.cancelled.reason ? ` (Reason: ${t.cancelled.reason})` : ""}
-                        {t.cancelled.releaseddAt ? `, Released at ${formatDate(t.cancelled.releaseddAt)}` : ""}
+                        {t.cancelled.reason
+                          ? ` (Reason: ${t.cancelled.reason})`
+                          : ""}
                       </p>
                     )}
                   </div>
@@ -316,13 +364,18 @@ const TourAdminDashboard = () => {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2 text-sm">Billing Address</h4>
+              <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                <MapPin className="w-4 h-4" /> Billing Address
+              </h4>
               <p>
-                {booking.billingAddress?.addressLine1 || "—"} {booking.billingAddress?.addressLine2 || ""}
+                {booking.billingAddress?.addressLine1 || "—"}{" "}
+                {booking.billingAddress?.addressLine2 || ""}
               </p>
               <p>
-                {booking.billingAddress?.city || "—"}, {booking.billingAddress?.state || "—"} -{" "}
-                {booking.billingAddress?.pincode || "—"}, {booking.billingAddress?.country || "India"}
+                {booking.billingAddress?.city || "—"},{" "}
+                {booking.billingAddress?.state || "—"} -{" "}
+                {booking.billingAddress?.pincode || "—"},{" "}
+                {booking.billingAddress?.country || "India"}
               </p>
             </div>
 
@@ -347,29 +400,37 @@ const TourAdminDashboard = () => {
             <div>
               <h4 className="font-semibold mb-2 text-sm">Receipts</h4>
               <p>
-                Advance Receipt Sent: {booking.receipts?.advanceReceiptSent
+                Advance Receipt Sent:{" "}
+                {booking.receipts?.advanceReceiptSent
                   ? `Yes at ${formatDate(booking.receipts.advanceReceiptSentAt)}`
                   : "No"}
               </p>
               <p>
-                Balance Receipt Sent: {booking.receipts?.balanceReceiptSent
+                Balance Receipt Sent:{" "}
+                {booking.receipts?.balanceReceiptSent
                   ? `Yes at ${formatDate(booking.receipts.balanceReceiptSentAt)}`
                   : "No"}
               </p>
               <p>
-                Cancellation Receipt: {booking.cancellationReceipt ? "Yes" : "No"}
+                Cancellation Receipt:{" "}
+                {booking.cancellationReceipt ? "Yes" : "No"}
               </p>
               <p>
-                Manage Booking Receipt: {booking.manageBookingReceipt ? "Yes" : "No"}
+                Manage Booking Receipt:{" "}
+                {booking.manageBookingReceipt ? "Yes" : "No"}
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2 text-sm">Advance Admin Remarks</h4>
+              <h4 className="font-semibold mb-2 text-sm">
+                Advance Admin Remarks
+              </h4>
               <div className="space-y-1">
                 {booking.advanceAdminRemarks?.map((r, i) => (
                   <div key={i} className="bg-gray-50 p-2 rounded text-xs">
-                    <p>{r.remark || "—"} (₹{r.amount || 0})</p>
+                    <p>
+                      {r.remark || "—"} (₹{r.amount || 0})
+                    </p>
                     <p>Added at: {formatDate(r.addedAt)}</p>
                   </div>
                 )) || <p>None</p>}
@@ -381,7 +442,9 @@ const TourAdminDashboard = () => {
               <div className="space-y-1">
                 {booking.adminRemarks?.map((r, i) => (
                   <div key={i} className="bg-gray-50 p-2 rounded text-xs">
-                    <p>{r.remark || "—"} (₹{r.amount || 0})</p>
+                    <p>
+                      {r.remark || "—"} (₹{r.amount || 0})
+                    </p>
                     <p>Added at: {formatDate(r.addedAt)}</p>
                   </div>
                 )) || <p>None</p>}
@@ -390,12 +453,19 @@ const TourAdminDashboard = () => {
 
             {booking.cancelled?.byAdmin || booking.cancelled?.byTraveller ? (
               <div className="text-red-600">
-                <h4 className="font-semibold mb-2 text-sm">Booking Cancellation</h4>
+                <h4 className="font-semibold mb-2 text-sm">
+                  Booking Cancellation
+                </h4>
                 <p>
-                  Cancelled by {booking.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
+                  Cancelled by{" "}
+                  {booking.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
                   {formatDate(booking.cancelled.cancelledAt)}
-                  {booking.cancelled.reason ? ` (Reason: ${booking.cancelled.reason})` : ""}
-                  {booking.cancelled.releaseddAt ? `, Released at ${formatDate(booking.cancelled.releaseddAt)}` : ""}
+                  {booking.cancelled.reason
+                    ? ` (Reason: ${booking.cancelled.reason})`
+                    : ""}
+                  {booking.cancelled.releaseddAt
+                    ? `, Released at ${formatDate(booking.cancelled.releaseddAt)}`
+                    : ""}
                 </p>
               </div>
             ) : null}
@@ -414,7 +484,7 @@ const TourAdminDashboard = () => {
     return (
       <div
         className="bg-white rounded-xl shadow-sm border border-red-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
-        onClick={() => toggleExpand("cancellation", booking._id)}
+        onClick={() => toggleExpand("cancellation", booking.tnr)}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -435,23 +505,9 @@ const TourAdminDashboard = () => {
           </span>
         </div>
 
-        {expanded["cancellation"]?.[booking._id] && (
-          <div className="mt-4 pt-4 border-t border-red-100 space-y-3">
-            <div className="flex items-center gap-2">
-              <strong>Booking ID:</strong>
-              <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-                {booking._id}
-              </code>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  copyToClipboard(booking._id);
-                }}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium"
-              >
-                <Copy className="w-3 h-3" /> Copy
-              </button>
-            </div>
+        {expanded["cancellation"]?.[booking.tnr] && (
+          <div className="mt-4 pt-4 border-t border-red-100 space-y-4 text-sm text-gray-700">
+            <TnrDisplay tnr={booking.tnr} color="red" />
 
             <h4 className="font-semibold mb-2 text-sm flex items-center gap-1">
               Travellers Requested
@@ -474,7 +530,7 @@ const TourAdminDashboard = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleReleaseBooking(booking._id, t._id);
+                      // handleReleaseBooking(booking.tnr, t._id);
                     }}
                     disabled={isLoading}
                     className={`flex items-center gap-1 px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition mt-2 sm:mt-0 ${
@@ -504,7 +560,7 @@ const TourAdminDashboard = () => {
     return (
       <div
         className="bg-white rounded-xl shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
-        onClick={() => toggleExpand("manageRequests", booking._id)}
+        onClick={() => toggleExpand("manageRequests", booking.tnr)}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -525,30 +581,27 @@ const TourAdminDashboard = () => {
           </span>
         </div>
 
-        {expanded["manageRequests"]?.[booking._id] && (
+        {expanded["manageRequests"]?.[booking.tnr] && (
           <div className="mt-4 pt-4 border-t border-pink-100 space-y-4 text-sm text-gray-700">
-            <div className="flex items-center gap-2">
-              <strong>Booking ID:</strong>
-              <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-                {booking._id}
-              </code>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  copyToClipboard(booking._id);
-                }}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium"
-              >
-                <Copy className="w-3 h-3" /> Copy
-              </button>
-            </div>
+            <TnrDisplay tnr={booking.tnr} color="pink" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <p><strong>Email:</strong> {booking.contact?.email || "—"}</p>
-              <p><strong>Mobile:</strong> {booking.contact?.mobile || "—"}</p>
-              <p><strong>Tour:</strong> {booking.tourData?.title || "—"}</p>
-              <p><strong>Travellers Count:</strong> {booking.travellers?.length || 1}</p>
-              <p><strong>Status:</strong> Pending Admin Review</p>
+              <p>
+                <strong>Email:</strong> {booking.contact?.email || "—"}
+              </p>
+              <p>
+                <strong>Mobile:</strong> {booking.contact?.mobile || "—"}
+              </p>
+              <p>
+                <strong>Tour:</strong> {booking.tourData?.title || "—"}
+              </p>
+              <p>
+                <strong>Travellers Count:</strong>{" "}
+                {booking.travellers?.length || 1}
+              </p>
+              <p>
+                <strong>Status:</strong> Pending Admin Review
+              </p>
             </div>
           </div>
         )}
@@ -578,19 +631,23 @@ const TourAdminDashboard = () => {
           <>
             <div className="space-y-4">
               {category === "cancellation"
-                ? visible.map((b) => <CancellationItem key={b._id} booking={b} />)
+                ? visible.map((b) => (
+                    <CancellationItem key={b.tnr} booking={b} />
+                  ))
                 : category === "manageRequests"
-                ? visible.map((b) => <ManageRequestItem key={b._id} booking={b} />)
-                : visible.map((b) => (
-                    <BookingItem
-                      key={b._id}
-                      booking={b}
-                      category={category}
-                      statusLabel={statusLabel}
-                      statusColor={statusColor}
-                      Icon={Icon}
-                    />
-                  ))}
+                  ? visible.map((b) => (
+                      <ManageRequestItem key={b.tnr} booking={b} />
+                    ))
+                  : visible.map((b) => (
+                      <BookingItem
+                        key={b.tnr}
+                        booking={b}
+                        category={category}
+                        statusLabel={statusLabel}
+                        statusColor={statusColor}
+                        Icon={Icon}
+                      />
+                    ))}
             </div>
 
             {items.length > 5 && (
@@ -598,7 +655,9 @@ const TourAdminDashboard = () => {
                 onClick={() => toggleShowMore(category)}
                 className="mt-6 w-full sm:w-auto mx-auto block px-6 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition flex items-center justify-center gap-2"
               >
-                {showMore[category] ? "Show Less" : `Show More (${items.length - 5})`}
+                {showMore[category]
+                  ? "Show Less"
+                  : `Show More (${items.length - 5})`}
               </button>
             )}
           </>

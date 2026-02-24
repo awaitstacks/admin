@@ -1,4 +1,3 @@
-
 import React, { useContext, useEffect, useState } from "react";
 import { TourAdminContext } from "../../context/TourAdminContext";
 import { toast, ToastContainer } from "react-toastify";
@@ -67,7 +66,7 @@ const ToursList = () => {
     const travellers = validBookings.flatMap((b) => {
       const validTravellers = (b.travellers || []).filter(
         (t) =>
-          t.cancelled?.byTraveller !== true && t.cancelled?.byAdmin !== true
+          t.cancelled?.byTraveller !== true && t.cancelled?.byAdmin !== true,
       );
       console.log(`Travellers for booking ${b._id}:`, validTravellers);
       return validTravellers;
@@ -89,12 +88,12 @@ const ToursList = () => {
       .filter(
         (b) =>
           b.tourId?.toString() === tourId.toString() &&
-          b.isBookingCompleted === true
+          b.isBookingCompleted === true,
       )
       .reduce((count, b) => {
         const cancelledTravellers = (b.travellers || []).filter(
           (t) =>
-            t.cancelled?.byTraveller === true && t.cancelled?.byAdmin === true
+            t.cancelled?.byTraveller === true && t.cancelled?.byAdmin === true,
         );
         return count + cancelledTravellers.length;
       }, 0);
@@ -104,7 +103,7 @@ const ToursList = () => {
 
   const getDoubleSharingCount = (tourId) => {
     const count = getValidTravellers(tourId).filter(
-      (t) => t.sharingType === "double" && t.sharingType !== "withBerth"
+      (t) => t.sharingType === "double" && t.sharingType !== "withBerth",
     ).length;
     console.log(`Double sharing count for tour ${tourId}: ${count}`);
     return count;
@@ -112,7 +111,7 @@ const ToursList = () => {
 
   const getTripleSharingCount = (tourId) => {
     const count = getValidTravellers(tourId).filter(
-      (t) => t.sharingType === "triple" && t.sharingType !== "withBerth"
+      (t) => t.sharingType === "triple" && t.sharingType !== "withBerth",
     ).length;
     console.log(`Triple sharing count for tour ${tourId}: ${count}`);
     return count;
@@ -122,13 +121,13 @@ const ToursList = () => {
     const travellers = getValidTravellers(tourId);
     const count = travellers.filter(
       (t) =>
-        t.sharingType === "withBerth" || t.gender?.toLowerCase() === "other"
+        t.sharingType === "withBerth" || t.gender?.toLowerCase() === "other",
     ).length;
     console.log(`Child count for tour ${tourId}: ${count}`, {
       withBerth: travellers.filter((t) => t.sharingType === "withBerth").length,
       children: travellers.filter(
         (t) =>
-          t.gender?.toLowerCase() === "other" && t.sharingType !== "withBerth"
+          t.gender?.toLowerCase() === "other" && t.sharingType !== "withBerth",
       ).length,
     });
     return count;
@@ -136,7 +135,8 @@ const ToursList = () => {
 
   const getMaleCount = (tourId) => {
     const count = getValidTravellers(tourId).filter(
-      (t) => t.gender?.toLowerCase() === "male" && t.sharingType !== "withBerth"
+      (t) =>
+        t.gender?.toLowerCase() === "male" && t.sharingType !== "withBerth",
     ).length;
     console.log(`Male count for tour ${tourId}: ${count}`);
     return count;
@@ -145,7 +145,7 @@ const ToursList = () => {
   const getFemaleCount = (tourId) => {
     const count = getValidTravellers(tourId).filter(
       (t) =>
-        t.gender?.toLowerCase() === "female" && t.sharingType !== "withBerth"
+        t.gender?.toLowerCase() === "female" && t.sharingType !== "withBerth",
     ).length;
     console.log(`Female count for tour ${tourId}: ${count}`);
     return count;
@@ -154,7 +154,7 @@ const ToursList = () => {
   // Filter tours by title
   const filteredTours = tours.filter(
     (tour) =>
-      tour?.title?.toLowerCase()?.includes(filterText.toLowerCase()) ?? false
+      tour?.title?.toLowerCase()?.includes(filterText.toLowerCase()) ?? false,
   );
 
   // Export filtered tours to PDF
@@ -204,7 +204,7 @@ const ToursList = () => {
   // Handle tour availability change
   const handleChangeAvailability = async (tourId) => {
     const confirm = window.confirm(
-      "Are you sure you want to change the tour availability?"
+      "Are you sure you want to change the tour availability?",
     );
     if (!confirm) return;
 
@@ -221,7 +221,7 @@ const ToursList = () => {
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          "Failed to change tour availability"
+          "Failed to change tour availability",
       );
     } finally {
       setIsLoading(false);
@@ -243,7 +243,7 @@ const ToursList = () => {
       />
 
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 text-center lg:text-left w-full">
           Tours Controls
         </h1>
 
@@ -276,30 +276,68 @@ const ToursList = () => {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider w-12">S.No</th>
-                  <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Tour Title</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Travellers</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Cancellations</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Double</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Triple</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Male</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Female</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Child</th>
-                  <th className="px-6 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider w-12">
+                    S.No
+                  </th>
+                  <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">
+                    Tour Title
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Travellers
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Cancellations
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Double
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Triple
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Male
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Female
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Child
+                  </th>
+                  <th className="px-6 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">
+                    Availability
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredTours.map((tour, index) => (
                   <tr key={tour._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap text-center font-medium">{index + 1}</td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{tour.title || "Unknown"}</td>
-                    <td className="px-4 py-4 text-center font-semibold">{getTravellerCount(tour._id)}</td>
-                    <td className="px-4 py-4 text-center text-red-600">{getCancellationCount(tour._id)}</td>
-                    <td className="px-4 py-4 text-center">{getDoubleSharingCount(tour._id)}</td>
-                    <td className="px-4 py-4 text-center">{getTripleSharingCount(tour._id)}</td>
-                    <td className="px-4 py-4 text-center text-blue-600">{getMaleCount(tour._id)}</td>
-                    <td className="px-4 py-4 text-center text-pink-600">{getFemaleCount(tour._id)}</td>
-                    <td className="px-4 py-4 text-center text-purple-600">{getChildAndWithBerthCount(tour._id)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-center font-medium">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {tour.title || "Unknown"}
+                    </td>
+                    <td className="px-4 py-4 text-center font-semibold">
+                      {getTravellerCount(tour._id)}
+                    </td>
+                    <td className="px-4 py-4 text-center text-red-600">
+                      {getCancellationCount(tour._id)}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      {getDoubleSharingCount(tour._id)}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      {getTripleSharingCount(tour._id)}
+                    </td>
+                    <td className="px-4 py-4 text-center text-blue-600">
+                      {getMaleCount(tour._id)}
+                    </td>
+                    <td className="px-4 py-4 text-center text-pink-600">
+                      {getFemaleCount(tour._id)}
+                    </td>
+                    <td className="px-4 py-4 text-center text-purple-600">
+                      {getChildAndWithBerthCount(tour._id)}
+                    </td>
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handleChangeAvailability(tour._id)}
@@ -340,34 +378,50 @@ const ToursList = () => {
                 <div className="grid grid-cols-3 gap-3 p-4 text-center text-sm">
                   <div>
                     <div className="text-gray-500 text-xs mb-1">Travellers</div>
-                    <div className="font-bold text-lg">{getTravellerCount(tour._id)}</div>
+                    <div className="font-bold text-lg">
+                      {getTravellerCount(tour._id)}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs mb-1">Cancellations</div>
-                    <div className="font-bold text-lg text-red-600">{getCancellationCount(tour._id)}</div>
+                    <div className="text-gray-500 text-xs mb-1">
+                      Cancellations
+                    </div>
+                    <div className="font-bold text-lg text-red-600">
+                      {getCancellationCount(tour._id)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-gray-500 text-xs mb-1">Child</div>
-                    <div className="font-bold text-lg">{getChildAndWithBerthCount(tour._id)}</div>
+                    <div className="font-bold text-lg">
+                      {getChildAndWithBerthCount(tour._id)}
+                    </div>
                   </div>
 
                   <div>
                     <div className="text-gray-500 text-xs mb-1">Double</div>
-                    <div className="font-bold text-lg">{getDoubleSharingCount(tour._id)}</div>
+                    <div className="font-bold text-lg">
+                      {getDoubleSharingCount(tour._id)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-gray-500 text-xs mb-1">Triple</div>
-                    <div className="font-bold text-lg">{getTripleSharingCount(tour._id)}</div>
+                    <div className="font-bold text-lg">
+                      {getTripleSharingCount(tour._id)}
+                    </div>
                   </div>
                   <div className="col-span-3 mt-2">
                     <div className="flex justify-center gap-8">
                       <div>
                         <div className="text-gray-500 text-xs">Male</div>
-                        <div className="font-bold text-blue-600">{getMaleCount(tour._id)}</div>
+                        <div className="font-bold text-blue-600">
+                          {getMaleCount(tour._id)}
+                        </div>
                       </div>
                       <div>
                         <div className="text-gray-500 text-xs">Female</div>
-                        <div className="font-bold text-pink-600">{getFemaleCount(tour._id)}</div>
+                        <div className="font-bold text-pink-600">
+                          {getFemaleCount(tour._id)}
+                        </div>
                       </div>
                     </div>
                   </div>

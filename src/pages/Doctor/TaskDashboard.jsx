@@ -1,8 +1,11 @@
-
-
-
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { useLocation } from "react-router-dom";
 import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
@@ -32,8 +35,8 @@ const TaskDashboard = () => {
     taskMarkBalanceReceiptSent,
     taskMarkModifyReceipt,
     taskCompleteBooking,
-    taskMarkCancellationReceiptSent,        // ← new
-    taskMarkManageBookingReceiptSent,       // ← new
+    taskMarkCancellationReceiptSent,
+    taskMarkManageBookingReceiptSent,
   } = useContext(TourContext);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -70,21 +73,29 @@ const TaskDashboard = () => {
       (b.payment?.advance?.paid &&
         !b.payment?.balance?.paid &&
         !b.receipts?.advanceReceiptSent &&
-        b.travellers?.some((t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin)) ||
+        b.travellers?.some(
+          (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+        )) ||
       (b.payment?.advance?.paid &&
         b.payment?.balance?.paid &&
         !b.receipts?.advanceReceiptSent &&
-        b.travellers?.some((t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin)),
+        b.travellers?.some(
+          (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+        )),
 
     balanceReceipt: (b) =>
       b?.payment?.advance?.paid === true &&
       b?.payment?.balance?.paid === true &&
       b?.receipts?.balanceReceiptSent !== true &&
-      (b?.travellers || []).some((t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin),
+      (b?.travellers || []).some(
+        (t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin,
+      ),
 
     modifyReceipt: (b) =>
       b?.isTripCompleted === true &&
-      (b?.travellers || []).some((t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin),
+      (b?.travellers || []).some(
+        (t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin,
+      ),
 
     uncompleted: (b) =>
       b?.payment?.advance?.paid === true &&
@@ -97,28 +108,40 @@ const TaskDashboard = () => {
     unverified: (b) =>
       !b?.payment?.advance?.paid &&
       !b?.payment?.balance?.paid &&
-      b.travellers?.some((t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin),
+      b.travellers?.some(
+        (t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin,
+      ),
 
-    // New filters
-    cancellationReceipt: (b) =>
-      b?.cancellationReceipt === true ,
+    cancellationReceipt: (b) => b?.cancellationReceipt === true,
 
-
-    manageBookingReceipt: (b) =>
-      b?.manageBookingReceipt === true ,
+    manageBookingReceipt: (b) => b?.manageBookingReceipt === true,
   };
 
   const categorized = useMemo(
     () => ({
-      advanceReceipt: bookings.filter(filters.advanceReceipt).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
-      balanceReceipt: bookings.filter(filters.balanceReceipt).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
-      modifyReceipt: bookings.filter(filters.modifyReceipt).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
-      uncompleted: bookings.filter(filters.uncompleted).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
-      unverified: bookings.filter(filters.unverified).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
-      cancellationReceipt: bookings.filter(filters.cancellationReceipt).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
-      manageBookingReceipt: bookings.filter(filters.manageBookingReceipt).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
+      advanceReceipt: bookings
+        .filter(filters.advanceReceipt)
+        .sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
+      balanceReceipt: bookings
+        .filter(filters.balanceReceipt)
+        .sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
+      modifyReceipt: bookings
+        .filter(filters.modifyReceipt)
+        .sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
+      uncompleted: bookings
+        .filter(filters.uncompleted)
+        .sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
+      unverified: bookings
+        .filter(filters.unverified)
+        .sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
+      cancellationReceipt: bookings
+        .filter(filters.cancellationReceipt)
+        .sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
+      manageBookingReceipt: bookings
+        .filter(filters.manageBookingReceipt)
+        .sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)),
     }),
-    [bookings]
+    [bookings],
   );
 
   const totalPendingTasks = useMemo(() => {
@@ -128,26 +151,78 @@ const TaskDashboard = () => {
   useEffect(() => {
     if (!isLoading) {
       if (totalPendingTasks > 0) {
-        toast.info(`${totalPendingTasks} pending tasks`, { toastId: "pending-tasks-count" });
+        toast.info(`${totalPendingTasks} pending tasks`, {
+          toastId: "pending-tasks-count",
+        });
       } else {
-        toast.success("Task Dashboard loaded Successfully", { toastId: "no-pending-tasks" });
+        toast.success("Task Dashboard loaded Successfully", {
+          toastId: "no-pending-tasks",
+        });
       }
     }
   }, [isLoading, totalPendingTasks]);
 
   const metrics = [
-    { label: "Total Pending Tasks", value: totalPendingTasks, Icon: Calendar, color: "text-blue-600", bg: "bg-blue-100" },
-    { label: "Advance receipts Pending", value: categorized.advanceReceipt.length, Icon: IndianRupee, color: "text-green-600", bg: "bg-green-100" },
-    { label: "Balance receipts Pending", value: categorized.balanceReceipt.length, Icon: Receipt, color: "text-yellow-600", bg: "bg-yellow-100" },
-    { label: "Modified receipts Pending", value: categorized.modifyReceipt.length, Icon: FileText, color: "text-purple-600", bg: "bg-purple-100" },
-    { label: "Booking Completion", value: categorized.uncompleted.length, Icon: CheckCircle, color: "text-orange-600", bg: "bg-orange-100" },
-    { label: "Unverified", value: categorized.unverified.length, Icon: Clock, color: "text-teal-600", bg: "bg-teal-100" },
-    { label: "Cancellation Receipts Pending", value: categorized.cancellationReceipt.length, Icon: FileCheck, color: "text-rose-600", bg: "bg-rose-100" },
-    { label: "Manage Booking Receipts Pending", value: categorized.manageBookingReceipt.length, Icon: Briefcase, color: "text-indigo-600", bg: "bg-indigo-100" },
+    {
+      label: "Total Pending Tasks",
+      value: totalPendingTasks,
+      Icon: Calendar,
+      color: "text-blue-600",
+      bg: "bg-blue-100",
+    },
+    {
+      label: "Advance receipts Pending",
+      value: categorized.advanceReceipt.length,
+      Icon: IndianRupee,
+      color: "text-green-600",
+      bg: "bg-green-100",
+    },
+    {
+      label: "Balance receipts Pending",
+      value: categorized.balanceReceipt.length,
+      Icon: Receipt,
+      color: "text-yellow-600",
+      bg: "bg-yellow-100",
+    },
+    {
+      label: "Modified receipts Pending",
+      value: categorized.modifyReceipt.length,
+      Icon: FileText,
+      color: "text-purple-600",
+      bg: "bg-purple-100",
+    },
+    {
+      label: "Booking Completion",
+      value: categorized.uncompleted.length,
+      Icon: CheckCircle,
+      color: "text-orange-600",
+      bg: "bg-orange-100",
+    },
+    {
+      label: "Unverified",
+      value: categorized.unverified.length,
+      Icon: Clock,
+      color: "text-teal-600",
+      bg: "bg-teal-100",
+    },
+    {
+      label: "Cancellation Receipts Pending",
+      value: categorized.cancellationReceipt.length,
+      Icon: FileCheck,
+      color: "text-rose-600",
+      bg: "bg-rose-100",
+    },
+    {
+      label: "Manage Booking Receipts Pending",
+      value: categorized.manageBookingReceipt.length,
+      Icon: Briefcase,
+      color: "text-indigo-600",
+      bg: "bg-indigo-100",
+    },
   ];
 
   const handleMarkAction = useCallback(
-    async (bookingId, type) => {
+    async (tnr, type) => {
       const successMessages = {
         advance: "Advance Receipt marked as Complete!",
         balance: "Balance Receipt marked as Complete!",
@@ -159,16 +234,25 @@ const TaskDashboard = () => {
 
       if (!window.confirm(`Mark this as Complete?`)) return;
 
-      setActionLoading((prev) => ({ ...prev, [bookingId]: type }));
+      if (!tnr || typeof tnr !== "string" || tnr.trim().length !== 6) {
+        toast.error("Valid TNR is required to mark receipt");
+        return;
+      }
+
+      setActionLoading((prev) => ({ ...prev, [tnr]: type }));
 
       try {
         let res;
-        if (type === "advance") res = await taskMarkAdvanceReceiptSent(bookingId);
-        else if (type === "balance") res = await taskMarkBalanceReceiptSent(bookingId);
-        else if (type === "modify") res = await taskMarkModifyReceipt(bookingId);
-        else if (type === "completeBooking") res = await taskCompleteBooking(bookingId);
-        else if (type === "cancellationReceipt") res = await taskMarkCancellationReceiptSent(bookingId);
-        else if (type === "manageBookingReceipt") res = await taskMarkManageBookingReceiptSent(bookingId);
+        if (type === "advance") res = await taskMarkAdvanceReceiptSent(tnr);
+        else if (type === "balance")
+          res = await taskMarkBalanceReceiptSent(tnr);
+        else if (type === "modify") res = await taskMarkModifyReceipt(tnr);
+        else if (type === "completeBooking")
+          res = await taskCompleteBooking(tnr);
+        else if (type === "cancellationReceipt")
+          res = await taskMarkCancellationReceiptSent(tnr);
+        else if (type === "manageBookingReceipt")
+          res = await taskMarkManageBookingReceiptSent(tnr);
 
         if (res?.success) {
           toast.success(successMessages[type]);
@@ -179,7 +263,7 @@ const TaskDashboard = () => {
       } catch (err) {
         toast.error("Something went wrong");
       } finally {
-        setActionLoading((prev) => ({ ...prev, [bookingId]: null }));
+        setActionLoading((prev) => ({ ...prev, [tnr]: null }));
       }
     },
     [
@@ -190,13 +274,14 @@ const TaskDashboard = () => {
       taskMarkCancellationReceiptSent,
       taskMarkManageBookingReceiptSent,
       getAllBookings,
-    ]
+    ],
   );
 
-  const toggleExpand = (category, id) => {
+  const toggleExpand = (category, tnr) => {
+    if (!tnr) return;
     setExpanded((prev) => ({
       ...prev,
-      [category]: { ...prev[category], [id]: !prev[category]?.[id] },
+      [category]: { ...prev[category], [tnr]: !prev[category]?.[tnr] },
     }));
   };
 
@@ -213,33 +298,62 @@ const TaskDashboard = () => {
       : "—";
 
   const copyToClipboard = (text) => {
+    if (!text) {
+      toast.error("No TNR to copy");
+      return;
+    }
     navigator.clipboard.writeText(text).then(
-      () => toast.success("Booking ID copied!"),
-      () => toast.error("Failed to copy")
+      () => toast.success("TNR copied!"),
+      () => toast.error("Failed to copy"),
     );
   };
 
   const TaskCard = ({ booking, category, type }) => {
     const firstTrav = booking.travellers?.[0] || {};
-    const travellerName = `${firstTrav.firstName || ""} ${firstTrav.lastName || ""}`.trim() || "Unknown";
-    const isActing = actionLoading[booking._id] === type;
+    const travellerName =
+      `${firstTrav.firstName || ""} ${firstTrav.lastName || ""}`.trim() ||
+      "Unknown";
+    const isActing = actionLoading[booking.tnr] === type;
     const showActionButton = category !== "unverified";
+
+    // Safety: skip rendering if no TNR
+    if (!booking.tnr) {
+      return (
+        <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-red-700 text-sm">
+          Booking missing TNR – cannot display
+        </div>
+      );
+    }
 
     return (
       <div
         className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
-        onClick={() => toggleExpand(category, booking._id)}
+        onClick={() => toggleExpand(category, booking.tnr)}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center flex-shrink-0">
-              {category === "unverified" && <Clock className="w-5 h-5 text-blue-600" />}
-              {category === "advanceReceipt" && <IndianRupee className="w-5 h-5 text-blue-600" />}
-              {category === "balanceReceipt" && <Receipt className="w-5 h-5 text-blue-600" />}
-              {category === "modifyReceipt" && <FileText className="w-5 h-5 text-blue-600" />}
-              {category === "uncompleted" && <CheckCircle className="w-5 h-5 text-blue-600" />}
-              {category === "cancellationReceipt" && <FileCheck className="w-5 h-5 text-rose-600" />}
-              {category === "manageBookingReceipt" && <Briefcase className="w-5 h-5 text-indigo-600" />}
+              {category === "unverified" && (
+                <Clock className="w-5 h-5 text-blue-600" />
+              )}
+              {category === "advanceReceipt" && (
+                <IndianRupee className="w-5 h-5 text-blue-600" />
+              )}
+              {category === "balanceReceipt" && (
+                <Receipt className="w-5 h-5 text-blue-600" />
+              )}
+              {category === "modifyReceipt" && (
+                <FileText className="w-5 h-5 text-blue-600" />
+              )}
+              {category === "uncompleted" && (
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+              )}
+              {category === "cancellationReceipt" && (
+                <FileCheck className="w-5 h-5 text-rose-600" />
+              )}
+              {category === "manageBookingReceipt" && (
+                <Briefcase className="w-5 h-5 text-indigo-600" />
+              )}
             </div>
 
             <div className="flex-1 min-w-0">
@@ -256,31 +370,37 @@ const TaskDashboard = () => {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleMarkAction(booking._id, type);
+                handleMarkAction(booking.tnr, type);
               }}
               disabled={isActing}
               className={`ml-3 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition ${
-                isActing ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                isActing
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700"
               }`}
             >
-              {isActing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {isActing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
               <span className="hidden xs:inline">Mark Sent</span>
             </button>
           )}
         </div>
 
-        {expanded[category]?.[booking._id] && (
+        {expanded[category]?.[booking.tnr] && (
           <div className="mt-4 pt-4 border-t border-gray-100 space-y-4 text-sm text-gray-700">
-            {/* Booking basic info */}
+            {/* TNR Display */}
             <div className="flex items-center gap-2">
-              <strong>Booking ID:</strong>
-              <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-                {booking._id}
+              <strong>TNR:</strong>
+              <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono tracking-wider font-bold">
+                {booking.tnr}
               </code>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  copyToClipboard(booking._id);
+                  copyToClipboard(booking.tnr);
                 }}
                 className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium"
               >
@@ -289,10 +409,18 @@ const TaskDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-              <p><strong>Email:</strong> {booking.contact?.email || "—"}</p>
-              <p><strong>Mobile:</strong> {booking.contact?.mobile || "—"}</p>
-              <p><strong>Booking Type:</strong> {booking.bookingType || "—"}</p>
-              <p><strong>Booking Date:</strong> {formatDate(booking.bookingDate)}</p>
+              <p>
+                <strong>Email:</strong> {booking.contact?.email || "—"}
+              </p>
+              <p>
+                <strong>Mobile:</strong> {booking.contact?.mobile || "—"}
+              </p>
+              <p>
+                <strong>Booking Type:</strong> {booking.bookingType || "—"}
+              </p>
+              <p>
+                <strong>Booking Date:</strong> {formatDate(booking.bookingDate)}
+              </p>
               <p>
                 <strong>Trip Completed:</strong>{" "}
                 {booking.isTripCompleted ? "Yes" : "No"}
@@ -301,35 +429,53 @@ const TaskDashboard = () => {
                 <strong>Booking Completed:</strong>{" "}
                 {booking.isBookingCompleted ? "Yes" : "No"}
               </p>
-              <p><strong>Manage Booking:</strong> {booking.manageBooking ? "Yes" : "No"}</p>
-              <p><strong>GV Cancellation Pool:</strong> {booking.gvCancellationPool || "—"}</p>
-              <p><strong>IRCTC Cancellation Pool:</strong> {booking.irctcCancellationPool || "—"}</p>
+              <p>
+                <strong>Manage Booking:</strong>{" "}
+                {booking.manageBooking ? "Yes" : "No"}
+              </p>
+              <p>
+                <strong>GV Cancellation Pool:</strong>{" "}
+                {booking.gvCancellationPool || "—"}
+              </p>
+              <p>
+                <strong>IRCTC Cancellation Pool:</strong>{" "}
+                {booking.irctcCancellationPool || "—"}
+              </p>
             </div>
 
             {/* Travellers */}
             <div>
               <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">
-                <Users className="w-4 h-4" /> Travellers ({booking.travellers?.length || 0})
+                <Users className="w-4 h-4" /> Travellers (
+                {booking.travellers?.length || 0})
               </h4>
               <div className="space-y-3">
                 {booking.travellers?.map((t, i) => (
                   <div
                     key={i}
                     className={`bg-gray-50 p-3 rounded-lg space-y-1 text-xs ${
-                      t.cancelled?.byTraveller || t.cancelled?.byAdmin ? "border-l-4 border-red-400" : ""
+                      t.cancelled?.byTraveller || t.cancelled?.byAdmin
+                        ? "border-l-4 border-red-400"
+                        : ""
                     }`}
                   >
                     <p className="font-medium break-words whitespace-normal leading-snug">
-                      {t.title} {t.firstName} {t.lastName} ({t.age} yrs, {t.gender || "—"})
+                      {t.title} {t.firstName} {t.lastName} ({t.age} yrs,{" "}
+                      {t.gender || "—"})
                     </p>
-                    <p className="break-words whitespace-normal">Sharing Type: {t.sharingType || "—"}</p>
+                    <p className="break-words whitespace-normal">
+                      Sharing Type: {t.sharingType || "—"}
+                    </p>
                     <p className="break-words whitespace-normal">
                       Package Type: {t.packageType || "—"}
-                      {t.variantPackageIndex !== null ? ` (Variant ${t.variantPackageIndex})` : ""}
+                      {t.variantPackageIndex !== null
+                        ? ` (Variant ${t.variantPackageIndex})`
+                        : ""}
                     </p>
                     {t.selectedAddon && (
                       <p className="break-words whitespace-normal">
-                        Addon: {t.selectedAddon.name || "—"} ({t.selectedAddon.price || 0})
+                        Addon: {t.selectedAddon.name || "—"} (
+                        {t.selectedAddon.price || 0})
                       </p>
                     )}
                     {t.boardingPoint && (
@@ -340,18 +486,28 @@ const TaskDashboard = () => {
                     )}
                     {t.deboardingPoint && (
                       <p className="break-words whitespace-normal">
-                        Deboarding Point: {t.deboardingPoint.stationName || "—"} (
-                        {t.deboardingPoint.stationCode || "—"})
+                        Deboarding Point: {t.deboardingPoint.stationName || "—"}{" "}
+                        ({t.deboardingPoint.stationCode || "—"})
                       </p>
                     )}
                     {t.trainSeats?.length > 0 && (
                       <p className="break-words whitespace-normal">
-                        Train Seats: {t.trainSeats.map(s => `${s.trainName || "—"}: ${s.seatNo || "—"}`).join(", ")}
+                        Train Seats:{" "}
+                        {t.trainSeats
+                          .map(
+                            (s) => `${s.trainName || "—"}: ${s.seatNo || "—"}`,
+                          )
+                          .join(", ")}
                       </p>
                     )}
                     {t.flightSeats?.length > 0 && (
                       <p className="break-words whitespace-normal">
-                        Flight Seats: {t.flightSeats.map(s => `${s.flightName || "—"}: ${s.seatNo || "—"}`).join(", ")}
+                        Flight Seats:{" "}
+                        {t.flightSeats
+                          .map(
+                            (s) => `${s.flightName || "—"}: ${s.seatNo || "—"}`,
+                          )
+                          .join(", ")}
                       </p>
                     )}
                     <p className="break-words whitespace-pre-wrap">
@@ -362,13 +518,18 @@ const TaskDashboard = () => {
                     </p>
                     {(t.cancelled?.byTraveller || t.cancelled?.byAdmin) && (
                       <p className="text-red-600 text-xs">
-                        Cancelled by {t.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
+                        Cancelled by{" "}
+                        {t.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
                         {formatDate(t.cancelled.cancelledAt)}
-                        {t.cancelled.reason ? ` (Reason: ${t.cancelled.reason})` : ""}
+                        {t.cancelled.reason
+                          ? ` (Reason: ${t.cancelled.reason})`
+                          : ""}
                       </p>
                     )}
                   </div>
-                )) || <p className="text-gray-500 italic text-sm">No travellers</p>}
+                )) || (
+                  <p className="text-gray-500 italic text-sm">No travellers</p>
+                )}
               </div>
             </div>
 
@@ -424,21 +585,27 @@ const TaskDashboard = () => {
                   : "Not Sent"}
               </p>
               <p className="break-words whitespace-normal">
-                Cancellation Receipt: {booking.cancellationReceipt ? "Marked" : "Not Marked"}
+                Cancellation Receipt:{" "}
+                {booking.cancellationReceipt ? "Marked" : "Not Marked"}
               </p>
               <p className="break-words whitespace-normal">
-                Manage Booking Receipt: {booking.manageBookingReceipt ? "Marked" : "Not Marked"}
+                Manage Booking Receipt:{" "}
+                {booking.manageBookingReceipt ? "Marked" : "Not Marked"}
               </p>
             </div>
 
             {/* Advance Admin Remarks */}
             <div>
-              <h4 className="font-semibold mb-2 text-sm">Advance Admin Remarks</h4>
+              <h4 className="font-semibold mb-2 text-sm">
+                Advance Admin Remarks
+              </h4>
               <div className="space-y-1">
                 {booking.advanceAdminRemarks?.length > 0 ? (
                   booking.advanceAdminRemarks.map((r, i) => (
                     <div key={i} className="bg-gray-50 p-2 rounded text-xs">
-                      <p>{r.remark || "—"} (₹{r.amount || 0})</p>
+                      <p>
+                        {r.remark || "—"} (₹{r.amount || 0})
+                      </p>
                       <p>Added at: {formatDate(r.addedAt)}</p>
                     </div>
                   ))
@@ -455,7 +622,9 @@ const TaskDashboard = () => {
                 {booking.adminRemarks?.length > 0 ? (
                   booking.adminRemarks.map((r, i) => (
                     <div key={i} className="bg-gray-50 p-2 rounded text-xs">
-                      <p>{r.remark || "—"} (₹{r.amount || 0})</p>
+                      <p>
+                        {r.remark || "—"} (₹{r.amount || 0})
+                      </p>
                       <p>Added at: {formatDate(r.addedAt)}</p>
                     </div>
                   ))
@@ -479,16 +648,25 @@ const TaskDashboard = () => {
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 mb-4">
           <Icon className="w-6 h-6" />
           {title}
-          <span className="text-sm font-normal text-gray-500 ml-1">({items.length})</span>
+          <span className="text-sm font-normal text-gray-500 ml-1">
+            ({items.length})
+          </span>
         </h2>
 
         {items.length === 0 ? (
-          <p className="text-center text-gray-500 py-8 text-lg">No pending actions.</p>
+          <p className="text-center text-gray-500 py-8 text-lg">
+            No pending actions.
+          </p>
         ) : (
           <>
             <div className="space-y-4">
               {visible.map((b) => (
-                <TaskCard key={b._id} booking={b} category={category} type={type} />
+                <TaskCard
+                  key={b.tnr}
+                  booking={b}
+                  category={category}
+                  type={type}
+                />
               ))}
             </div>
 
@@ -497,7 +675,9 @@ const TaskDashboard = () => {
                 onClick={() => toggleShowMore(category)}
                 className="mt-6 w-full sm:w-auto mx-auto block px-6 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition flex items-center justify-center gap-2"
               >
-                {showMore[category] ? "Show Less" : `Show More (${items.length - 5})`}
+                {showMore[category]
+                  ? "Show Less"
+                  : `Show More (${items.length - 5})`}
               </button>
             )}
           </>
@@ -542,7 +722,9 @@ const TaskDashboard = () => {
                   key={i}
                   className="bg-white p-4 rounded-xl shadow-sm border hover:shadow-md transition text-center"
                 >
-                  <div className={`w-12 h-12 ${m.bg} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                  <div
+                    className={`w-12 h-12 ${m.bg} rounded-full flex items-center justify-center mx-auto mb-3`}
+                  >
                     <m.Icon className={`w-6 h-6 ${m.color}`} />
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{m.value}</p>

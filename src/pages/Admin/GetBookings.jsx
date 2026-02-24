@@ -1,74 +1,114 @@
+/* eslint-disable no-unused-vars */
 
-/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { TourAdminContext } from "../../context/TourAdminContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { ChevronDown, ChevronUp, Copy } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Copy } from "lucide-react";
 
 const GetBookings = () => {
-  const { bookings, fetchAllBookings } = useContext(TourAdminContext);
+  const { aToken, bookings, fetchAllBookings, rejectBooking } =
+    useContext(TourAdminContext);
   const location = useLocation();
 
   const [expandedRow, setExpandedRow] = useState(null);
   const [filters, setFilters] = useState({
     tour: "",
+    tnr: "", // ← NEW: TNR filter
     contact: "",
     payment: "",
     status: "all",
     fromDate: "",
     toDate: "",
   });
+  const [rejectedTravellers, setRejectedTravellers] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+  const shouldProtect = Boolean(bookings && bookings.length > 0 && !isLoading);
 
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-
+  // 1. Reload / close tab / browser navigate away
   useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      event.preventDefault();
-      event.returnValue = "You have unsaved changes or active filters. Are you sure you want to leave?";
+    if (!shouldProtect) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = ""; // Browser default "Leave site?" prompt
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
+  }, [shouldProtect]);
 
+  // 2. Back button / mobile swipe back
   useEffect(() => {
+    if (!shouldProtect) return;
+
+    // Dummy history push → triggers popstate on back
     window.history.pushState(null, null, window.location.href);
 
-    const handlePopState = (event) => {
-      event.preventDefault();
-      setShowLeaveConfirm(true);
+    const handlePopState = () => {
+      setShowConfirmLeave(true);
     };
 
     window.addEventListener("popstate", handlePopState);
-
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [shouldProtect]);
 
+  // Confirm & Cancel functions
+  const handleConfirmLeave = () => {
+    setShowConfirmLeave(false);
+    window.history.back();
+  };
+
+  const handleCancelLeave = () => {
+    setShowConfirmLeave(false);
+    // Re-trap the back button
+    window.history.pushState(null, null, window.location.href);
+  };
+
+  // Clear toasts on route change
   useEffect(() => {
-    return () => toast.dismiss();
+    return () => {
+      toast.dismiss();
+    };
   }, [location]);
 
+  // Fetch bookings
   useEffect(() => {
-    const loadBookings = async () => {
+    if (aToken) {
+      console.log(
+        "Fetching all bookings at",
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+      );
       setIsLoading(true);
-      try {
-        await fetchAllBookings();
-      } catch (err) {
-        toast.error("Something went wrong while loading bookings");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadBookings();
-  }, [fetchAllBookings]);
+      fetchAllBookings()
+        .then((response) => {
+          if (response?.success) {
+            toast.success(`Loaded ${response.bookings?.length || 0} bookings`);
+          } else {
+            toast.error(response?.message || "Failed to fetch bookings");
+          }
+        })
+        .catch((error) => {
+          console.error(
+            "Fetch bookings error at",
+            new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+            error,
+          );
+          toast.error(
+            error.response?.data?.message ||
+              error.message ||
+              "Failed to fetch bookings",
+          );
+        })
+        .finally(() => setIsLoading(false));
+    }
+  }, [aToken, fetchAllBookings]);
 
   const hasActiveFilters =
     filters.tour.trim() !== "" ||
+    filters.tnr.trim() !== "" ||
     filters.contact.trim() !== "" ||
     filters.payment !== "" ||
     filters.status !== "all" ||
@@ -78,6 +118,7 @@ const GetBookings = () => {
   const clearFilters = () => {
     setFilters({
       tour: "",
+      tnr: "",
       contact: "",
       payment: "",
       status: "all",
@@ -91,10 +132,15 @@ const GetBookings = () => {
     setExpandedRow(expandedRow === index ? null : index);
   };
 
-  const copyToClipboard = (text) => {
+  // Copy to clipboard
+  const copyToClipboard = (text, label = "TNR") => {
+    if (!text) {
+      toast.error(`No ${label} to copy`);
+      return;
+    }
     navigator.clipboard.writeText(text).then(
-      () => toast.success("Booking ID copied!"),
-      () => toast.error("Failed to copy")
+      () => toast.success(`${label} copied!`),
+      () => toast.error(`Failed to copy ${label}`),
     );
   };
 
@@ -110,14 +156,16 @@ const GetBookings = () => {
   };
 
   const getStatusKey = (booking) => {
-    const isFullyCancelled = booking.cancelled?.byAdmin || booking.cancelled?.byTraveller;
+    const isFullyCancelled =
+      booking.cancelled?.byAdmin || booking.cancelled?.byTraveller;
     const allTravellersCancelled = booking.travellers?.every(
-      (t) => t.cancelled?.byAdmin || t.cancelled?.byTraveller
+      (t) => t.cancelled?.byAdmin || t.cancelled?.byTraveller,
     );
 
     if (isFullyCancelled || allTravellersCancelled) return "cancelled";
     if (booking.isBookingCompleted) return "completed";
-    if (booking.payment?.advance?.paid && booking.payment?.balance?.paid) return "Under Completion";
+    if (booking.payment?.advance?.paid && booking.payment?.balance?.paid)
+      return "Under Completion";
     if (booking.payment?.advance?.paid) return "advance_paid";
     if (!booking.payment?.advance?.paid) return "advance_pending";
     return "under_completion";
@@ -131,13 +179,21 @@ const GetBookings = () => {
       case "completed":
         return <span className="text-green-600 font-medium">Completed</span>;
       case "Under Completion":
-        return <span className="text-yellow-600 font-medium">Under Completion</span>;
+        return (
+          <span className="text-yellow-600 font-medium">Under Completion</span>
+        );
       case "advance_paid":
-        return <span className="text-yellow-600 font-medium">Advance Paid</span>;
+        return (
+          <span className="text-yellow-600 font-medium">Advance Paid</span>
+        );
       case "advance_pending":
-        return <span className="text-orange-600 font-medium">Advance Pending</span>;
+        return (
+          <span className="text-orange-600 font-medium">Advance Pending</span>
+        );
       default:
-        return <span className="text-gray-600 font-medium">Under Completion</span>;
+        return (
+          <span className="text-gray-600 font-medium">Under Completion</span>
+        );
     }
   };
 
@@ -148,21 +204,32 @@ const GetBookings = () => {
         ? `${firstTraveller.firstName} ${firstTraveller.lastName}`.toLowerCase()
         : "unknown traveller";
 
-      const tourMatch = b?.tourData?.title?.toLowerCase().includes(filters.tour.toLowerCase());
+      const tourMatch = b?.tourData?.title
+        ?.toLowerCase()
+        .includes(filters.tour.toLowerCase());
+
+      const tnrMatch =
+        filters.tnr === "" ||
+        (b.tnr && b.tnr.toLowerCase().includes(filters.tnr.toLowerCase()));
 
       const contactMatch =
         filters.contact === "" ||
         displayName.includes(filters.contact.toLowerCase()) ||
-        b?.contact?.mobile?.toLowerCase().includes(filters.contact.toLowerCase());
+        b?.contact?.mobile
+          ?.toLowerCase()
+          .includes(filters.contact.toLowerCase());
 
-      const paymentStatus = `${b.payment?.advance?.paid ? "advance-paid" : "advance-pending"} ${
-        b.payment?.balance?.paid ? "balance-paid" : "balance-pending"
-      }`;
+      const paymentStatus = `${
+        b.payment?.advance?.paid ? "advance-paid" : "advance-pending"
+      } ${b.payment?.balance?.paid ? "balance-paid" : "balance-pending"}`;
 
-      const paymentMatch = paymentStatus.includes(filters.payment.toLowerCase());
+      const paymentMatch = paymentStatus.includes(
+        filters.payment.toLowerCase(),
+      );
 
       const statusKey = getStatusKey(b);
-      const statusMatch = filters.status === "all" || statusKey === filters.status;
+      const statusMatch =
+        filters.status === "all" || statusKey === filters.status;
 
       let dateMatch = true;
       if (filters.fromDate || filters.toDate) {
@@ -178,7 +245,14 @@ const GetBookings = () => {
         }
       }
 
-      return tourMatch && contactMatch && paymentMatch && statusMatch && dateMatch;
+      return (
+        tourMatch &&
+        tnrMatch &&
+        contactMatch &&
+        paymentMatch &&
+        statusMatch &&
+        dateMatch
+      );
     })
     .sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate));
 
@@ -204,33 +278,50 @@ const GetBookings = () => {
       <div className="bg-white rounded-xl shadow-md p-4 mb-6 overflow-x-auto">
         <div className="flex flex-col sm:flex-row sm:items-end gap-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 flex-1">
+            {/* TNR Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tour</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                TNR
+              </label>
               <input
                 type="text"
-                placeholder="Filter tour"
-                value={filters.tour}
-                onChange={(e) => setFilters({ ...filters, tour: e.target.value })}
+                placeholder="(e.g. ABC123)"
+                value={filters.tnr}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    tnr: e.target.value.toUpperCase().trim(),
+                  })
+                }
+                maxLength={6}
                 className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name / Mobile</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name / Mobile
+              </label>
               <input
                 type="text"
                 placeholder="Filter by name or mobile"
                 value={filters.contact}
-                onChange={(e) => setFilters({ ...filters, contact: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, contact: e.target.value })
+                }
                 className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Payment
+              </label>
               <select
                 value={filters.payment}
-                onChange={(e) => setFilters({ ...filters, payment: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, payment: e.target.value })
+                }
                 className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
               >
                 <option value="">All</option>
@@ -242,10 +333,14 @@ const GetBookings = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
               <select
                 value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, status: e.target.value })
+                }
                 className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
               >
                 <option value="all">All</option>
@@ -256,21 +351,29 @@ const GetBookings = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                From Date
+              </label>
               <input
                 type="date"
                 value={filters.fromDate}
-                onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, fromDate: e.target.value })
+                }
                 className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                To Date
+              </label>
               <input
                 type="date"
                 value={filters.toDate}
-                onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, toDate: e.target.value })
+                }
                 className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"
               />
             </div>
@@ -288,9 +391,13 @@ const GetBookings = () => {
       </div>
 
       {isLoading ? (
-        <div className="text-center text-gray-600 py-10">Loading all bookings...</div>
+        <div className="text-center text-gray-600 py-10">
+          Loading all bookings...
+        </div>
       ) : filteredBookings.length === 0 ? (
-        <p className="text-center text-gray-600 text-lg py-10">No bookings found</p>
+        <p className="text-center text-gray-600 text-lg py-10">
+          No bookings found
+        </p>
       ) : (
         <>
           {/* DESKTOP TABLE */}
@@ -299,12 +406,27 @@ const GetBookings = () => {
               <thead className="bg-blue-50">
                 <tr>
                   <th className="p-3 text-left text-sm font-semibold text-gray-700 w-10"></th>
-                  <th className="p-3 text-left text-sm font-semibold text-gray-700">S.No</th>
-                  <th className="p-3 text-left text-sm font-semibold text-gray-700">Tour</th>
-                  <th className="p-3 text-left text-sm font-semibold text-gray-700">Booked On</th>
-                  <th className="p-3 text-left text-sm font-semibold text-gray-700">Contact</th>
-                  <th className="p-3 text-left text-sm font-semibold text-gray-700">Payment</th>
-                  <th className="p-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    S.No
+                  </th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    TNR
+                  </th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    Tour
+                  </th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    Booked On
+                  </th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    Contact
+                  </th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    Payment
+                  </th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    Status
+                  </th>
                 </tr>
               </thead>
 
@@ -316,49 +438,79 @@ const GetBookings = () => {
                     : "Unknown Traveller";
 
                   return (
-                    <React.Fragment key={booking._id}>
+                    <React.Fragment key={booking.tnr}>
                       <tr
                         className="border-b hover:bg-gray-50 transition cursor-pointer"
                         onClick={() => toggleRow(index)}
                       >
                         <td className="p-3 text-gray-600">
-                          {expandedRow === index ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          {expandedRow === index ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )}
                         </td>
-                        <td className="p-3 text-sm text-gray-800">{index + 1}</td>
+                        <td className="p-3 text-sm text-gray-800">
+                          {index + 1}
+                        </td>
+                        <td className="p-3 text-sm text-gray-800 font-mono font-bold">
+                          <div className="flex items-center gap-2">
+                            {booking.tnr || "N/A"}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(booking.tnr, "TNR");
+                              }}
+                              className="text-indigo-600 hover:text-indigo-800"
+                              title="Copy TNR"
+                            >
+                              <Copy size={16} />
+                            </button>
+                          </div>
+                        </td>
                         <td className="p-3 text-sm text-gray-800">
                           {booking?.tourData?.title || "N/A"}
                         </td>
                         <td className="p-3 text-sm text-gray-800">
                           {booking?.bookingDate
-                            ? new Date(booking.bookingDate).toLocaleDateString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })
+                            ? new Date(booking.bookingDate).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )
                             : "N/A"}
                         </td>
                         <td className="p-3 text-sm text-gray-800">
-                          <div><strong>{displayName}</strong></div>
+                          <div>
+                            <strong>{displayName}</strong>
+                          </div>
                           <div>Mobile: {booking?.contact?.mobile || "N/A"}</div>
                           <div>Email: {booking?.contact?.email || "N/A"}</div>
                         </td>
                         <td className="p-3 text-sm text-gray-800">
                           <div>
-                            Advance: {booking.payment?.advance?.paid ? (
+                            Advance:{" "}
+                            {booking.payment?.advance?.paid ? (
                               <span className="text-green-600">Paid</span>
                             ) : (
                               <span className="text-red-600">Pending</span>
                             )}
                           </div>
                           <div>
-                            Balance: {booking.payment?.balance?.paid ? (
+                            Balance:{" "}
+                            {booking.payment?.balance?.paid ? (
                               <span className="text-green-600">Paid</span>
                             ) : (
                               <span className="text-yellow-600">Pending</span>
                             )}
                           </div>
                         </td>
-                        <td className="p-3 text-sm font-medium">{getStatusLabel(booking)}</td>
+                        <td className="p-3 text-sm font-medium">
+                          {getStatusLabel(booking)}
+                        </td>
                       </tr>
 
                       {expandedRow === index && (
@@ -366,54 +518,80 @@ const GetBookings = () => {
                           <td></td>
                           <td colSpan={7} className="p-4">
                             <div className="mb-4 flex items-center gap-3 text-sm">
-                              <strong>Booking ID:</strong>
+                              <strong>TNR:</strong>
                               <code className="bg-gray-200 px-3 py-1 rounded font-mono">
-                                {booking._id}
+                                {booking.tnr}
                               </code>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  copyToClipboard(booking._id);
+                                  copyToClipboard(booking.tnr, "TNR");
                                 }}
                                 className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-                                title="Copy Booking ID"
+                                title="Copy TNR"
                               >
                                 <Copy size={16} />
                                 Copy
                               </button>
                             </div>
 
-                            {/* Payment Details with Date */}
+                            {/* Payment Details */}
                             <div className="mb-6">
                               <h4 className="font-semibold text-gray-800 mb-2 text-base">
                                 Payment Details
                               </h4>
                               <div className="space-y-2 text-sm bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div className="break-words">
-                                  Advance: <strong>₹{booking.payment?.advance?.amount || 0}</strong> –{" "}
+                                  Advance:{" "}
+                                  <strong>
+                                    ₹{booking.payment?.advance?.amount || 0}
+                                  </strong>{" "}
+                                  –{" "}
                                   {booking.payment?.advance?.paid ? (
                                     <span className="text-green-600 font-medium">
                                       Paid
                                       {booking.payment?.advance?.paidDate && (
-                                        <> (on {formatCustomDate(booking.payment.advance.paidDate)})</>
+                                        <>
+                                          {" "}
+                                          (on{" "}
+                                          {formatCustomDate(
+                                            booking.payment.advance.paidDate,
+                                          )}
+                                          )
+                                        </>
                                       )}
                                     </span>
                                   ) : (
-                                    <span className="text-red-600">Pending</span>
+                                    <span className="text-red-600">
+                                      Pending
+                                    </span>
                                   )}
                                 </div>
 
                                 <div className="break-words">
-                                  Balance: <strong>₹{booking.payment?.balance?.amount || 0}</strong> –{" "}
+                                  Balance:{" "}
+                                  <strong>
+                                    ₹{booking.payment?.balance?.amount || 0}
+                                  </strong>{" "}
+                                  –{" "}
                                   {booking.payment?.balance?.paid ? (
                                     <span className="text-green-600 font-medium">
                                       Paid
                                       {booking.payment?.balance?.paidDate && (
-                                        <> (on {formatCustomDate(booking.payment.balance.paidDate)})</>
+                                        <>
+                                          {" "}
+                                          (on{" "}
+                                          {formatCustomDate(
+                                            booking.payment.balance.paidDate,
+                                          )}
+                                          )
+                                        </>
                                       )}
                                     </span>
                                   ) : (
-                                    <span className="text-yellow-600">Pending</span>
+                                    <span className="text-yellow-600">
+                                      Pending
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -426,8 +604,10 @@ const GetBookings = () => {
                               </h4>
                               <div className="text-sm text-gray-700 space-y-1">
                                 <p className="break-words">
-                                  {booking.billingAddress?.addressLine1 || "N/A"}
-                                  {booking.billingAddress?.addressLine2 && `, ${booking.billingAddress.addressLine2}`}
+                                  {booking.billingAddress?.addressLine1 ||
+                                    "N/A"}
+                                  {booking.billingAddress?.addressLine2 &&
+                                    `, ${booking.billingAddress.addressLine2}`}
                                 </p>
                                 <p className="break-words">
                                   {booking.billingAddress?.city || "N/A"},{" "}
@@ -435,7 +615,8 @@ const GetBookings = () => {
                                   {booking.billingAddress?.pincode || "N/A"}
                                 </p>
                                 <p className="break-words">
-                                  Country: {booking.billingAddress?.country || "India"}
+                                  Country:{" "}
+                                  {booking.billingAddress?.country || "India"}
                                 </p>
                               </div>
                             </div>
@@ -450,13 +631,14 @@ const GetBookings = () => {
                                 {booking.travellers.map((t, i) => (
                                   <li
                                     key={i}
-                                    className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 text-sm"
+                                    className="bg-gray-50 p-5 rounded-lg shadow-sm border border-gray-200 text-sm"
                                   >
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                       <div className="space-y-1">
                                         <p className="font-medium text-gray-800 flex items-center gap-2 flex-wrap">
-                                          Name: {t.title} {t.firstName} {t.lastName}
-                                          {(t.cancelled?.byTraveller || t.cancelled?.byAdmin) && (
+                                          {t.title} {t.firstName} {t.lastName}
+                                          {(t.cancelled?.byTraveller ||
+                                            t.cancelled?.byAdmin) && (
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                               Cancelled
                                             </span>
@@ -469,16 +651,34 @@ const GetBookings = () => {
 
                                       <div className="space-y-1">
                                         <p>
-                                          Package: {t.packageType === "main" ? "Main Package" : `Variant Package ${t.variantPackageIndex + 1}`}
+                                          Package:{" "}
+                                          {t.packageType === "main"
+                                            ? "Main Package"
+                                            : `Variant Package ${t.variantPackageIndex + 1}`}
                                         </p>
                                         <p>
-                                          Addon: {t.selectedAddon?.name ? `${t.selectedAddon.name} (₹${t.selectedAddon.price || 0})` : "Nil"}
+                                          Addon:{" "}
+                                          {t.selectedAddon?.name
+                                            ? `${t.selectedAddon.name} (₹${t.selectedAddon.price || 0})`
+                                            : "Nil"}
                                         </p>
                                         <p>
-                                          Boarding: {t.boardingPoint?.stationName || "N/A"} ({t.boardingPoint?.stationCode || "N/A"})
+                                          Boarding:{" "}
+                                          {t.boardingPoint?.stationName ||
+                                            "N/A"}{" "}
+                                          (
+                                          {t.boardingPoint?.stationCode ||
+                                            "N/A"}
+                                          )
                                         </p>
                                         <p>
-                                          Deboarding: {t.deboardingPoint?.stationName || "N/A"} ({t.deboardingPoint?.stationCode || "N/A"})
+                                          Deboarding:{" "}
+                                          {t.deboardingPoint?.stationName ||
+                                            "N/A"}{" "}
+                                          (
+                                          {t.deboardingPoint?.stationCode ||
+                                            "N/A"}
+                                          )
                                         </p>
                                       </div>
 
@@ -504,7 +704,7 @@ const GetBookings = () => {
             </table>
           </div>
 
-          {/* MOBILE & TABLET CARD LAYOUT */}
+          {/* MOBILE CARD LAYOUT */}
           <div className="md:hidden space-y-5 mt-4 px-2 sm:px-3 max-w-full">
             {filteredBookings.map((booking, index) => {
               const firstTraveller = booking.travellers?.[0];
@@ -516,10 +716,9 @@ const GetBookings = () => {
 
               return (
                 <div
-                  key={booking._id}
+                  key={booking.tnr}
                   className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-md transition-shadow text-sm"
                 >
-                  {/* Header */}
                   <div
                     className="px-3.5 py-3 flex items-center justify-between cursor-pointer bg-gray-50 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                     onClick={() => toggleRow(index)}
@@ -534,61 +733,89 @@ const GetBookings = () => {
                         </p>
                         <p className="text-xs text-gray-600 mt-0.5">
                           {booking?.bookingDate
-                            ? new Date(booking.bookingDate).toLocaleDateString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })
+                            ? new Date(booking.bookingDate).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )
                             : "N/A"}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className="text-right text-xs">{getStatusLabel(booking)}</div>
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      <div className="text-right text-xs">
+                        {getStatusLabel(booking)}
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp size={18} />
+                      ) : (
+                        <ChevronDown size={18} />
+                      )}
                     </div>
                   </div>
 
-                  {/* Expanded Content */}
                   {isExpanded && (
                     <div className="p-3.5 border-t space-y-4 text-sm">
-                      {/* Booking ID */}
                       <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-gray-100">
-                        <span className="font-medium text-gray-800 whitespace-nowrap">Booking ID:</span>
+                        <span className="font-medium text-gray-800 whitespace-nowrap">
+                          TNR:
+                        </span>
                         <code className="bg-gray-100 px-2 py-0.5 rounded font-mono text-xs break-all">
-                          {booking._id}
+                          {booking.tnr}
                         </code>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            copyToClipboard(booking._id);
+                            copyToClipboard(booking.tnr, "TNR");
                           }}
                           className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-xs"
+                          title="Copy TNR"
                         >
-                          <Copy size={14} /> Copy
+                          <Copy size={14} />
+                          Copy
                         </button>
                       </div>
 
-                      {/* Contact Person */}
                       <div className="space-y-1.5">
-                        <div className="font-medium text-gray-800">Contact Person</div>
+                        <div className="font-medium text-gray-800">
+                          Contact Person
+                        </div>
                         <div className="break-words">{displayName}</div>
-                        <div className="break-words">Mobile: {booking?.contact?.mobile || "N/A"}</div>
-                        <div className="break-words">Email: {booking?.contact?.email || "N/A"}</div>
+                        <div className="break-words">
+                          Mobile: {booking?.contact?.mobile || "N/A"}
+                        </div>
+                        <div className="break-words">
+                          Email: {booking?.contact?.email || "N/A"}
+                        </div>
                       </div>
 
-                      {/* Payment Details with Date */}
                       <div className="space-y-1.5">
-                        <div className="font-medium text-gray-800">Payment Details</div>
+                        <div className="font-medium text-gray-800">
+                          Payment Details
+                        </div>
                         <div className="space-y-2 text-sm bg-gray-50 p-3.5 rounded-lg border border-gray-200">
                           <div className="break-words">
-                            Advance: <strong>₹{booking.payment?.advance?.amount || 0}</strong> –{" "}
+                            Advance:{" "}
+                            <strong>
+                              ₹{booking.payment?.advance?.amount || 0}
+                            </strong>{" "}
+                            –{" "}
                             {booking.payment?.advance?.paid ? (
                               <span className="text-green-600">
                                 Paid
                                 {booking.payment?.advance?.paidDate && (
-                                  <> (on {formatCustomDate(booking.payment.advance.paidDate)})</>
+                                  <>
+                                    {" "}
+                                    (on{" "}
+                                    {formatCustomDate(
+                                      booking.payment.advance.paidDate,
+                                    )}
+                                    )
+                                  </>
                                 )}
                               </span>
                             ) : (
@@ -597,12 +824,23 @@ const GetBookings = () => {
                           </div>
 
                           <div className="break-words">
-                            Balance: <strong>₹{booking.payment?.balance?.amount || 0}</strong> –{" "}
+                            Balance:{" "}
+                            <strong>
+                              ₹{booking.payment?.balance?.amount || 0}
+                            </strong>{" "}
+                            –{" "}
                             {booking.payment?.balance?.paid ? (
                               <span className="text-green-600">
                                 Paid
                                 {booking.payment?.balance?.paidDate && (
-                                  <> (on {formatCustomDate(booking.payment.balance.paidDate)})</>
+                                  <>
+                                    {" "}
+                                    (on{" "}
+                                    {formatCustomDate(
+                                      booking.payment.balance.paidDate,
+                                    )}
+                                    )
+                                  </>
                                 )}
                               </span>
                             ) : (
@@ -612,13 +850,15 @@ const GetBookings = () => {
                         </div>
                       </div>
 
-                      {/* Billing Address */}
                       <div className="space-y-1.5">
-                        <div className="font-medium text-gray-800">Billing Address</div>
+                        <div className="font-medium text-gray-800">
+                          Billing Address
+                        </div>
                         <div className="text-sm text-gray-700 space-y-1">
                           <p className="break-words">
                             {booking.billingAddress?.addressLine1 || "N/A"}
-                            {booking.billingAddress?.addressLine2 && `, ${booking.billingAddress.addressLine2}`}
+                            {booking.billingAddress?.addressLine2 &&
+                              `, ${booking.billingAddress.addressLine2}`}
                           </p>
                           <p className="break-words">
                             {booking.billingAddress?.city || "N/A"},{" "}
@@ -626,12 +866,12 @@ const GetBookings = () => {
                             {booking.billingAddress?.pincode || "N/A"}
                           </p>
                           <p className="break-words">
-                            Country: {booking.billingAddress?.country || "India"}
+                            Country:{" "}
+                            {booking.billingAddress?.country || "India"}
                           </p>
                         </div>
                       </div>
 
-                      {/* Travellers */}
                       {booking.travellers?.length > 0 && (
                         <div className="space-y-4">
                           <div className="font-medium text-gray-800">
@@ -646,7 +886,8 @@ const GetBookings = () => {
                               >
                                 <div className="font-medium pb-2 border-b border-gray-200 break-words flex items-center gap-2 flex-wrap">
                                   {t.title} {t.firstName} {t.lastName}
-                                  {(t.cancelled?.byTraveller || t.cancelled?.byAdmin) && (
+                                  {(t.cancelled?.byTraveller ||
+                                    t.cancelled?.byAdmin) && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                       Cancelled
                                     </span>
@@ -655,35 +896,60 @@ const GetBookings = () => {
 
                                 <div className="space-y-2">
                                   <div className="break-words">
-                                    <span className="text-gray-600">Age:</span> {t.age}
+                                    <span className="text-gray-600">Age:</span>{" "}
+                                    {t.age}
                                   </div>
                                   <div className="break-words">
-                                    <span className="text-gray-600">Gender:</span> {t.gender}
+                                    <span className="text-gray-600">
+                                      Gender:
+                                    </span>{" "}
+                                    {t.gender}
                                   </div>
                                   <div className="break-words">
-                                    <span className="text-gray-600">Sharing:</span> {t.sharingType}
+                                    <span className="text-gray-600">
+                                      Sharing:
+                                    </span>{" "}
+                                    {t.sharingType}
                                   </div>
                                   <div className="break-words">
-                                    <span className="text-gray-600">Package:</span>{" "}
-                                    {t.packageType === "main" ? "Main" : `Var ${t.variantPackageIndex + 1}`}
+                                    <span className="text-gray-600">
+                                      Package:
+                                    </span>{" "}
+                                    {t.packageType === "main"
+                                      ? "Main"
+                                      : `Var ${t.variantPackageIndex + 1}`}
                                   </div>
 
                                   <div className="break-words">
-                                    <span className="text-gray-600">Boarding:</span>{" "}
+                                    <span className="text-gray-600">
+                                      Boarding:
+                                    </span>{" "}
                                     {t.boardingPoint?.stationName || "N/A"}{" "}
-                                    {t.boardingPoint?.stationCode ? `(${t.boardingPoint.stationCode})` : ""}
+                                    {t.boardingPoint?.stationCode
+                                      ? `(${t.boardingPoint.stationCode})`
+                                      : ""}
                                   </div>
                                   <div className="break-words">
-                                    <span className="text-gray-600">Deboarding:</span>{" "}
+                                    <span className="text-gray-600">
+                                      Deboarding:
+                                    </span>{" "}
                                     {t.deboardingPoint?.stationName || "N/A"}{" "}
-                                    {t.deboardingPoint?.stationCode ? `(${t.deboardingPoint.stationCode})` : ""}
+                                    {t.deboardingPoint?.stationCode
+                                      ? `(${t.deboardingPoint.stationCode})`
+                                      : ""}
                                   </div>
                                   <div className="break-words">
-                                    <span className="text-gray-600">Addon:</span>{" "}
-                                    {t.selectedAddon?.name ? t.selectedAddon.name : "Nil"}
+                                    <span className="text-gray-600">
+                                      Addon:
+                                    </span>{" "}
+                                    {t.selectedAddon?.name
+                                      ? t.selectedAddon.name
+                                      : "Nil"}
                                   </div>
                                   <div className="break-words whitespace-normal">
-                                    <span className="text-gray-600">Remarks:</span>{" "}
+                                    <span className="text-gray-600">
+                                      Remarks:
+                                    </span>{" "}
                                     {t.remarks || "Nil"}
                                   </div>
                                 </div>
@@ -702,21 +968,24 @@ const GetBookings = () => {
       )}
 
       {/* Leave Confirmation Popup */}
-      {showLeaveConfirm && (
+      {showConfirmLeave && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Confirm Navigation
             </h2>
             <p className="text-gray-600 mb-6">
-              You are about to leave this page.<br />
-              Any active filters or changes will be lost on reload.<br /><br />
+              You are about to leave this page.
+              <br />
+              Any active filters or changes will be lost on reload.
+              <br />
+              <br />
               Are you sure you want to continue?
             </p>
             <div className="flex justify-center gap-6">
               <button
                 onClick={() => {
-                  setShowLeaveConfirm(false);
+                  setShowConfirmLeave(false);
                   window.history.pushState(null, null, window.location.href);
                 }}
                 className="px-8 py-3 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition"
@@ -725,7 +994,7 @@ const GetBookings = () => {
               </button>
               <button
                 onClick={() => {
-                  setShowLeaveConfirm(false);
+                  setShowConfirmLeave(false);
                   window.history.back();
                 }}
                 className="px-8 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition"

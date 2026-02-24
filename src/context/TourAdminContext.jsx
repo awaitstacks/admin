@@ -1,24 +1,20 @@
+/* eslint-disable no-unused-vars */
 
-
-/* eslint-disable no-useless-catch */
 /* eslint-disable react-refresh/only-export-components */
 
-import React, { createContext, useState, useCallback, useEffect } from "react"; import axios from "axios";
+import React, { createContext, useState, useCallback, useEffect } from "react";
+import axios from "axios";
 import { toast } from "react-toastify";
 
 export const TourAdminContext = createContext();
 
 const TourAdminContextProvider = (props) => {
-  // const [aToken, setAToken] = useState(
-  //   localStorage.getItem("aToken") ? localStorage.getItem("aToken") : ""
-  // );
-
   const [aToken, setAToken] = useState(
-    localStorage.getItem("aToken") ? localStorage.getItem("aToken") : ""
+    localStorage.getItem("aToken") ? localStorage.getItem("aToken") : "",
   );
   const [tours, setTours] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [bookingsStats, setBookingsStats] = useState(null); // new: stores stats from /get-bookings
+  const [bookingsStats, setBookingsStats] = useState(null);
   const [tourBookings, setTourBookings] = useState([]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(false);
   const [bookingsError, setBookingsError] = useState(null);
@@ -28,27 +24,32 @@ const TourAdminContextProvider = (props) => {
   const [cancelBookings, setCancelBookings] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
-  const [selectedTourId, setSelectedTourId] = useState(""); // ← இது முக்கியம் (crash fix)
+  const [selectedTourId, setSelectedTourId] = useState("");
   const [roomAllocation, setRoomAllocation] = useState(null);
   const [localRoomAllocation, setLocalRoomAllocation] = useState(null);
   const [roomAllocationLoading, setRoomAllocationLoading] = useState(false);
   const [roomAllocationError, setRoomAllocationError] = useState(null);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
   // === VALIDATE API RESPONSE ===
   const validateApiResponse = useCallback((data, errorMessage) => {
     console.log(
       "API Response:",
       new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-      data
+      data,
     );
     if (data && typeof data === "object" && "success" in data) return data;
     throw new Error(data?.message || errorMessage || "Invalid response");
   }, []);
 
   const handleApiError = (error, defaultMsg = "Operation failed") => {
-    const msg = error.response?.data?.error || error.response?.data?.message || error.message || defaultMsg;
+    const msg =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message ||
+      defaultMsg;
     console.error("API Error:", msg, error);
     toast.error(msg);
     return msg;
@@ -64,56 +65,56 @@ const TourAdminContextProvider = (props) => {
   }, [aToken]);
 
   // ─── NEW FUNCTION: Fetch & trigger room allotment ──────────────────
-  const fetchRoomAllocation = useCallback(async (tourId) => {
-    if (!tourId || !/^[0-9a-fA-F]{24}$/.test(tourId)) {
-      toast.error("Invalid tour ID format");
-      return null;
-    }
-
-    setRoomAllocationLoading(true);
-    setRoomAllocationError(null);
-    setRoomAllocation(null);
-
-    try {
-      const { data } = await axios.get(
-        `${backendUrl}/api/touradmin/adminallot-rooms/${tourId}`,
-        { headers: { aToken } }
-      );
-
-      console.log("RAW axios response.data =", data); // ← மிக முக்கியம்
-
-      // Try these variations one by one (comment others)
-      let allocationData = data;
-
-      // Option A - most common in your case
-      if (data?.success && data?.data) {
-        allocationData = data.data;
+  const fetchRoomAllocation = useCallback(
+    async (tourId) => {
+      if (!tourId || !/^[0-9a-fA-F]{24}$/.test(tourId)) {
+        toast.error("Invalid tour ID format");
+        return null;
       }
 
-      // Option B - if nested even deeper
-      // if (data?.success && data?.data?.roomAllocation) {
-      //   allocationData = data.data.roomAllocation;
-      // }
+      setRoomAllocationLoading(true);
+      setRoomAllocationError(null);
+      setRoomAllocation(null);
 
-      console.log("Final allocation data going to state =", allocationData);
+      try {
+        const { data } = await axios.get(
+          `${backendUrl}/api/touradmin/adminallot-rooms/${tourId}`,
+          { headers: { aToken } },
+        );
 
-      // const validated = validateApiResponse(allocationData, "Failed to get room allocation");
+        console.log("RAW axios response.data =", data);
 
-      setRoomAllocation(allocationData);
+        let allocationData = data;
 
-      const count = validated.totalRooms || validated.roomAllocations?.length || 0;
-      toast.success(`Room allocation loaded (${count} rooms)`);
+        if (data?.success && data?.data) {
+          allocationData = data.data;
+        }
 
-      return validated;
-    } catch (err) {
-      // ... existing error handling
+        console.log("Final allocation data going to state =", allocationData);
 
-    } finally {
-      setRoomAllocationLoading(false);
-    }
-  }, [aToken, backendUrl, validateApiResponse]);
+        setRoomAllocation(allocationData);
 
-  // Optional: auto-fetch allocation when selectedTourId changes
+        const count =
+          allocationData.totalRooms ||
+          allocationData.roomAllocations?.length ||
+          0;
+        toast.success(`Room allocation loaded (${count} rooms)`);
+
+        return allocationData;
+      } catch (err) {
+        const msg =
+          err.response?.data?.message || "Failed to load room allocation";
+        setRoomAllocationError(msg);
+        toast.error(msg);
+        console.error("Room allocation fetch error:", err);
+        return null;
+      } finally {
+        setRoomAllocationLoading(false);
+      }
+    },
+    [aToken, backendUrl],
+  );
+
   useEffect(() => {
     if (selectedTourId) {
       fetchRoomAllocation(selectedTourId).then((data) => {
@@ -122,24 +123,24 @@ const TourAdminContextProvider = (props) => {
     } else {
       setLocalRoomAllocation(null);
     }
-  }, [selectedTourId]);
+  }, [selectedTourId, fetchRoomAllocation]);
 
-  // === NEW FUNCTION to fetch from your latest route (/api/touradmin/get-bookings) ===
   const fetchAllBookings = useCallback(async () => {
     setIsLoadingBookings(true);
     setBookingsError(null);
 
     try {
-      const { data } = await axios.get(`${backendUrl}/api/touradmin/get-bookings`, {
-        headers: { aToken },
-      });
+      const { data } = await axios.get(
+        `${backendUrl}/api/touradmin/get-bookings`,
+        {
+          headers: { aToken },
+        },
+      );
 
       const validated = validateApiResponse(data, "Failed to fetch bookings");
 
-      // Store bookings array
       setBookings(validated.bookings || []);
 
-      // Store stats if available
       setBookingsStats({
         totalBookings: validated.totalBookings || validated.total || 0,
         totalEarnings: validated.totalEarnings || 0,
@@ -160,7 +161,6 @@ const TourAdminContextProvider = (props) => {
     }
   }, [aToken, backendUrl, validateApiResponse]);
 
-  // === YOUR ORIGINAL getAllBookings FUNCTION (unchanged as requested) ===
   const getAllBookings = useCallback(async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/touradmin/bookings`, {
@@ -172,18 +172,17 @@ const TourAdminContextProvider = (props) => {
     } catch (error) {
       console.error("Fetch bookings error:", error);
       throw new Error(
-        error.response?.data?.message || "Failed to fetch bookings"
+        error.response?.data?.message || "Failed to fetch bookings",
       );
     }
   }, [aToken, backendUrl, validateApiResponse]);
 
-  // === GET ALL REGISTERED USERS ===
   const getAllUsers = useCallback(async () => {
     try {
       console.log("Fetching all registered users...");
       const { data } = await axios.get(
         `${backendUrl}/api/touradmin/alluser-profile`,
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
 
       const validated = validateApiResponse(data, "Failed to fetch users");
@@ -200,19 +199,18 @@ const TourAdminContextProvider = (props) => {
     }
   }, [aToken, backendUrl, validateApiResponse]);
 
-  // === ALL YOUR OTHER EXISTING FUNCTIONS (unchanged) ===
   const addMissingFields = useCallback(async () => {
     try {
       console.log("Adding missing fields to all bookings...");
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/add-missing-fields`,
         {},
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
 
       const validated = validateApiResponse(
         data,
-        "Failed to add missing fields"
+        "Failed to add missing fields",
       );
 
       return validated;
@@ -227,12 +225,12 @@ const TourAdminContextProvider = (props) => {
       console.log("Fetching cancellation chart...");
       const response = await axios.get(
         `${backendUrl}/api/touradmin/touradmingetcancelrule`,
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
 
       const validated = validateApiResponse(
         response.data,
-        "Failed to fetch chart"
+        "Failed to fetch chart",
       );
       setCancelRule(validated.data);
       return validated;
@@ -255,7 +253,7 @@ const TourAdminContextProvider = (props) => {
             aToken,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       const validated = validateApiResponse(data, "Failed to update chart");
@@ -277,7 +275,7 @@ const TourAdminContextProvider = (props) => {
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/all-tours`,
         {},
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
       const validated = validateApiResponse(data, "Failed to fetch tours");
       setTours(validated.tours);
@@ -293,18 +291,18 @@ const TourAdminContextProvider = (props) => {
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/change-touravailablity`,
         { tourId },
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
       const validated = validateApiResponse(
         data,
-        "Failed to change availability"
+        "Failed to change availability",
       );
       await getAllTours();
       return validated;
     } catch (error) {
       console.error("Change availability error:", error);
       throw new Error(
-        error.response?.data?.message || "Failed to change availability"
+        error.response?.data?.message || "Failed to change availability",
       );
     }
   };
@@ -313,7 +311,7 @@ const TourAdminContextProvider = (props) => {
     try {
       const { data } = await axios.get(
         `${backendUrl}/api/touradmin/touradmindashboard`,
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
       const validated = validateApiResponse(data, "Failed to fetch dashboard");
       setDashData(validated.dashData);
@@ -321,27 +319,28 @@ const TourAdminContextProvider = (props) => {
     } catch (error) {
       console.error("Fetch dashboard error:", error);
       throw new Error(
-        error.response?.data?.message || "Failed to fetch dashboard"
+        error.response?.data?.message || "Failed to fetch dashboard",
       );
     }
   };
-
-
-
-  const rejectBooking = async (tourBookingId, travellerIds) => {
+  const rejectBooking = async (tnr, travellerIds) => {
     try {
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/reject-bookingadmin`,
-        { tourBookingId, travellerIds },
-        { headers: { aToken } }
+        { tnr, travellerIds },
+        { headers: { aToken } },
       );
+
       const validated = validateApiResponse(data, "Failed to reject booking");
+
+      // Refresh bookings after successful rejection
       await getAllBookings();
+
       return validated;
     } catch (error) {
       console.error("Reject booking error:", error);
       throw new Error(
-        error.response?.data?.message || "Failed to reject booking"
+        error.response?.data?.message || "Failed to reject booking",
       );
     }
   };
@@ -351,7 +350,7 @@ const TourAdminContextProvider = (props) => {
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/release-bookingadmin`,
         { tourBookingId, travellerIds },
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
       const validated = validateApiResponse(data, "Failed to release booking");
       await getAllBookings();
@@ -359,7 +358,7 @@ const TourAdminContextProvider = (props) => {
     } catch (error) {
       console.error("Release booking error:", error);
       throw new Error(
-        error.response?.data?.message || "Failed to release booking"
+        error.response?.data?.message || "Failed to release booking",
       );
     }
   };
@@ -368,57 +367,81 @@ const TourAdminContextProvider = (props) => {
     try {
       const { data } = await axios.get(
         `${backendUrl}/api/touradmin/touradmingetcancellations`,
-        { headers: { aToken } }
+        { headers: { aToken } },
       );
+
       const validated = validateApiResponse(
         data,
-        "Failed to fetch cancellations"
+        "Failed to fetch cancellations",
       );
-      setCancelBookings(validated.data);
+
+      if (validated.success) {
+        // Optional: sort by createdAt descending
+        const sorted = (validated.data || []).sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        );
+        setCancelBookings(sorted);
+      } else {
+        toast.error(validated.message || "Failed to load cancellations");
+      }
+
       return validated;
     } catch (error) {
+      console.error("getCancellations error:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to fetch cancellations",
+      );
       throw error;
     }
   }, [aToken, backendUrl, validateApiResponse]);
 
   const approveCancellation = async (
-    bookingId,
+    tnr, // ← Changed from bookingId to tnr
     travellerIds,
-    cancellationId
+    cancellationId,
   ) => {
     try {
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/approvecancellation`,
-        { bookingId, travellerIds, cancellationId },
-        { headers: { aToken } }
+        { tnr, travellerIds, cancellationId }, // ← Now sends tnr
+        { headers: { aToken } },
       );
+
       const validated = validateApiResponse(data, "Failed to approve");
+
+      // Refresh the list after approval
       await getCancellations();
+
       return validated;
     } catch (error) {
+      console.error("approveCancellation error:", error);
       throw error;
     }
   };
 
   const rejectCancellation = async (
-    bookingId,
+    tnr, // ← Changed from bookingId to tnr
     travellerIds,
-    cancellationId
+    cancellationId,
   ) => {
     try {
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/rejectcancellation`,
-        { bookingId, travellerIds, cancellationId },
-        { headers: { aToken } }
+        { tnr, travellerIds, cancellationId }, // ← Now sends tnr
+        { headers: { aToken } },
       );
+
       const validated = validateApiResponse(data, "Failed to reject");
+
+      // Refresh the list after rejection
       await getCancellations();
+
       return validated;
     } catch (error) {
+      console.error("rejectCancellation error:", error);
       throw error;
     }
   };
-
   const getPendingApprovals = useCallback(async () => {
     try {
       console.log("Fetching pending manage-booking approvals...");
@@ -426,12 +449,12 @@ const TourAdminContextProvider = (props) => {
         `${backendUrl}/api/touradmin/pending-approvals`,
         {
           headers: { aToken },
-        }
+        },
       );
 
       const validated = validateApiResponse(
         data,
-        "Failed to fetch pending approvals"
+        "Failed to fetch pending approvals",
       );
 
       setPendingApprovals(validated.data);
@@ -445,22 +468,20 @@ const TourAdminContextProvider = (props) => {
 
   const approveBookingUpdate = async (bookingId) => {
     try {
-      
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/approvebookingupdate`,
         { bookingId },
         {
           headers: { aToken },
-        }
+        },
       );
 
       const validated = validateApiResponse(
         data,
-        "Failed to approve booking update"
+        "Failed to approve booking update",
       );
 
       if (validated.success) {
-        
         await getPendingApprovals();
         await getAllBookings();
       }
@@ -469,7 +490,7 @@ const TourAdminContextProvider = (props) => {
     } catch (error) {
       console.error("Approve update error:", error);
       const msg = error.response?.data?.message || "Failed to approve update";
-      
+
       throw error;
     }
   };
@@ -482,16 +503,15 @@ const TourAdminContextProvider = (props) => {
         { bookingId, remark },
         {
           headers: { aToken },
-        }
+        },
       );
 
       const validated = validateApiResponse(
         data,
-        "Failed to reject booking update"
+        "Failed to reject booking update",
       );
 
       if (validated.success) {
-        
         await getPendingApprovals();
         await getAllBookings();
       }
@@ -500,13 +520,11 @@ const TourAdminContextProvider = (props) => {
     } catch (error) {
       console.error("Reject update error:", error);
       const msg = error.response?.data?.message || "Failed to reject update";
-      
+
       throw error;
     }
   };
 
-
-  // Fetch all tours FOR NAME LIST AND ROOM LIST
   const fetchToursList = useCallback(async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/touradmin/tourlist`, {
@@ -522,50 +540,99 @@ const TourAdminContextProvider = (props) => {
     }
   }, [aToken, backendUrl, validateApiResponse]);
 
-  // Fetch bookings for a specific tour
-  // Inside TourAdminContext.jsx
-  const fetchBookingsOfTour = useCallback(async (tourId) => {
-    if (!tourId) return null;
+  const fetchBookingsOfTour = useCallback(
+    async (tourId) => {
+      if (!tourId) return null;
 
-    setIsLoadingBookings(true);
-    setBookingsError(null); // if you have error state
+      setIsLoadingBookings(true);
+      setBookingsError(null);
 
+      try {
+        const { data } = await axios.get(
+          `${backendUrl}/api/touradmin/adminbookings-tour/${tourId}`,
+          { headers: { aToken } },
+        );
+
+        const validated = validateApiResponse(
+          data,
+          "Failed to load tour bookings",
+        );
+
+        setTourBookings(validated.bookings || []);
+
+        toast.success("Bookings fetched successfully", {
+          toastId: "namelist-success",
+          autoClose: 2500,
+        });
+
+        return validated;
+      } catch (err) {
+        const msg = err.response?.data?.message || "Failed to load bookings";
+        toast.error(msg);
+        throw err;
+      } finally {
+        setIsLoadingBookings(false);
+      }
+    },
+    [aToken, backendUrl, validateApiResponse],
+  );
+
+  // ────────────────────────────────────────────────────────────────
+  //  NEW FUNCTION ADDED: generate missing TNRs
+  // ────────────────────────────────────────────────────────────────
+  const generateMissingTNRs = useCallback(async () => {
     try {
-      const { data } = await axios.get(
-        `${backendUrl}/api/touradmin/adminbookings-tour/${tourId}`,
-        { headers: { aToken } }
+      toast.info("Generating missing TNRs... This may take a moment.");
+
+      const { data } = await axios.post(
+        `${backendUrl}/api/touradmin/generate-missing-tnrs`,
+        {},
+        { headers: { aToken } },
       );
 
-      const validated = validateApiResponse(data, "Failed to load tour bookings");
+      const validated = validateApiResponse(
+        data,
+        "Failed to generate missing TNRs",
+      );
 
-      setTourBookings(validated.bookings || []);
+      if (validated.success) {
+        const { summary, failedBookings } = validated;
 
-      // ─── Only this toast ───────────────────────────────────────
-      toast.success("Bookings fetched successfully", {
-        toastId: "namelist-success",      // prevents duplicate toasts
-        autoClose: 2500,
-      });
+        toast.success(validated.message || "TNR generation completed");
+
+        console.log("TNR generation summary:", summary);
+
+        if (failedBookings?.length > 0) {
+          console.warn("Some bookings failed to get TNR:", failedBookings);
+          toast.warn(
+            `${failedBookings.length} bookings could not be processed`,
+          );
+        }
+
+        // Optional: refresh bookings list after successful generation
+        await fetchAllBookings();
+
+        return validated;
+      }
 
       return validated;
-    } catch (err) {
-      const msg = err.response?.data?.message || "Failed to load bookings";
+    } catch (error) {
+      console.error("generateMissingTNRs error:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to generate missing TNRs";
       toast.error(msg);
-      throw err;
-    } finally {
-      setIsLoadingBookings(false);
+      throw error;
     }
-  }, [aToken, backendUrl, validateApiResponse]);
+  }, [aToken, backendUrl, validateApiResponse, fetchAllBookings]);
 
-
-
-  // Auto-load tours when token changes
   useEffect(() => {
     if (aToken) {
       fetchToursList();
     }
   }, [aToken, fetchToursList]);
 
-  // === FINAL CONTEXT VALUE ===
   const value = {
     aToken,
     setAToken,
@@ -575,13 +642,13 @@ const TourAdminContextProvider = (props) => {
     getAllTours,
     changeTourAvailablity,
     bookings,
-    bookingsStats,           // new: totalBookings, totalEarnings, etc.
+    bookingsStats,
     isLoadingBookings,
     bookingsError,
     tourBookings,
     setTourBookings,
-    fetchAllBookings,        // new function linked to /api/touradmin/get-bookings
-    getAllBookings,          // your original function (unchanged)
+    fetchAllBookings,
+    getAllBookings,
 
     dashData,
     setDashData,
@@ -594,14 +661,13 @@ const TourAdminContextProvider = (props) => {
     allUsers,
     getAllUsers,
 
-
     addMissingFields,
     getCancelRule,
     updateCancelRule,
     getCancellations,
     approveCancellation,
     rejectCancellation,
-    
+
     rejectBooking,
     releaseBooking,
     getPendingApprovals,
@@ -609,20 +675,21 @@ const TourAdminContextProvider = (props) => {
     rejectBookingUpdate,
     getAdminDashData,
 
-    // ─── NEW FUNCTIONS ───────────────────────────────
     fetchToursList,
     fetchBookingsOfTour,
-    
+
     selectedTourId,
     setSelectedTourId,
 
-    // Room allocation
     roomAllocation,
-    setRoomAllocation,               // ← இதை add பண்ணு (useState இருந்தா auto available)
+    setRoomAllocation,
     roomAllocationLoading,
     roomAllocationError,
     setRoomAllocationError,
     fetchRoomAllocation,
+
+    // ─── NEW FUNCTION EXPOSED TO COMPONENTS ───────
+    generateMissingTNRs,
   };
 
   return (

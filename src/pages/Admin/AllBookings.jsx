@@ -1,9 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { TourAdminContext } from "../../context/TourAdminContext";
-import { ChevronDown, ChevronRight, Copy } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ChevronDown, ChevronRight, Copy } from "lucide-react";
 
 const AllBookings = () => {
   const { aToken, bookings, getAllBookings, rejectBooking } =
@@ -13,6 +14,7 @@ const AllBookings = () => {
   const [expandedRow, setExpandedRow] = useState(null);
   const [filters, setFilters] = useState({
     tour: "",
+    tnr: "", // ← TNR filter added
     contact: "",
     payment: "",
     status: "",
@@ -28,26 +30,26 @@ const AllBookings = () => {
 
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = '';  // Browser-ஓட default "Leave site?" வரும்
+      e.returnValue = ""; // Browser default "Leave site?" prompt
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [shouldProtect]);
 
   // 2. Back button / mobile swipe back
   useEffect(() => {
     if (!shouldProtect) return;
 
-    // Dummy history push → back அடிச்சா popstate வரும்
+    // Dummy history push → triggers popstate on back
     window.history.pushState(null, null, window.location.href);
 
     const handlePopState = () => {
       setShowConfirmLeave(true);
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [shouldProtect]);
 
   // Confirm & Cancel functions
@@ -58,7 +60,7 @@ const AllBookings = () => {
 
   const handleCancelLeave = () => {
     setShowConfirmLeave(false);
-    // மறுபடியும் trap வைக்க
+    // Re-trap the back button
     window.history.pushState(null, null, window.location.href);
   };
 
@@ -75,7 +77,7 @@ const AllBookings = () => {
       console.log(
         "API Response at",
         new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-        response
+        response,
       );
       if (response && typeof response === "object" && "success" in response) {
         if (response.success) {
@@ -90,7 +92,7 @@ const AllBookings = () => {
         return false;
       }
     },
-    []
+    [],
   );
 
   // Fetch bookings
@@ -98,7 +100,7 @@ const AllBookings = () => {
     if (aToken) {
       console.log(
         "Fetching all bookings at",
-        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
       );
       setIsLoading(true);
       getAllBookings()
@@ -106,19 +108,19 @@ const AllBookings = () => {
           handleApiResponse(
             response,
             "Bookings fetched successfully",
-            "Failed to fetch bookings"
+            "Failed to fetch bookings",
           );
         })
         .catch((error) => {
           console.error(
             "Fetch bookings error at",
             new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-            error
+            error,
           );
           toast.error(
             error.response?.data?.message ||
               error.message ||
-              "Failed to fetch bookings"
+              "Failed to fetch bookings",
           );
         })
         .finally(() => setIsLoading(false));
@@ -130,10 +132,14 @@ const AllBookings = () => {
   };
 
   // Copy to clipboard
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text, label = "TNR") => {
+    if (!text) {
+      toast.error(`No ${label} to copy`);
+      return;
+    }
     navigator.clipboard.writeText(text).then(
-      () => toast.success("Booking ID copied!"),
-      () => toast.error("Failed to copy")
+      () => toast.success(`${label} copied!`),
+      () => toast.error(`Failed to copy ${label}`),
     );
   };
 
@@ -150,6 +156,10 @@ const AllBookings = () => {
         ?.toLowerCase()
         .includes(filters.tour.toLowerCase());
 
+      const tnrMatch =
+        filters.tnr === "" ||
+        (b.tnr && b.tnr.toLowerCase().includes(filters.tnr.toLowerCase()));
+
       const contactMatch =
         displayName.includes(filters.contact.toLowerCase()) ||
         b?.contact?.mobile
@@ -161,44 +171,46 @@ const AllBookings = () => {
       } ${b.payment?.balance?.paid ? "balance-paid" : "balance-pending"}`;
 
       const paymentMatch = paymentStatus.includes(
-        filters.payment.toLowerCase()
+        filters.payment.toLowerCase(),
       );
 
       const statusValue = b.isBookingCompleted
         ? "completed"
         : b.cancelled?.byAdmin || b.cancelled?.byTraveller
-        ? "cancelled"
-        : "under completion";
+          ? "cancelled"
+          : "under completion";
 
       const statusMatch = statusValue.includes(filters.status.toLowerCase());
 
-      return tourMatch && contactMatch && paymentMatch && statusMatch;
+      return (
+        tourMatch && tnrMatch && contactMatch && paymentMatch && statusMatch
+      );
     })
     .sort((a, b) => {
       return (
         new Date(b.createdAt) - new Date(a.createdAt) ||
-        b._id.localeCompare(a._id)
+        (b.tnr || "").localeCompare(a.tnr || "")
       );
     });
 
   // Handle reject with confirmation
-  const handleReject = async (bookingId, travellerId) => {
+  const handleReject = async (tnr, travellerId) => {
     const confirmReject = window.confirm(
-      "Are you sure you want to reject this booking?"
+      "Are you sure you want to reject this booking?",
     );
     if (confirmReject) {
       setIsLoading(true);
       try {
         console.log(
-          `Rejecting booking ${bookingId} for traveller ${travellerId} at`,
-          new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+          `Rejecting booking with TNR ${tnr} for traveller ${travellerId} at`,
+          new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
         );
-        const response = await rejectBooking(bookingId, [travellerId]);
+        const response = await rejectBooking(tnr, [travellerId]);
         if (
           handleApiResponse(
             response,
             "Booking rejected successfully",
-            "Failed to reject booking"
+            "Failed to reject booking",
           )
         ) {
           setRejectedTravellers((prev) => ({
@@ -210,12 +222,12 @@ const AllBookings = () => {
         console.error(
           "Reject booking error at",
           new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-          error
+          error,
         );
         toast.error(
           error.response?.data?.message ||
             error.message ||
-            "Failed to reject booking"
+            "Failed to reject booking",
         );
       } finally {
         setIsLoading(false);
@@ -232,7 +244,7 @@ const AllBookings = () => {
         newestOnTop
         closeOnClick
         rtl={false}
-        pausaOnFocusLoss
+        pauseOnFocusLoss
         draggable
         pauseOnHover
       />
@@ -265,6 +277,23 @@ const AllBookings = () => {
                 <th className="p-1 sm:p-2"></th>
                 <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
                   S.No
+                </th>
+                <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
+                  TNR
+                  <input
+                    type="text"
+                    placeholder="Filter TNR"
+                    value={filters.tnr}
+                    onChange={(e) =>
+                      setFilters({
+                        ...filters,
+                        tnr: e.target.value.toUpperCase().trim(),
+                      })
+                    }
+                    maxLength={6}
+                    className="mt-1 w-full border rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm"
+                    disabled={isLoading}
+                  />
                 </th>
                 <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
                   Tour
@@ -337,8 +366,9 @@ const AllBookings = () => {
                 const displayName = firstTraveller
                   ? `${firstTraveller.firstName} ${firstTraveller.lastName}`
                   : "Unknown Traveller";
+
                 return (
-                  <React.Fragment key={booking._id}>
+                  <React.Fragment key={booking.tnr}>
                     <tr
                       className="border-b hover:bg-gray-50 transition cursor-pointer"
                       onClick={() => toggleRow(index)}
@@ -352,6 +382,21 @@ const AllBookings = () => {
                       </td>
                       <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800">
                         {index + 1}
+                      </td>
+                      <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800 font-mono font-bold">
+                        <div className="flex items-center gap-1">
+                          {booking.tnr || "N/A"}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(booking.tnr, "TNR");
+                            }}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Copy TNR"
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
                       </td>
                       <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800">
                         {booking?.tourData?.title || "N/A"}
@@ -398,22 +443,22 @@ const AllBookings = () => {
                       <tr className="bg-gray-50">
                         <td></td>
                         <td
-                          colSpan="5"
+                          colSpan="6"
                           className="p-1 sm:p-2 md:p-4 lg:p-6 xl:p-8"
                         >
-                          {/* Booking ID with Copy Button */}
+                          {/* TNR with Copy Button */}
                           <div className="mb-2 flex items-center gap-2 text-xs sm:text-sm">
-                            <strong>Booking ID:</strong>
+                            <strong>TNR:</strong>
                             <code className="bg-gray-200 px-2 py-1 rounded font-mono text-xs">
-                              {booking._id}
+                              {booking.tnr}
                             </code>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                copyToClipboard(booking._id);
+                                copyToClipboard(booking.tnr, "TNR");
                               }}
                               className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs"
-                              title="Copy Booking ID"
+                              title="Copy TNR"
                             >
                               <Copy size={14} />
                               Copy
@@ -464,7 +509,7 @@ const AllBookings = () => {
                                       onClick={
                                         !isDisabled
                                           ? () =>
-                                              handleReject(booking._id, t._id)
+                                              handleReject(booking.tnr, t._id)
                                           : undefined
                                       }
                                       className={`ml-1 sm:ml-2 md:ml-4 px-1 sm:px-2 md:px-3 py-0.5 sm:py-1 md:py-1.5 rounded text-xs sm:text-sm md:text-base ${
@@ -499,7 +544,7 @@ const AllBookings = () => {
               {filteredBookings.length === 0 && (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="7"
                     className="text-center text-gray-500 p-1 sm:p-2 md:p-4 text-xs sm:text-sm md:text-base"
                   >
                     No results match your filters
@@ -514,48 +559,65 @@ const AllBookings = () => {
       {showConfirmLeave && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            backgroundColor: "rgba(0,0,0,0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 9999,
-            padding: '16px'
+            padding: "16px",
           }}
         >
           <div
             style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '420px',
-              width: '100%',
-              textAlign: 'center',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)'
+              backgroundColor: "white",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "420px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)",
             }}
           >
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px', color: '#111827' }}>
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                marginBottom: "16px",
+                color: "#111827",
+              }}
+            >
               Leave this page?
             </h2>
 
-            <p style={{ color: '#4b5563', marginBottom: '24px', lineHeight: '1.6' }}>
-              You are viewing the bookings dashboard.<br />
-              Leaving now will refresh the data on return.<br />
+            <p
+              style={{
+                color: "#4b5563",
+                marginBottom: "24px",
+                lineHeight: "1.6",
+              }}
+            >
+              You are viewing the bookings dashboard.
+              <br />
+              Leaving now will refresh the data on return.
+              <br />
               Are you sure you want to leave?
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+            <div
+              style={{ display: "flex", gap: "16px", justifyContent: "center" }}
+            >
               <button
                 onClick={handleCancelLeave}
                 style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#e5e7eb',
-                  color: '#1f2937',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  border: 'none',
-                  cursor: 'pointer'
+                  padding: "12px 24px",
+                  backgroundColor: "#e5e7eb",
+                  color: "#1f2937",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
                 Cancel (Stay)
@@ -564,13 +626,13 @@ const AllBookings = () => {
               <button
                 onClick={handleConfirmLeave}
                 style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#dc2626',
-                  color: 'white',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  border: 'none',
-                  cursor: 'pointer'
+                  padding: "12px 24px",
+                  backgroundColor: "#dc2626",
+                  color: "white",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
                 Yes, Leave
@@ -580,7 +642,6 @@ const AllBookings = () => {
         </div>
       )}
     </div>
-    
   );
 };
 

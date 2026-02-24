@@ -3,6 +3,20 @@ import React, { useContext, useEffect, useState } from "react";
 import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  ChevronDown,
+  ChevronUp,
+  Users,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  AlertTriangle,
+  Copy,
+  IndianRupee,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 
 const trainClasses = [
   { value: "3A", label: "3A - Three tier AC" },
@@ -14,15 +28,13 @@ const trainClasses = [
   { value: "CC", label: "CC - Chair car AC" },
   { value: "EC", label: "EC - Executive chair car AC" },
 ];
+
 const flightClasses = [
   { value: "Economy", label: "Economy" },
   { value: "Business", label: "Business" },
   { value: "First", label: "First Class" },
 ];
 
-/**
- * Returns consistent status object for a cancellation record
- */
 const getCancellationStatus = (c) => {
   if (c.approvedBy === true && c.raisedBy === false) {
     return {
@@ -69,7 +81,7 @@ const CancellationControls = () => {
   } = useContext(TourContext);
 
   // ────────────────────── STATE ──────────────────────
-  const [bookingId, setBookingId] = useState("");
+  const [tnr, setTnr] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedIndexes, setSelectedIndexes] = useState([]);
@@ -85,28 +97,27 @@ const CancellationControls = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
 
-// ──────────────────────────────────────────────
-  // UNSAVED CHANGES PROTECTION + BACK/SWIPE POPUP
+  // ──────────────────────────────────────────────
+  // UNSAVED CHANGES + BACK/SWIPE PROTECTION
   // ──────────────────────────────────────────────
   const [formIsDirty, setFormIsDirty] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
 
-  // Detect unsaved changes
   useEffect(() => {
     const hasChanges =
-      bookingId.trim() !== "" ||
+      tnr.trim() !== "" ||
       selectedIndexes.length > 0 ||
       cancellationDate !== "" ||
       Object.keys(trainCancellations).length > 0 ||
       Object.keys(flightCancellations).length > 0 ||
       customAddons.some(
-        (a) => a.name.trim() || a.amount.trim() || a.remark.trim()
+        (a) => a.name.trim() || a.amount.trim() || a.remark.trim(),
       ) ||
       submitting;
 
     setFormIsDirty(hasChanges);
   }, [
-    bookingId,
+    tnr,
     selectedIndexes,
     cancellationDate,
     trainCancellations,
@@ -115,23 +126,19 @@ const CancellationControls = () => {
     submitting,
   ]);
 
-  // Browser refresh / tab close protection
   useEffect(() => {
     if (!formIsDirty) return;
 
     const handleBeforeUnload = (event) => {
       event.preventDefault();
-      event.returnValue = "You have unsaved cancellation changes. Are you sure you want to leave?";
+      event.returnValue =
+        "You have unsaved cancellation changes. Are you sure you want to leave?";
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [formIsDirty]);
 
-  // Back button / swipe protection (push dummy history)
   useEffect(() => {
     if (!formIsDirty) return;
 
@@ -143,18 +150,14 @@ const CancellationControls = () => {
     };
 
     window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [formIsDirty]);
-
 
   // ────────────────────── EFFECTS ──────────────────────
   useEffect(() => {
-    if (singleBooking) {
+    if (singleBooking?.tnr) {
       resetForm();
-      fetchCancellationHistory(singleBooking._id);
+      fetchCancellationHistory(singleBooking.tnr);
     } else {
       setCancellationHistory([]);
       setHistoryError(null);
@@ -171,27 +174,33 @@ const CancellationControls = () => {
 
   // ────────────────────── API CALLS ──────────────────────
   const handleFetch = async () => {
-    if (!bookingId.trim()) return toast.error("Paste a Booking ID");
+    if (!tnr.trim()) return toast.error("Enter a valid TNR");
+    if (tnr.length !== 6)
+      return toast.error("TNR must be exactly 6 characters");
+
     setLoading(true);
     setError(null);
-    const result = await viewBooking(bookingId.trim());
+    const result = await viewBooking(tnr.trim());
     setLoading(false);
+
     if (result.success) {
       toast.success("Booking loaded!");
     } else {
       setError(result.message);
+      toast.error(result.message);
     }
   };
 
-  const fetchCancellationHistory = async (bookingId) => {
-    if (!bookingId) return;
+  const fetchCancellationHistory = async (tnr) => {
+    if (!tnr || tnr.length !== 6) return;
     setHistoryLoading(true);
     setHistoryError(null);
-    const result = await fetchCancellationsByBooking(bookingId);
+    const result = await fetchCancellationsByBooking(tnr);
     setHistoryLoading(false);
+
     if (result.success) {
       const sorted = (result.results || []).sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       );
       setCancellationHistory(sorted);
     } else {
@@ -207,13 +216,13 @@ const CancellationControls = () => {
 
     const isApprovedAndAdminCancelled =
       cancellationHistory.some(
-        (c) => c.travellerIds?.includes(t._id) && c.approvedBy === true
+        (c) => c.travellerIds?.includes(t._id) && c.approvedBy === true,
       ) && cancelled.byAdmin === true;
 
     if (isApprovedAndAdminCancelled) return; // blocked
 
     setSelectedIndexes((prev) =>
-      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],
     );
   };
 
@@ -222,6 +231,7 @@ const CancellationControls = () => {
       ...prev,
       [key]: value === "" ? 0 : Number(value),
     }));
+
   const setFlight = (key, value) =>
     setFlightCancellations((prev) => ({
       ...prev,
@@ -231,8 +241,10 @@ const CancellationControls = () => {
   // ────────────────────── CUSTOM ADDONS ──────────────────────
   const handleAddAddon = () =>
     setCustomAddons([...customAddons, { name: "", amount: "", remark: "" }]);
+
   const handleRemoveAddon = (i) =>
     setCustomAddons(customAddons.filter((_, idx) => idx !== i));
+
   const handleAddonChange = (i, field, val) => {
     const upd = [...customAddons];
     upd[i][field] = val;
@@ -243,33 +255,38 @@ const CancellationControls = () => {
   const handleBulkCancel = async () => {
     if (selectedIndexes.length === 0)
       return toast.error("Select at least one traveller");
+
     if (!cancellationDate) return toast.error("Pick a cancellation date");
+
     setSubmitting(true);
 
     const relevantTrain = Object.fromEntries(
       Object.entries(trainCancellations).filter(([k]) =>
-        selectedIndexes.includes(Number(k.split("-")[1]))
-      )
+        selectedIndexes.includes(Number(k.split("-")[1])),
+      ),
     );
+
     const relevantFlight = Object.fromEntries(
       Object.entries(flightCancellations).filter(([k]) =>
-        selectedIndexes.includes(Number(k.split("-")[1]))
-      )
+        selectedIndexes.includes(Number(k.split("-")[1])),
+      ),
     );
 
     const trainSum = Object.values(relevantTrain).reduce((s, v) => s + v, 0);
     const flightSum = Object.values(relevantFlight).reduce((s, v) => s + v, 0);
     const irctcCancellationAmount = trainSum + flightSum;
+
     const extraRemarkAmount = customAddons
       .filter((a) => a.amount)
       .reduce((s, a) => s + parseFloat(a.amount || 0), 0);
+
     const remark = customAddons
       .filter((a) => a.remark)
       .map((a) => `${a.name}: ${a.remark}`)
       .join("; ");
 
     const payload = {
-      bookingId: singleBooking._id,
+      tnr: singleBooking.tnr,
       cancellationDate,
       cancelledTravellerIndexes: selectedIndexes,
       extraRemarkAmount,
@@ -281,10 +298,11 @@ const CancellationControls = () => {
 
     const result = await calculateCancelBooking(payload);
     setSubmitting(false);
+
     if (result.success) {
       toast.success(`${selectedIndexes.length} traveller(s) cancelled`);
-      await viewBooking(singleBooking._id); // refresh
-      fetchCancellationHistory(singleBooking._id); // refresh history
+      await viewBooking(singleBooking.tnr); // refresh
+      fetchCancellationHistory(singleBooking.tnr); // refresh history
     } else {
       toast.error(result.message || "Cancellation failed");
     }
@@ -343,8 +361,8 @@ const CancellationControls = () => {
           ? balance.childWithBerth
           : balance.childWithoutBerth
         : t.sharingType === "triple"
-        ? balance.triple
-        : balance.double;
+          ? balance.triple
+          : balance.double;
     });
     return total;
   };
@@ -386,16 +404,17 @@ const CancellationControls = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
-                value={bookingId}
-                onChange={(e) => setBookingId(e.target.value)}
-                placeholder="Paste Booking ID"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                value={tnr}
+                onChange={(e) => setTnr(e.target.value.toUpperCase().trim())}
+                placeholder="Paste TNR (6 characters)"
+                maxLength={6}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base uppercase tracking-wider font-mono"
               />
               <button
                 onClick={handleFetch}
-                disabled={loading}
+                disabled={loading || tnr.length !== 6}
                 className={`px-6 py-3 rounded-lg font-semibold text-white transition ${
-                  loading
+                  loading || tnr.length !== 6
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-indigo-600 hover:bg-indigo-700"
                 }`}
@@ -406,7 +425,9 @@ const CancellationControls = () => {
           </div>
         </div>
         <div className="max-w-5xl mx-auto text-center text-gray-500 mt-20">
-          <p className="text-lg">Paste a Booking ID and click "Get Details"</p>
+          <p className="text-lg">
+            Paste a 6-character TNR and click "Get Details"
+          </p>
         </div>
       </div>
     );
@@ -435,10 +456,11 @@ const CancellationControls = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
-                value={bookingId}
-                onChange={(e) => setBookingId(e.target.value)}
-                placeholder="Paste Booking ID"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                value={tnr}
+                onChange={(e) => setTnr(e.target.value.toUpperCase().trim())}
+                placeholder="Paste TNR (6 characters)"
+                maxLength={6}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base uppercase tracking-wider font-mono"
               />
               <button
                 onClick={handleFetch}
@@ -476,20 +498,39 @@ const CancellationControls = () => {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={bookingId}
-              onChange={(e) => setBookingId(e.target.value)}
-              placeholder="Paste Booking ID"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-              disabled={isBookingRejected}
-            />
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={tnr}
+                onChange={(e) => setTnr(e.target.value.toUpperCase().trim())}
+                placeholder="Paste TNR (6 characters)"
+                maxLength={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base uppercase tracking-wider font-mono"
+                disabled={isBookingRejected}
+              />
+              {tnr && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(tnr);
+                    toast.success("TNR copied!");
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800"
+                  title="Copy TNR"
+                >
+                  <Copy size={18} />
+                </button>
+              )}
+            </div>
             <button
               onClick={handleFetch}
-              className="px-6 py-3 rounded-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition"
-              disabled={isBookingRejected}
+              disabled={loading || tnr.length !== 6 || isBookingRejected}
+              className={`px-6 py-3 rounded-lg font-semibold text-white transition ${
+                loading || tnr.length !== 6 || isBookingRejected
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-700"
+              }`}
             >
-              Get Details
+              {loading ? "Loading…" : "Get Details"}
             </button>
           </div>
         </div>
@@ -498,9 +539,23 @@ const CancellationControls = () => {
       {/* BOOKING SUMMARY */}
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl sm:text-2xl font-semibold text-indigo-700 mb-4">
-            Booking ID #{singleBooking._id}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl sm:text-2xl font-semibold text-indigo-700">
+              TNR:{" "}
+              <span className="font-mono font-bold">{singleBooking.tnr}</span>
+            </h2>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(singleBooking.tnr);
+                toast.success("TNR copied!");
+              }}
+              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              title="Copy TNR"
+            >
+              <Copy size={18} /> Copy
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <strong>Lead Traveller:</strong> {firstTraveller?.title}{" "}
@@ -529,6 +584,7 @@ const CancellationControls = () => {
               </span>
             </div>
           </div>
+
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm font-medium">
             <div className={`p-3 rounded-lg border ${advanceStatus.color}`}>
               <p className="font-semibold">Advance</p>
@@ -547,6 +603,7 @@ const CancellationControls = () => {
               <p className="text-xs mt-1">{balanceStatus.text}</p>
             </div>
           </div>
+
           <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
             <label className="block text-sm font-medium text-indigo-800 mb-1">
               Total Amount Paid So Far
@@ -594,8 +651,8 @@ const CancellationControls = () => {
                       r.amount > 0
                         ? "bg-green-50 border-green-500"
                         : r.amount < 0
-                        ? "bg-red-50 border-red-500"
-                        : "bg-blue-50 border-blue-500"
+                          ? "bg-red-50 border-red-500"
+                          : "bg-blue-50 border-blue-500"
                     }`}
                   >
                     <div className="flex justify-between items-start">
@@ -633,19 +690,18 @@ const CancellationControls = () => {
         )}
 
         {/* CANCELLATION HISTORY */}
-        {/* CANCELLATION HISTORY */}
-        <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4 md:p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">
               Cancellation History
             </h3>
             <div>
               {historyLoading ? (
-                <span className="text-xs text-gray-500">Loading...</span>
+                <span className="text-sm text-gray-500">Loading...</span>
               ) : historyError ? (
-                <span className="text-xs text-red-600">Error</span>
+                <span className="text-sm text-red-600">Error</span>
               ) : (
-                <span className="text-xs text-gray-500">
+                <span className="text-sm text-gray-500">
                   {cancellationHistory.length} record(s)
                 </span>
               )}
@@ -653,25 +709,24 @@ const CancellationControls = () => {
           </div>
 
           {historyLoading && (
-            <div className="text-xs text-gray-500">Loading history...</div>
+            <div className="text-sm text-gray-500">Loading history...</div>
           )}
           {historyError && (
-            <div className="text-xs text-red-600">{historyError}</div>
+            <div className="text-sm text-red-600">{historyError}</div>
           )}
           {!historyLoading && cancellationHistory.length === 0 && (
-            <div className="text-xs text-gray-500">No cancellations yet.</div>
+            <div className="text-sm text-gray-500">No cancellations yet.</div>
           )}
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {cancellationHistory.map((c, i) => {
               const status = getCancellationStatus(c);
 
-              // Resolve traveller names using travellerIds
               const cancelledTravellers = c.travellerIds
                 ? c.travellerIds
                     .map((id) => {
                       const t = singleBooking?.travellers?.find(
-                        (trav) => trav._id.toString() === id.toString()
+                        (trav) => trav._id.toString() === id.toString(),
                       );
                       return t
                         ? `${t.title} ${t.firstName} ${t.lastName}`
@@ -684,45 +739,41 @@ const CancellationControls = () => {
                 cancelledTravellers.length > 0
                   ? cancelledTravellers.join(", ")
                   : c.travellerIndexes
-                  ? c.travellerIndexes
-                      .map((idx) => {
-                        const t = singleBooking?.travellers?.[idx];
-                        return t
-                          ? `${t.title} ${t.firstName} ${t.lastName}`
-                          : null;
-                      })
-                      .filter(Boolean)
-                      .join(", ")
-                  : "—";
+                    ? c.travellerIndexes
+                        .map((idx) => {
+                          const t = singleBooking?.travellers?.[idx];
+                          return t
+                            ? `${t.title} ${t.firstName} ${t.lastName}`
+                            : null;
+                        })
+                        .filter(Boolean)
+                        .join(", ")
+                    : "—";
 
               return (
                 <div
                   key={i}
-                  className={`border rounded-lg p-3 ${status.bg} ${status.border} border-l-4`}
+                  className={`border rounded-lg p-4 ${status.bg} ${status.border} border-l-4`}
                 >
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-3">
                     <div>
                       <p className="font-medium">
                         Cancellation #{cancellationHistory.length - i}
                         <span
-                          className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${status.badgeBg}`}
+                          className={`ml-3 inline-flex items-center px-2.5 py-1 rounded text-xs font-bold ${status.badgeBg}`}
                         >
                           {status.badge}
                         </span>
                       </p>
 
-                      {/* NEW: Traveller Names & Cancellation Date */}
                       {travellerNames !== "—" && (
-                        <p className="text-xs text-gray-700 mt-1 font-medium">
-                          Cancelled:{" "}
-                          <span className="text-indigo-700">
-                            {travellerNames}
-                          </span>
+                        <p className="text-sm text-indigo-700 mt-1 font-medium">
+                          Cancelled: {travellerNames}
                         </p>
                       )}
                       {c.cancellationDate && (
-                        <p className="text-xs text-gray-600">
-                          Date of Cancellation:{" "}
+                        <p className="text-sm text-gray-600">
+                          Cancellation Date:{" "}
                           <span className="font-medium text-rose-700">
                             {new Date(c.cancellationDate).toLocaleDateString(
                               "en-IN",
@@ -730,13 +781,13 @@ const CancellationControls = () => {
                                 day: "2-digit",
                                 month: "short",
                                 year: "numeric",
-                              }
+                              },
                             )}
                           </span>
                         </p>
                       )}
 
-                      <p className="text-xs text-gray-600">
+                      <p className="text-sm text-gray-600 mt-1">
                         Requested on:{" "}
                         {c.createdAt
                           ? new Date(c.createdAt).toLocaleString()
@@ -750,7 +801,7 @@ const CancellationControls = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div>
                       <strong>GV Cancellation:</strong> ₹
                       {(c.gvCancellationAmount ?? 0).toLocaleString()}
@@ -782,21 +833,21 @@ const CancellationControls = () => {
         </div>
 
         {/* TRAVELLERS */}
-        <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <h3 className="text-xl font-semibold text-gray-800">
               Travellers ({singleBooking?.travellers?.length ?? 0})
             </h3>
-            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <div className="w-full sm:w-48">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Cancellation Date
                 </label>
                 <input
                   type="date"
                   value={cancellationDate}
                   onChange={(e) => setCancellationDate(e.target.value)}
-                  className="w-full px-2 py-1 sm:px-3 sm:py-2 border rounded text-xs sm:text-sm"
+                  className="w-full px-3 py-2 border rounded text-sm"
                   disabled={isBookingRejected}
                 />
               </div>
@@ -807,7 +858,7 @@ const CancellationControls = () => {
                   selectedIndexes.length === 0 ||
                   isBookingRejected
                 }
-                className={`px-3 py-1 sm:px-4 sm:py-2 rounded font-semibold text-white text-xs sm:text-sm ${
+                className={`px-6 py-3 rounded-lg font-semibold text-white transition text-sm ${
                   submitting ||
                   selectedIndexes.length === 0 ||
                   isBookingRejected
@@ -822,13 +873,13 @@ const CancellationControls = () => {
             </div>
           </div>
 
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-4">
             {(singleBooking?.travellers || []).map((t, idx) => {
               const cancelled = t.cancelled || {};
               const isApprovedAndAdminCancelled =
                 cancellationHistory.some(
                   (c) =>
-                    c.travellerIds?.includes(t._id) && c.approvedBy === true
+                    c.travellerIds?.includes(t._id) && c.approvedBy === true,
                 ) && cancelled.byAdmin === true;
 
               const isSelectable = !isApprovedAndAdminCancelled;
@@ -845,15 +896,15 @@ const CancellationControls = () => {
               return (
                 <div
                   key={idx}
-                  className={`border rounded-lg p-3 sm:p-4 ${
+                  className={`border rounded-lg p-4 ${
                     isApprovedAndAdminCancelled
                       ? "bg-gray-100 opacity-60"
                       : "bg-gray-50"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
                     <label
-                      className={`flex items-center gap-2 sm:gap-3 flex-1 ${
+                      className={`flex items-center gap-3 flex-1 ${
                         !isSelectable ? "cursor-not-allowed" : ""
                       }`}
                     >
@@ -861,22 +912,22 @@ const CancellationControls = () => {
                         type="checkbox"
                         checked={selectedIndexes.includes(idx)}
                         onChange={() => toggleTraveller(idx)}
-                        className="h-4 w-4 sm:h-5 sm:w-5"
+                        className="h-5 w-5"
                         disabled={!isSelectable}
                       />
                       <div>
-                        <div className="text-sm sm:text-base font-medium">
+                        <div className="font-medium">
                           {t.title} {t.firstName} {t.lastName}
-                          <span className="text-xs sm:text-sm text-gray-500 ml-1">
+                          <span className="text-gray-500 ml-2">
                             ({t.age}, {t.gender})
                           </span>
                           {isApprovedAndAdminCancelled && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white">
+                            <span className="ml-3 inline-flex items-center px-2.5 py-1 rounded text-xs font-bold bg-red-600 text-white">
                               OFF - Cancellation Approved
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className="text-sm text-gray-600 mt-1">
                           Package:{" "}
                           <span className="font-semibold">
                             {isVariant ? "Variant" : "Main"}
@@ -891,10 +942,10 @@ const CancellationControls = () => {
                   </div>
 
                   {selectedIndexes.includes(idx) && isSelectable && (
-                    <div className="mt-3 space-y-3 border-t pt-3">
+                    <div className="mt-4 space-y-4 border-t pt-4">
                       {trainDetails.length > 0 && (
                         <div>
-                          <div className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                          <div className="text-sm font-medium text-gray-700 mb-2">
                             Train Cancellation
                           </div>
                           {trainDetails.map((tr, i) => {
@@ -903,16 +954,16 @@ const CancellationControls = () => {
                             return (
                               <div
                                 key={i}
-                                className="p-2 sm:p-3 bg-white rounded border mb-2"
+                                className="p-3 bg-white rounded border mb-3"
                               >
-                                <p className="font-medium text-indigo-700 text-xs sm:text-sm">
+                                <p className="font-medium text-indigo-700">
                                   {tr.trainName} ({tr.trainNo})
                                 </p>
-                                <p className="text-xs text-gray-600">
+                                <p className="text-sm text-gray-600">
                                   {tr.fromStation} to {tr.toStation}
                                 </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1 sm:mt-2">
-                                  <select className="px-2 py-1 sm:px-3 sm:py-2 border rounded-md text-xs sm:text-sm">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                  <select className="px-3 py-2 border rounded-md text-sm">
                                     <option>Select Class</option>
                                     {trainClasses.map((c) => (
                                       <option key={c.value} value={c.value}>
@@ -927,7 +978,7 @@ const CancellationControls = () => {
                                     onChange={(e) =>
                                       setTrain(key, e.target.value)
                                     }
-                                    className="px-2 py-1 sm:px-3 sm:py-2 border rounded-md text-xs sm:text-sm"
+                                    className="px-3 py-2 border rounded-md text-sm"
                                   />
                                 </div>
                               </div>
@@ -938,7 +989,7 @@ const CancellationControls = () => {
 
                       {flightDetails.length > 0 && (
                         <div>
-                          <div className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                          <div className="text-sm font-medium text-gray-700 mb-2">
                             Flight Cancellation
                           </div>
                           {flightDetails.map((fl, i) => {
@@ -947,16 +998,16 @@ const CancellationControls = () => {
                             return (
                               <div
                                 key={i}
-                                className="p-2 sm:p-3 bg-white rounded border mb-2"
+                                className="p-3 bg-white rounded border mb-3"
                               >
-                                <p className="font-medium text-indigo-700 text-xs sm:text-sm">
+                                <p className="font-medium text-indigo-700">
                                   {fl.airline} {fl.flightNo}
                                 </p>
-                                <p className="text-xs text-gray-600">
+                                <p className="text-sm text-gray-600">
                                   {fl.fromAirport} to {fl.toAirport}
                                 </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1 sm:mt-2">
-                                  <select className="px-2 py-1 sm:px-3 sm:py-2 border rounded-md text-xs sm:text-sm">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                  <select className="px-3 py-2 border rounded-md text-sm">
                                     <option>Select Class</option>
                                     {flightClasses.map((c) => (
                                       <option key={c.value} value={c.value}>
@@ -971,7 +1022,7 @@ const CancellationControls = () => {
                                     onChange={(e) =>
                                       setFlight(key, e.target.value)
                                     }
-                                    className="px-2 py-1 sm:px-3 sm:py-2 border rounded-md text-xs sm:text-sm"
+                                    className="px-3 py-2 border rounded-md text-sm"
                                   />
                                 </div>
                               </div>
@@ -980,8 +1031,8 @@ const CancellationControls = () => {
                         </div>
                       )}
 
-                      <div className="p-2 sm:p-3 bg-orange-50 border border-orange-200 rounded">
-                        <p className="text-xs sm:text-sm font-medium text-orange-800">
+                      <div className="p-3 bg-orange-50 border border-orange-200 rounded">
+                        <p className="text-sm font-medium text-orange-800">
                           IRCTC for this traveller: ₹
                           {(
                             Object.entries(trainCancellations)
@@ -1002,14 +1053,14 @@ const CancellationControls = () => {
 
           {/* CUSTOM ADDONS */}
           {!isBookingRejected && (
-            <div className="mt-4 sm:mt-6 md:mt-8">
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700">
+            <div className="mt-8">
+              <div className="flex justify-between items-center mb-3">
+                <label className="block text-sm font-medium text-gray-700">
                   Custom Addons (apply to whole cancellation)
                 </label>
                 <button
                   onClick={handleAddAddon}
-                  className="text-xs text-indigo-600 hover:text-indigo-800"
+                  className="text-sm text-indigo-600 hover:text-indigo-800"
                   disabled={isBookingRejected}
                 >
                   + Add New
@@ -1019,9 +1070,9 @@ const CancellationControls = () => {
               {customAddons.map((a, i) => (
                 <div
                   key={i}
-                  className="mb-2 p-2 sm:p-3 bg-yellow-50 rounded border border-yellow-200"
+                  className="mb-3 p-4 bg-yellow-50 rounded border border-yellow-200"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <input
                       type="text"
                       placeholder="Name"
@@ -1029,7 +1080,7 @@ const CancellationControls = () => {
                       onChange={(e) =>
                         handleAddonChange(i, "name", e.target.value)
                       }
-                      className="px-2 py-1 sm:px-3 sm:py-2 border rounded-md text-xs sm:text-sm"
+                      className="px-3 py-2 border rounded-md text-sm"
                       disabled={isBookingRejected}
                     />
                     <input
@@ -1039,7 +1090,7 @@ const CancellationControls = () => {
                       onChange={(e) =>
                         handleAddonChange(i, "amount", e.target.value)
                       }
-                      className="px-2 py-1 sm:px-3 sm:py-2 border rounded-md text-xs sm:text-sm"
+                      className="px-3 py-2 border rounded-md text-sm"
                       disabled={isBookingRejected}
                     />
                     <input
@@ -1049,14 +1100,14 @@ const CancellationControls = () => {
                       onChange={(e) =>
                         handleAddonChange(i, "remark", e.target.value)
                       }
-                      className="px-2 py-1 sm:px-3 sm:py-2 border rounded-md text-xs sm:text-sm"
+                      className="px-3 py-2 border rounded-md text-sm"
                       disabled={isBookingRejected}
                     />
                   </div>
                   {customAddons.length > 1 && (
                     <button
                       onClick={() => handleRemoveAddon(i)}
-                      className="mt-1 sm:mt-2 text-xs text-red-600 hover:text-red-800"
+                      className="mt-2 text-sm text-red-600 hover:text-red-800"
                       disabled={isBookingRejected}
                     >
                       Remove
@@ -1069,17 +1120,18 @@ const CancellationControls = () => {
         </div>
       </div>
 
-      
-      {/* Back/Swipe/Leave Confirmation Popup - centered */}
+      {/* Back/Swipe/Leave Confirmation Popup */}
       {showBackConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Unsaved Changes
             </h2>
             <p className="text-gray-600 mb-6">
-              You have unsaved cancellation changes.<br />
-              Going back will reload the page and you will lose them.<br />
+              You have unsaved cancellation changes.
+              <br />
+              Going back will reload the page and lose them.
+              <br />
               Are you sure you want to go back?
             </p>
             <div className="flex justify-center gap-6">
