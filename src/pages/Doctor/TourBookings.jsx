@@ -219,15 +219,15 @@ const TourBookings = () => {
     }
   };
 
-  const handleCopyTNR = (tnr) => {
-    if (!tnr) {
-      toast.error("No TNR to copy");
+  const handleCopyTNR = (text) => {
+    if (!text) {
+      toast.error("Nothing to copy");
       return;
     }
     navigator.clipboard
-      .writeText(tnr)
-      .then(() => toast.success("TNR copied!"))
-      .catch(() => toast.error("Failed to copy TNR"));
+      .writeText(text)
+      .then(() => toast.success("Copied!"))
+      .catch(() => toast.error("Failed to copy"));
   };
 
   // === HELPER FUNCTIONS ===
@@ -379,6 +379,20 @@ const TourBookings = () => {
               >
                 Balance: {booking.payment.balance.paid ? "Paid" : "Pending"}
               </span>
+
+              {/* T&C Agreed Label */}
+              {booking.termsAgreed && (
+                <span className="px-2 py-1 rounded-lg text-xs font-medium bg-purple-100 text-purple-700">
+                  T&C form submitted
+                </span>
+              )}
+
+              {/* Emergency Contact Badge */}
+              {booking.emergencyContact && (
+                <span className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700">
+                  Emergency: {booking.emergencyContact}
+                </span>
+              )}
             </div>
 
             {category === "completed" && (
@@ -512,8 +526,34 @@ const TourBookings = () => {
 
             <div>
               <h3 className="font-semibold text-gray-800">Contact</h3>
-              <p>Email: {booking.contact?.email}</p>
-              <p>Mobile: {booking.contact?.mobile}</p>
+              <p>Email: {booking.contact?.email || "—"}</p>
+              <p>Mobile: {booking.contact?.mobile || "—"}</p>
+
+              {booking.emergencyContact && (
+                <p className="mt-1 text-blue-700 font-medium">
+                  Emergency Contact: {booking.emergencyContact}
+                </p>
+              )}
+
+              <p className="mt-2">
+                <strong>T&C Agreed:</strong>{" "}
+                <span
+                  className={
+                    booking.termsAgreed
+                      ? "text-green-600 font-medium"
+                      : "text-red-600"
+                  }
+                >
+                  {booking.termsAgreed ? "Yes" : "No"}
+                  {booking.termsAgreed && booking.termsAgreedAt && (
+                    <>
+                      {" "}
+                      (on {new Date(booking.termsAgreedAt).toLocaleDateString()}
+                      )
+                    </>
+                  )}
+                </span>
+              </p>
             </div>
 
             {booking.billingAddress && (
@@ -531,7 +571,7 @@ const TourBookings = () => {
               </div>
             )}
 
-            {/* Admin Remarks - FIXED to show negative amounts */}
+            {/* Admin Remarks */}
             <div className="bg-white p-4 rounded-lg border shadow-sm">
               <h3 className="font-semibold text-gray-800 mb-3">
                 Admin Remarks
@@ -601,7 +641,7 @@ const TourBookings = () => {
               )}
             </div>
 
-            {/* Advance Admin Remarks - same fix */}
+            {/* Advance Admin Remarks */}
             <div className="bg-white p-4 rounded-lg border shadow-sm">
               <h3 className="font-semibold text-gray-800 mb-3">
                 Advance Admin Remarks
