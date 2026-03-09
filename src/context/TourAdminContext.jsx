@@ -30,6 +30,10 @@ const TourAdminContextProvider = (props) => {
   const [roomAllocationLoading, setRoomAllocationLoading] = useState(false);
   const [roomAllocationError, setRoomAllocationError] = useState(null);
 
+  const [termsLoading, setTermsLoading] = useState(false);
+  const [termsError, setTermsError] = useState(null);
+  const [currentTermsVersion, setCurrentTermsVersion] = useState(null);
+
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -532,7 +536,7 @@ const TourAdminContextProvider = (props) => {
       });
       const validated = validateApiResponse(data, "Failed to load tours");
       setTours(validated.tours || []);
-      toast.success(`Loaded ${validated.tours?.length || 0} tours`);
+
       return validated;
     } catch (err) {
       toast.error(err.message || "Failed to load tours");
@@ -632,6 +636,145 @@ const TourAdminContextProvider = (props) => {
       fetchToursList();
     }
   }, [aToken, fetchToursList]);
+  const addTermsPoints = useCallback(
+    async (pointsArray) => {
+      if (!Array.isArray(pointsArray) || pointsArray.length === 0) {
+        toast.error("Please provide at least one terms point");
+        return { success: false, message: "Invalid input" };
+      }
+
+      setTermsLoading(true);
+      setTermsError(null);
+
+      try {
+        const payload = { points: pointsArray }; // can be strings or {text, internalNote}
+
+        const { data } = await axios.post(
+          `${backendUrl}/api/touradmin/terms/add-points`,
+          payload,
+          {
+            headers: {
+              aToken,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (!data?.success) {
+          throw new Error(data?.message || "Failed to add terms points");
+        }
+
+        // Optional: update local state if you want to show latest version immediately
+        if (data.data?.version) {
+          setCurrentTermsVersion(data.data.version);
+        }
+
+        return data;
+      } catch (error) {
+        const msg =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to add terms points";
+        console.error("addTermsPoints error:", error);
+        setTermsError(msg);
+
+        return { success: false, message: msg };
+      } finally {
+        setTermsLoading(false);
+      }
+    },
+    [aToken, backendUrl],
+  );
+
+  const fetchCurrentTerms = useCallback(async () => {
+    setTermsLoading(true);
+    setTermsError(null);
+
+    try {
+      // ─── CHANGED: use the correct protected path ───
+      const { data } = await axios.get(
+        `${backendUrl}/api/touradmin/terms/current`,
+        { headers: { aToken } }, // ← add auth header since it's protected
+      );
+
+      const validated = validateApiResponse(
+        data,
+        "Failed to fetch current terms",
+      );
+
+      if (validated.success && validated.data) {
+        if (validated.data.version) {
+          setCurrentTermsVersion(validated.data.version);
+        }
+        toast.success("Current terms loaded", {
+          toastId: "terms-fetch-success",
+          autoClose: 2000,
+        });
+        return validated.data;
+      }
+
+      return null;
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to load current terms";
+      console.error("fetchCurrentTerms error:", error);
+      setTermsError(msg);
+
+      return null;
+    } finally {
+      setTermsLoading(false);
+    }
+  }, [backendUrl, validateApiResponse, aToken]); // ← added aToken to deps
+
+  const deleteTermsPoint = useCallback(
+    async (pointId) => {
+      if (!pointId) {
+        return { success: false, message: "Point ID required" };
+      }
+
+      setTermsLoading(true);
+      setTermsError(null);
+
+      try {
+        const { data } = await axios.delete(
+          `${backendUrl}/api/touradmin/terms/points/${pointId}`,
+          {
+            headers: {
+              aToken,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        const validated = validateApiResponse(
+          data,
+          "Failed to delete terms point",
+        );
+
+        if (validated.success) {
+          // Optional: refresh current terms after deletion
+          const updatedTerms = await fetchCurrentTerms();
+          return { success: true, data: updatedTerms };
+        }
+
+        return { success: false, message: validated.message };
+      } catch (error) {
+        const msg =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to deactivate point";
+        console.error("deleteTermsPoint error:", error);
+        setTermsError(msg);
+
+        return { success: false, message: msg };
+      } finally {
+        setTermsLoading(false);
+      }
+    },
+    [aToken, backendUrl, validateApiResponse, fetchCurrentTerms],
+  );
 
   const value = {
     aToken,
@@ -688,8 +831,13 @@ const TourAdminContextProvider = (props) => {
     setRoomAllocationError,
     fetchRoomAllocation,
 
-    // ─── NEW FUNCTION EXPOSED TO COMPONENTS ───────
     generateMissingTNRs,
+    termsLoading,
+    termsError,
+    currentTermsVersion,
+    addTermsPoints,
+    deleteTermsPoint,
+    fetchCurrentTerms,
   };
 
   return (

@@ -150,6 +150,7 @@ const adminMenuItems = [
   { to: "/admin-roomlist", icon: HousePlus, label: "Admin Room List" },
   { to: "/booking-approvals", icon: Signature, label: "Booking approvals" },
   { to: "/cancel-centre", icon: TicketX, label: "Cancellation approvals" },
+  { to: "/terms", icon: FileText, label: "Terms & Conditions" },
   { to: "/all-bookings", icon: Calendar, label: "Rejection centre" },
   { to: "/tour-list", icon: Users, label: "Tour Controls and Data" },
   { to: "/cancel-rule", icon: FileText, label: "Cancellation Rule" },
@@ -172,11 +173,13 @@ const tourMenuItems = [
   { to: "/add-tourDetail", icon: Plus, label: "Add Tour" },
   { to: "/tour-profile", icon: User, label: "Tour profile" },
   { to: "/tour-namelist", icon: FileText, label: "Tour Name List" },
+
   {
     to: "/tour-roomlist",
     icon: Hotel,
     label: "Tour Room list",
   },
+  { to: "/tour-termspage", icon: FileText, label: "Traveller Consent Form" },
   { to: "/tour-updateBalance", icon: IndianRupee, label: "Payment controller" },
   {
     to: "/tour-cancelTraveller",

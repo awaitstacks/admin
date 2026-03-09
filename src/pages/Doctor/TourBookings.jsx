@@ -1,4 +1,5 @@
-import { useEffect, useContext, useState, useCallback } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { TourContext } from "../../context/TourContext";
 import { ChevronDown, ChevronUp, CheckCircle, Copy } from "lucide-react";
@@ -151,7 +152,6 @@ const TourBookings = () => {
     [selectedTourId, getBookings],
   );
 
-  // Updated: now uses tnr instead of bookingId
   const handleMarkAdvancePaid = async (tnr, tourId) => {
     if (!tnr) {
       toast.error("Cannot mark advance – TNR is missing");
@@ -172,7 +172,6 @@ const TourBookings = () => {
     }
   };
 
-  // Updated: now uses tnr instead of bookingId
   const handleMarkBalancePaid = async (tnr, tourId) => {
     if (!tourId) {
       toast.error("Please select a tour first.");
@@ -197,7 +196,6 @@ const TourBookings = () => {
     }
   };
 
-  // Updated: now uses tnr instead of bookingId
   const handleCompleteBooking = async (tnr, tourId) => {
     if (!tnr) {
       toast.error("Cannot complete booking – TNR is missing");
@@ -533,58 +531,147 @@ const TourBookings = () => {
               </div>
             )}
 
-            <div className="bg-white p-4 rounded-lg border">
+            {/* Admin Remarks - FIXED to show negative amounts */}
+            <div className="bg-white p-4 rounded-lg border shadow-sm">
               <h3 className="font-semibold text-gray-800 mb-3">
                 Admin Remarks
               </h3>
               {booking.adminRemarks?.length > 0 ? (
                 <div className="space-y-3">
-                  {booking.adminRemarks.map((remark, idx) => (
-                    <div key={idx} className="bg-gray-50 p-3 rounded border">
-                      <p className="text-sm">{remark.remark}</p>
-                      {remark.amount > 0 && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Amount: ₹{remark.amount}
+                  {booking.adminRemarks.map((remark, idx) => {
+                    const amount = remark.amount || 0;
+                    const isNegative = amount < 0;
+                    const displayAmount =
+                      amount !== 0 ? `₹${Math.abs(amount)}` : "—";
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded border ${
+                          isNegative
+                            ? "bg-red-50 border-red-200"
+                            : amount > 0
+                              ? "bg-green-50 border-green-200"
+                              : "bg-gray-50 border-gray-200"
+                        }`}
+                      >
+                        <p className="text-sm">{remark.remark}</p>
+
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              isNegative
+                                ? "bg-red-100 text-red-700"
+                                : amount > 0
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {isNegative
+                              ? "Refund/Adjustment"
+                              : amount > 0
+                                ? "Additional"
+                                : "No Amount"}
+                          </span>
+
+                          <span
+                            className={`text-sm font-medium ${
+                              isNegative
+                                ? "text-red-600"
+                                : amount > 0
+                                  ? "text-green-600"
+                                  : "text-gray-600"
+                            }`}
+                          >
+                            {amount !== 0 ? (isNegative ? "-" : "+") : ""}
+                            {displayAmount}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-gray-500 mt-1">
+                          Added on:{" "}
+                          {new Date(remark.addedAt).toLocaleDateString()}
                         </p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Added on:{" "}
-                        {new Date(remark.addedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="text-gray-500 italic">No remarks found</p>
+                <p className="text-gray-500 italic">No admin remarks found</p>
               )}
             </div>
 
-            <div className="bg-white p-4 rounded-lg border">
+            {/* Advance Admin Remarks - same fix */}
+            <div className="bg-white p-4 rounded-lg border shadow-sm">
               <h3 className="font-semibold text-gray-800 mb-3">
                 Advance Admin Remarks
               </h3>
               {booking.advanceAdminRemarks?.length > 0 ? (
                 <div className="space-y-3">
-                  {booking.advanceAdminRemarks.map((remark, idx) => (
-                    <div key={idx} className="bg-gray-50 p-3 rounded border">
-                      <p className="text-sm">{remark.remark}</p>
-                      {remark.amount > 0 && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Amount: ₹{remark.amount}
+                  {booking.advanceAdminRemarks.map((remark, idx) => {
+                    const amount = remark.amount || 0;
+                    const isNegative = amount < 0;
+                    const displayAmount =
+                      amount !== 0 ? `₹${Math.abs(amount)}` : "—";
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded border ${
+                          isNegative
+                            ? "bg-red-50 border-red-200"
+                            : amount > 0
+                              ? "bg-green-50 border-green-200"
+                              : "bg-gray-50 border-gray-200"
+                        }`}
+                      >
+                        <p className="text-sm">{remark.remark}</p>
+
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              isNegative
+                                ? "bg-red-100 text-red-700"
+                                : amount > 0
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {isNegative
+                              ? "Refund/Adjustment"
+                              : amount > 0
+                                ? "Additional"
+                                : "No Amount"}
+                          </span>
+
+                          <span
+                            className={`text-sm font-medium ${
+                              isNegative
+                                ? "text-red-600"
+                                : amount > 0
+                                  ? "text-green-600"
+                                  : "text-gray-600"
+                            }`}
+                          >
+                            {amount !== 0 ? (isNegative ? "-" : "+") : ""}
+                            {displayAmount}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-gray-500 mt-1">
+                          Added on:{" "}
+                          {new Date(remark.addedAt).toLocaleDateString()}
                         </p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Added on:{" "}
-                        {new Date(remark.addedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="text-gray-500 italic">No remarks found</p>
+                <p className="text-gray-500 italic">No advance remarks found</p>
               )}
             </div>
 
+            {/* Travellers */}
             {booking.travellers.map((trav, idx) => {
               let status = null;
               if (trav.cancelled?.byTraveller && !trav.cancelled?.byAdmin) {
@@ -874,8 +961,7 @@ const TourBookings = () => {
                 {tourList.find((t) => t._id === selectedTourId)?.title ||
                   "this tour"}
               </strong>
-              .
-              <br />
+              .<br />
               Leaving will clear the current bookings view.
               <br />
               Are you sure you want to leave?
