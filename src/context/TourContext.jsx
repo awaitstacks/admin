@@ -24,7 +24,11 @@ const TourContextProvider = (props) => {
   const [roomAllocation, setRoomAllocation] = useState(null);
   const [roomAllocationLoading, setRoomAllocationLoading] = useState(false);
   const [roomAllocationError, setRoomAllocationError] = useState(null);
+  const [tourVehicles, setTourVehicles] = useState([]); // list of vehicles for current tour
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [vehiclesError, setVehiclesError] = useState(null);
 
+  const [currentTourId, setCurrentTourId] = useState(null);
   // ==================== GET ALL BOOKINGS ====================
   const getAllBookings = useCallback(async () => {
     try {
@@ -1274,7 +1278,196 @@ const TourContextProvider = (props) => {
     },
     [backendUrl, ttoken],
   );
+  const getTourVehicles = useCallback(
+    async (tourId) => {
+      if (!tourId) {
+        toast.error("Tour ID is required");
+        return { success: false, message: "Tour ID required" };
+      }
 
+      setVehiclesLoading(true);
+      setVehiclesError(null);
+
+      try {
+        const { data } = await axios.get(
+          `${backendUrl}/api/tour/${tourId}/vehicles`,
+          { headers: { ttoken }, timeout: 12000 },
+        );
+
+        if (data.success) {
+          setTourVehicles(data.vehicles || []);
+          if (tourId !== currentTourId) setCurrentTourId(tourId);
+          return { success: true, vehicles: data.vehicles, count: data.count };
+        } else {
+          setTourVehicles([]);
+          setVehiclesError(data.message || "Failed to load vehicles");
+          toast.error(data.message || "Could not fetch vehicles");
+          return { success: false, message: data.message };
+        }
+      } catch (error) {
+        console.error("getTourVehicles error:", error);
+        const msg =
+          error.response?.data?.message || error.message || "Network error";
+        setVehiclesError(msg);
+        toast.error(msg);
+        setTourVehicles([]);
+        return { success: false, message: msg };
+      } finally {
+        setVehiclesLoading(false);
+      }
+    },
+    [backendUrl, ttoken, currentTourId],
+  );
+
+  const createTourVehicle = async (tourId, vehiclePayload) => {
+    if (!tourId) return { success: false, message: "Tour ID required" };
+    if (!vehiclePayload?.vehicleName?.trim()) {
+      toast.error("Vehicle name is required");
+      return { success: false, message: "Vehicle name required" };
+    }
+
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/${tourId}/vehicles`,
+        vehiclePayload,
+        { headers: { ttoken }, timeout: 10000 },
+      );
+
+      if (data.success) {
+        // Optimistic update – add to list if we're viewing this tour
+        if (tourId === currentTourId) {
+          setTourVehicles((prev) => [...prev, data.data || data.vehicle]);
+        }
+        toast.success("Vehicle created successfully");
+        return { success: true, vehicle: data.data || data.vehicle };
+      } else {
+        toast.error(data.message || "Failed to create vehicle");
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("createTourVehicle error:", error);
+      const msg =
+        error.response?.data?.message || error.message || "Server error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const updateTourVehicle = async (tourId, vehicleId, updates) => {
+    if (!tourId || !vehicleId)
+      return { success: false, message: "Missing IDs" };
+
+    try {
+      const { data } = await axios.patch(
+        `${backendUrl}/api/tour/${tourId}/vehicles/${vehicleId}`,
+        updates,
+        { headers: { ttoken }, timeout: 10000 },
+      );
+
+      if (data.success) {
+        // Update in list if loaded
+        if (tourId === currentTourId) {
+          setTourVehicles((prev) =>
+            prev.map((v) =>
+              v._id === vehicleId ? { ...v, ...data.vehicle } : v,
+            ),
+          );
+        }
+        toast.success("Vehicle updated");
+        return { success: true, vehicle: data.vehicle };
+      } else {
+        toast.error(data.message || "Update failed");
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("updateTourVehicle error:", error);
+      const msg = error.response?.data?.message || error.message;
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const toggleSeatSelection = async (tourId, vehicleId, allow) => {
+    if (!tourId || !vehicleId)
+      return { success: false, message: "Missing IDs" };
+    if (typeof allow !== "boolean") {
+      toast.error("allowSeatSelection must be true or false");
+      return { success: false, message: "Invalid value" };
+    }
+
+    try {
+      const { data } = await axios.patch(
+        `${backendUrl}/api/tour/${tourId}/vehicles/${vehicleId}/toggle-seat-selection`,
+        { allowSeatSelection: allow },
+        { headers: { ttoken }, timeout: 8000 },
+      );
+
+      if (data.success) {
+        if (tourId === currentTourId) {
+          setTourVehicles((prev) =>
+            prev.map((v) =>
+              v._id === vehicleId ? { ...v, allowSeatSelection: allow } : v,
+            ),
+          );
+        }
+        toast.success(`Seat selection ${allow ? "enabled" : "disabled"}`);
+        return { success: true, vehicle: data.vehicle };
+      } else {
+        toast.error(data.message);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("toggleSeatSelection error:", error);
+      const msg = error.response?.data?.message || error.message;
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const deleteTourVehicle = async (tourId, vehicleId) => {
+    if (!tourId || !vehicleId) {
+      toast.error("Missing IDs");
+      return { success: false, message: "Missing IDs" };
+    }
+
+    try {
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/${tourId}/vehicles/${vehicleId}`,
+        { headers: { ttoken }, timeout: 10000 },
+      );
+
+      if (data.success) {
+        if (tourId === currentTourId) {
+          setTourVehicles((prev) => prev.filter((v) => v._id !== vehicleId));
+        }
+        toast.success("Vehicle deleted");
+        return { success: true };
+      } else {
+        toast.error(data.message || "Cannot delete vehicle");
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg =
+        error.response?.data?.message || // ← Use backend message first
+        error.message ||
+        "Failed to delete vehicle";
+
+      // Special handling for 403 (optional - but now uses real message)
+      if (error.response?.status === 403) {
+        const bookedCount = error.response?.data?.bookedSeatsCount || 0;
+        toast.error(
+          bookedCount > 0
+            ? `Cannot delete — ${bookedCount} seat(s) already booked`
+            : "Cannot delete vehicle (seats booked)",
+        );
+      } else {
+        toast.error(msg);
+      }
+
+      console.error("deleteTourVehicle error:", error);
+      return { success: false, message: msg, status: error.response?.status };
+    }
+  };
   // ==================== Context Value ====================
   const value = {
     ttoken,
@@ -1332,6 +1525,19 @@ const TourContextProvider = (props) => {
     taskMarkBalanceReceiptSent,
     taskMarkCancellationReceiptSent,
     taskMarkManageBookingReceiptSent,
+
+    //Vehicle management
+    tourVehicles,
+    vehiclesLoading,
+    vehiclesError,
+    currentTourId,
+    setCurrentTourId,
+
+    getTourVehicles,
+    createTourVehicle,
+    updateTourVehicle,
+    toggleSeatSelection,
+    deleteTourVehicle,
   };
 
   return (

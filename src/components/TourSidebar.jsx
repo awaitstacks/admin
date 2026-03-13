@@ -38,6 +38,7 @@ import {
   HotelIcon,
   HousePlugIcon,
   HousePlus,
+  CarTaxiFrontIcon,
 } from "lucide-react";
 
 const TourSidebar = () => {
@@ -178,6 +179,11 @@ const tourMenuItems = [
     to: "/tour-roomlist",
     icon: Hotel,
     label: "Tour Room list",
+  },
+  {
+    to: "/vehicles",
+    icon: CarTaxiFrontIcon,
+    label: "SAM",
   },
   { to: "/tour-termspage", icon: FileText, label: "Traveller Consent Form" },
   { to: "/tour-updateBalance", icon: IndianRupee, label: "Payment controller" },

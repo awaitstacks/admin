@@ -349,21 +349,41 @@ const TourAdminContextProvider = (props) => {
     }
   };
 
-  const releaseBooking = async (tourBookingId, travellerIds) => {
+  const releaseBooking = async (tnr, travellerIds) => {
     try {
+      if (!tnr || typeof tnr !== "string" || tnr.trim().length !== 6) {
+        throw new Error("Valid 6-character TNR is required");
+      }
+
+      if (!Array.isArray(travellerIds) || travellerIds.length === 0) {
+        throw new Error("travellerIds must be a non-empty array");
+      }
+
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/release-bookingadmin`,
-        { tourBookingId, travellerIds },
+        {
+          tnr: tnr.trim().toUpperCase(), // normalize TNR
+          travellerIds,
+        },
         { headers: { aToken } },
       );
+
       const validated = validateApiResponse(data, "Failed to release booking");
+
+      // Refresh bookings list after success
       await getAllBookings();
+
       return validated;
     } catch (error) {
-      console.error("Release booking error:", error);
-      throw new Error(
-        error.response?.data?.message || "Failed to release booking",
-      );
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to release booking";
+
+      console.error("Release booking error:", error); // keep this for debugging (you can remove later)
+      toast.error(msg);
+
+      throw new Error(msg);
     }
   };
 
@@ -423,26 +443,34 @@ const TourAdminContextProvider = (props) => {
     }
   };
 
-  const rejectCancellation = async (
-    tnr, // ← Changed from bookingId to tnr
-    travellerIds,
-    cancellationId,
-  ) => {
+  const rejectCancellation = async (tnr, travellerIds, cancellationId) => {
     try {
+      const payload = { tnr, travellerIds };
+      if (cancellationId) payload.cancellationId = cancellationId;
+
       const { data } = await axios.post(
         `${backendUrl}/api/touradmin/rejectcancellation`,
-        { tnr, travellerIds, cancellationId }, // ← Now sends tnr
-        { headers: { aToken } },
+        payload,
+        {
+          headers: { aToken },
+        },
       );
 
-      const validated = validateApiResponse(data, "Failed to reject");
+      const validated = validateApiResponse(
+        data,
+        "Failed to reject cancellation",
+      );
 
-      // Refresh the list after rejection
-      await getCancellations();
+      // Optional: refresh after success
+      await getAllBookings();
 
       return validated;
     } catch (error) {
-      console.error("rejectCancellation error:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to reject cancellation request";
+      toast.error(msg);
       throw error;
     }
   };

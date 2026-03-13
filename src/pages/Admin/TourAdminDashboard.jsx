@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-// /* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import React, {
   useContext,
@@ -33,7 +33,7 @@ const TourAdminDashboard = () => {
   const {
     bookings,
     getAllBookings,
-    releaseBooking,
+    releaseBooking, // ← This is the API we want for "Reject" (release cancellation)
     getPendingApprovals,
     pendingApprovals,
   } = useContext(TourAdminContext);
@@ -41,7 +41,7 @@ const TourAdminDashboard = () => {
   const [expanded, setExpanded] = useState({});
   const [showMore, setShowMore] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState({});
+  const [actionLoading, setActionLoading] = useState({}); // per booking loading
 
   const location = useLocation();
 
@@ -185,7 +185,7 @@ const TourAdminDashboard = () => {
     return date ? new Date(date).toLocaleString() : "—";
   };
 
-  // Reusable component for displaying TNR with copy button
+  // Reusable TNR display with copy button
   const TnrDisplay = ({ tnr, color = "indigo" }) => (
     <div className="flex items-center gap-2 text-sm mb-3">
       <strong>TNR:</strong>
@@ -481,6 +481,54 @@ const TourAdminDashboard = () => {
       `${first.firstName || ""} ${first.lastName || ""}`.trim() ||
       "Unknown Traveller";
 
+    // Get only pending cancellation requests
+    const pendingCancellations = booking.travellers
+      .filter((t) => t.cancelled?.byTraveller && !t.cancelled?.byAdmin)
+      .map((t) => ({
+        travellerId: t._id,
+        name: `${t.firstName} ${t.lastName}`,
+      }));
+    const handleReleaseCancel = async () => {
+      if (
+        !window.confirm(
+          "Are you sure you want to RELEASE this cancellation request? This will restore the booking.",
+        )
+      ) {
+        return;
+      }
+
+      setActionLoading((prev) => ({ ...prev, [booking.tnr]: true }));
+
+      try {
+        const travellerIds = pendingCancellations.map((t) => t.travellerId);
+
+        console.log("Sending release request:", {
+          // ← add this log
+          tnr: booking.tnr,
+          travellerIds,
+          travellerIdsLength: travellerIds.length,
+          travellerIdsType: typeof travellerIds,
+        });
+
+        if (travellerIds.length === 0) {
+          toast.info("No eligible travellers to release");
+          return;
+        }
+
+        const result = await releaseBooking(booking.tnr, travellerIds);
+
+        if (result?.success) {
+          toast.success("Cancellation released successfully");
+          await getAllBookings();
+        }
+      } catch (err) {
+        console.error("Release failed with details:", err); // ← more info
+        toast.error("Failed to release cancellation");
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [booking.tnr]: false }));
+      }
+    };
+
     return (
       <div
         className="bg-white rounded-xl shadow-sm border border-red-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
@@ -510,41 +558,55 @@ const TourAdminDashboard = () => {
             <TnrDisplay tnr={booking.tnr} color="red" />
 
             <h4 className="font-semibold mb-2 text-sm flex items-center gap-1">
-              Travellers Requested
+              Travellers Requested Cancellation
             </h4>
-            {booking.travellers
-              .filter((t) => t.cancelled?.byTraveller && !t.cancelled?.byAdmin)
-              .map((t, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-red-50 p-3 rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium text-red-900">
-                      {t.firstName} {t.lastName} ({t.age} yrs)
-                    </p>
-                    <p className="text-xs text-red-700">
-                      {t.sharingType} sharing
-                    </p>
+
+            <div className="space-y-3">
+              {pendingCancellations.length === 0 ? (
+                <p className="text-gray-500 italic">
+                  No pending cancellation requests
+                </p>
+              ) : (
+                <>
+                  {pendingCancellations.map((t) => (
+                    <div
+                      key={t.travellerId}
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-red-50 p-3 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium text-red-900">{t.name}</p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Release (Reject Cancellation) Button */}
+                  <div className="pt-4 text-right">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReleaseCancel();
+                      }}
+                      disabled={actionLoading[booking.tnr]}
+                      className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white transition
+                        ${
+                          actionLoading[booking.tnr]
+                            ? "bg-green-400 cursor-not-allowed"
+                            : "bg-green-600 hover:bg-green-700"
+                        }`}
+                    >
+                      {actionLoading[booking.tnr] ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Releasing...
+                        </>
+                      ) : (
+                        "Release Cancellation"
+                      )}
+                    </button>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // handleReleaseBooking(booking.tnr, t._id);
-                    }}
-                    disabled={isLoading}
-                    className={`flex items-center gap-1 px-3 py-1.5 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition mt-2 sm:mt-0 ${
-                      isLoading ? "opacity-50" : ""
-                    }`}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Reject"
-                    )}
-                  </button>
-                </div>
-              ))}
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
