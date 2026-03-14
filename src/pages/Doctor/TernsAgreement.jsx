@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Copy, Share2, Loader2 } from "lucide-react";
+import { Copy, Share2, Loader2, CheckCircle } from "lucide-react";
 
 const TermsAgreementPage = () => {
   const { tourList, getTourList, getBookings } = useContext(TourContext);
@@ -13,10 +13,8 @@ const TermsAgreementPage = () => {
   const [error, setError] = useState("");
   const [generatedLinks, setGeneratedLinks] = useState([]);
 
-  // Fixed base URL (no window.location.origin)
   const BASE_URL = "https://gvtourplanners.com";
 
-  // Load tours on mount
   useEffect(() => {
     const fetchTours = async () => {
       try {
@@ -28,7 +26,6 @@ const TermsAgreementPage = () => {
     fetchTours();
   }, [getTourList]);
 
-  // Fetch bookings when tour is selected
   const handleTourChange = async (e) => {
     const tourId = e.target.value;
     setSelectedTourId(tourId);
@@ -58,11 +55,11 @@ const TermsAgreementPage = () => {
     }
   };
 
-  // Generate links + formatted copy text
+  // Generate links + check agreed status
   useEffect(() => {
     if (tourBookings.length > 0) {
       const links = tourBookings.map((booking) => {
-        const leadTraveller = booking.travellers?.[0]; // first traveller = lead
+        const leadTraveller = booking.travellers?.[0];
         const title = leadTraveller?.title || "";
         const firstName = leadTraveller?.firstName || "";
         const lastName = leadTraveller?.lastName || "";
@@ -76,14 +73,17 @@ const TermsAgreementPage = () => {
 
         const agreementUrl = `${BASE_URL}/agree/${booking.tnr}`;
 
-        // Exact text you want copied/shared
         const copyText = `Hi ${leadNameWithTitle} Please read and agree this terms and conditions for your TNR by clicking the below link\n\nlink: ${agreementUrl}`;
+
+        // ← Key change: check if already agreed
+        const isAgreed = booking.termsAgreed === true; // ← adjust field name if different (e.g. agreed, tncAccepted, etc.)
 
         return {
           tnr: booking.tnr,
           leadName: cleanLeadName || "Unknown Traveller",
           url: agreementUrl,
           copyText: copyText,
+          isAgreed,
         };
       });
 
@@ -91,7 +91,6 @@ const TermsAgreementPage = () => {
     }
   }, [tourBookings]);
 
-  // Copy the formatted message
   const copyToClipboard = (text) => {
     navigator.clipboard
       .writeText(text)
@@ -99,12 +98,8 @@ const TermsAgreementPage = () => {
       .catch(() => toast.error("Failed to copy"));
   };
 
-  // Share → copies the message AND tries native share
   const shareLink = async (copyText, leadName) => {
-    // First copy the message (as requested)
     copyToClipboard(copyText);
-
-    // Then try native share
     try {
       if (navigator.share) {
         await navigator.share({
@@ -116,7 +111,6 @@ const TermsAgreementPage = () => {
         toast.info("Message copied — share not supported on this device");
       }
     } catch (err) {
-      // If share fails, user already has copied text
       console.error("Native share failed:", err);
       toast.info("Message copied — share not supported");
     }
@@ -131,7 +125,6 @@ const TermsAgreementPage = () => {
           Generate Terms Agreement Links
         </h1>
 
-        {/* Tour Dropdown */}
         <div className="mb-8">
           <label className="block text-lg font-medium text-gray-700 mb-3">
             Select Tour
@@ -150,7 +143,6 @@ const TermsAgreementPage = () => {
           </select>
         </div>
 
-        {/* Loading / Error */}
         {loading && (
           <div className="flex justify-center my-10">
             <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
@@ -163,7 +155,6 @@ const TermsAgreementPage = () => {
           </div>
         )}
 
-        {/* Generated Links */}
         {generatedLinks.length > 0 && (
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
@@ -174,32 +165,48 @@ const TermsAgreementPage = () => {
               {generatedLinks.map((link) => (
                 <div
                   key={link.tnr}
-                  className="bg-gray-50 p-5 rounded-xl border border-gray-200 hover:shadow-md transition"
+                  className={`p-5 rounded-xl border transition ${
+                    link.isAgreed
+                      ? "bg-gray-100 border-gray-300 opacity-75 cursor-not-allowed"
+                      : "bg-gray-50 border-gray-200 hover:shadow-md"
+                  }`}
                 >
-                  <div className="font-medium text-lg text-gray-900 mb-2">
-                    {link.leadName}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium text-lg text-gray-900">
+                      {link.leadName}
+                    </div>
+                    {link.isAgreed && (
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    )}
                   </div>
-                  <div className="text-sm text-gray-600 mb-3 break-all">
+
+                  <div className="text-sm text-gray-600 mb-4 break-all">
                     {link.url}
                   </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => copyToClipboard(link.copyText)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                    >
-                      <Copy size={18} />
-                      Copy Message
-                    </button>
+                  {link.isAgreed ? (
+                    <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-center font-medium">
+                      Form Submitted / Already Agreed
+                    </div>
+                  ) : (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => copyToClipboard(link.copyText)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                      >
+                        <Copy size={18} />
+                        Copy Message
+                      </button>
 
-                    <button
-                      onClick={() => shareLink(link.copyText, link.leadName)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                    >
-                      <Share2 size={18} />
-                      Share + Copy
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => shareLink(link.copyText, link.leadName)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      >
+                        <Share2 size={18} />
+                        Share + Copy
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
