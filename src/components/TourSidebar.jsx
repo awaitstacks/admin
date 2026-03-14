@@ -149,6 +149,11 @@ const adminMenuItems = [
   { to: "/add-tour", icon: Plus, label: "Add Tour" },
   { to: "/admin-namelist", icon: ListIcon, label: "Admin Name List" },
   { to: "/admin-roomlist", icon: HousePlus, label: "Admin Room List" },
+  {
+    to: "/admin-vehicles",
+    icon: CarTaxiFrontIcon,
+    label: "SAM",
+  },
   { to: "/booking-approvals", icon: Signature, label: "Booking approvals" },
   { to: "/cancel-centre", icon: TicketX, label: "Cancellation approvals" },
   { to: "/terms", icon: FileText, label: "Terms & Conditions" },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { TourAdminContext } from "../../context/TourAdminContext";
 import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -142,18 +143,17 @@ const SeatLayoutPreview = ({ previewLayout, seatsPerRow }) => {
   );
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-const TourVehicles = () => {
+// ─── Main Component ─────────────────────────────────────────────────────────
+const AdminTourVehicles = () => {
   const {
-    tourList,
-    getTourList,
     tourVehicles,
     getTourVehicles,
     createTourVehicle,
     updateTourVehicle,
     toggleSeatSelection,
     deleteTourVehicle,
-  } = useContext(TourContext);
+  } = useContext(TourAdminContext);
+  const { tourList, getTourList } = useContext(TourContext);
 
   const [selectedTourId, setSelectedTourId] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -171,8 +171,8 @@ const TourVehicles = () => {
   const [previewLayout, setPreviewLayout] = useState([]);
 
   useEffect(() => {
-    if (tourList.length === 0) getTourList();
-  }, [tourList.length, getTourList]);
+    if (!tourList?.length) getTourList?.();
+  }, [tourList?.length, getTourList]);
 
   useEffect(() => {
     if (selectedTourId) getTourVehicles(selectedTourId);
@@ -198,7 +198,7 @@ const TourVehicles = () => {
     let newValue = type === "checkbox" ? checked : value;
 
     if (name === "passengerRows" || name === "seatsPerRow") {
-      newValue = Number(value);
+      newValue = Number(value) || 0;
     }
 
     setFormData((prev) => ({ ...prev, [name]: newValue }));
@@ -222,7 +222,6 @@ const TourVehicles = () => {
 
   const handleCreate = async () => {
     if (!validateForm()) return;
-
     const layout = buildLayout(formData.passengerRows, formData.seatsPerRow);
     const payload = {
       vehicleName: formData.vehicleName.trim(),
@@ -231,14 +230,12 @@ const TourVehicles = () => {
       passengerRows: layout.slice(1),
       allowSeatSelection: formData.allowSeatSelection,
     };
-
     const result = await createTourVehicle(selectedTourId, payload);
     if (result.success) closeModals();
   };
 
   const handleUpdate = async () => {
     if (!selectedVehicle || !validateForm()) return;
-
     const layout = buildLayout(formData.passengerRows, formData.seatsPerRow);
     const updates = {
       vehicleName: formData.vehicleName.trim(),
@@ -247,7 +244,6 @@ const TourVehicles = () => {
       leaderRow: layout[0],
       passengerRows: layout.slice(1),
     };
-
     const result = await updateTourVehicle(
       selectedTourId,
       selectedVehicle._id,
@@ -257,7 +253,7 @@ const TourVehicles = () => {
   };
 
   const handleToggleSeatSelection = async (vehicle) => {
-    if (!selectedTourId) return;
+    if (!selectedTourId || !vehicle?._id) return;
     await toggleSeatSelection(
       selectedTourId,
       vehicle._id,
@@ -266,17 +262,15 @@ const TourVehicles = () => {
   };
 
   const handleDelete = async (vehicle) => {
-    if (!selectedTourId) return;
+    if (!selectedTourId || !vehicle?._id) return;
 
     const bookedCount = vehicle.bookedSeatsCount || 0;
+    const message =
+      bookedCount > 0
+        ? `This vehicle has ${bookedCount} booked seat(s). Deleting it may affect bookings. Continue?`
+        : "Are you sure you want to delete this vehicle?";
 
-    let confirmMessage = "Are you sure you want to delete this vehicle?";
-
-    if (bookedCount > 0) {
-      confirmMessage = `This vehicle has ${bookedCount} booked seat(s). Deleting it may affect bookings. Are you sure you want to proceed?`;
-    }
-
-    if (!window.confirm(confirmMessage)) return;
+    if (!window.confirm(message)) return;
 
     const result = await deleteTourVehicle(selectedTourId, vehicle._id);
     if (result.success) {
@@ -289,8 +283,9 @@ const TourVehicles = () => {
     setFormData({
       vehicleName: vehicle.vehicleName || "",
       registrationNumber: vehicle.registrationNumber || "",
-      passengerRows: vehicle.passengerRowCount || 0,
-      seatsPerRow: vehicle.seatsPerRow || 0,
+      passengerRows:
+        vehicle.passengerRowCount || vehicle.passengerRows?.length || 4,
+      seatsPerRow: vehicle.seatsPerRow || 4,
       allowSeatSelection: !!vehicle.allowSeatSelection,
     });
     setShowEditModal(true);
@@ -344,9 +339,9 @@ const TourVehicles = () => {
             className="w-full px-4 sm:px-6 py-4 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-50 bg-slate-50 text-slate-700 font-bold outline-none transition-all"
           >
             <option value="">-- Choose a Tour --</option>
-            {tourList.map((tour) => (
+            {tourList?.map((tour) => (
               <option key={tour._id} value={tour._id}>
-                {tour.tourName || tour.title}
+                {tour.tourName || tour.title || "Unnamed Tour"}
               </option>
             ))}
           </select>
@@ -401,7 +396,7 @@ const TourVehicles = () => {
                     <div className="flex justify-between items-start mb-6">
                       <div className="truncate pr-2">
                         <h3 className="font-black text-xl text-slate-800 uppercase tracking-tight truncate">
-                          {vehicle.vehicleName}
+                          {vehicle.vehicleName || "Unnamed Bus"}
                         </h3>
                         <p className="text-xs font-bold text-slate-400 tracking-widest mt-1">
                           {vehicle.registrationNumber || "NO REG #"}
@@ -429,7 +424,7 @@ const TourVehicles = () => {
                           Capacity
                         </span>
                         <span className="font-black text-2xl text-slate-800">
-                          {vehicle.totalSeats}
+                          {vehicle.totalSeats || "—"}
                         </span>
                       </div>
                       <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
@@ -442,18 +437,19 @@ const TourVehicles = () => {
                       </div>
                     </div>
 
-                    {/* Booked Seats List */}
+                    {/* Booked Seats Section – SAFE VERSION */}
                     <div className="mb-6">
                       <span className="text-[10px] font-black text-slate-500 uppercase block mb-2">
                         Booked Seats
                       </span>
-                      {vehicle.bookedSeatsCount > 0 ? (
-                        <div className="bg-red-50 p-3 rounded-xl border border-red-100 text-sm text-red-700">
-                          {vehicle.bookedSeats &&
+
+                      {Number(vehicle.bookedSeatsCount) > 0 ? (
+                        <div className="bg-red-50 p-3 rounded-xl border border-red-100 text-sm text-red-700 min-h-[60px] flex items-center">
+                          {Array.isArray(vehicle.bookedSeats) &&
                           vehicle.bookedSeats.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                               {vehicle.bookedSeats
-                                .map((bs) => bs.seatNumber)
+                                .map((bs, index) => bs?.seatNumber)
                                 .filter(Boolean)
                                 .map((seat, i) => (
                                   <span
@@ -465,12 +461,15 @@ const TourVehicles = () => {
                                 ))}
                             </div>
                           ) : (
-                            "Seats booked but numbers not available"
+                            <span className="italic opacity-80">
+                              {vehicle.bookedSeatsCount} seat(s) booked —
+                              numbers not available
+                            </span>
                           )}
                         </div>
                       ) : (
                         <p className="text-slate-500 text-sm italic">
-                          No seats booked
+                          No seats booked yet
                         </p>
                       )}
                     </div>
@@ -625,4 +624,4 @@ const TourVehicles = () => {
   );
 };
 
-export default TourVehicles;
+export default AdminTourVehicles;
