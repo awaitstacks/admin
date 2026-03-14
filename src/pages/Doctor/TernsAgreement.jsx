@@ -55,39 +55,50 @@ const TermsAgreementPage = () => {
     }
   };
 
-  // Generate links + check agreed status
+  // Helper: check if booking has at least one active (non-cancelled) traveller
+  const hasActiveTraveller = (booking) => {
+    if (!booking.travellers || booking.travellers.length === 0) return false;
+    return booking.travellers.some(
+      (t) => !(t.cancelled?.byTraveller || t.cancelled?.byAdmin),
+    );
+  };
+
+  // Generate links only for bookings with at least one active traveller
   useEffect(() => {
     if (tourBookings.length > 0) {
-      const links = tourBookings.map((booking) => {
-        const leadTraveller = booking.travellers?.[0];
-        const title = leadTraveller?.title || "";
-        const firstName = leadTraveller?.firstName || "";
-        const lastName = leadTraveller?.lastName || "";
+      const links = tourBookings
+        .filter((booking) => hasActiveTraveller(booking)) // ← only keep bookings with ≥1 active traveller
+        .map((booking) => {
+          const leadTraveller = booking.travellers?.[0] || {};
+          const title = leadTraveller.title || "";
+          const firstName = leadTraveller.firstName || "";
+          const lastName = leadTraveller.lastName || "";
 
-        const leadNameWithTitle = title
-          ? `"${title}. ${firstName} ${lastName}"`
-          : `"${firstName} ${lastName}"`;
+          const leadNameWithTitle = title
+            ? `"${title}. ${firstName} ${lastName}"`
+            : `"${firstName} ${lastName}"`;
 
-        const cleanLeadName =
-          (title ? `${title}. ` : "") + `${firstName} ${lastName}`;
+          const cleanLeadName =
+            (title ? `${title}. ` : "") + `${firstName} ${lastName}`;
 
-        const agreementUrl = `${BASE_URL}/agree/${booking.tnr}`;
+          const agreementUrl = `${BASE_URL}/agree/${booking.tnr}`;
 
-        const copyText = `Hi ${leadNameWithTitle} Please read and agree this terms and conditions for your TNR by clicking the below link\n\nlink: ${agreementUrl}`;
+          const copyText = `Hi ${leadNameWithTitle} Please read and agree this terms and conditions for your TNR by clicking the below link\n\nlink: ${agreementUrl}`;
 
-        // ← Key change: check if already agreed
-        const isAgreed = booking.termsAgreed === true; // ← adjust field name if different (e.g. agreed, tncAccepted, etc.)
+          const isAgreed = booking.termsAgreed === true;
 
-        return {
-          tnr: booking.tnr,
-          leadName: cleanLeadName || "Unknown Traveller",
-          url: agreementUrl,
-          copyText: copyText,
-          isAgreed,
-        };
-      });
+          return {
+            tnr: booking.tnr,
+            leadName: cleanLeadName.trim() || "Unknown Traveller",
+            url: agreementUrl,
+            copyText,
+            isAgreed,
+          };
+        });
 
       setGeneratedLinks(links);
+    } else {
+      setGeneratedLinks([]);
     }
   }, [tourBookings]);
 
@@ -155,7 +166,7 @@ const TermsAgreementPage = () => {
           </div>
         )}
 
-        {generatedLinks.length > 0 && (
+        {generatedLinks.length > 0 ? (
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
               Agreement Links ({generatedLinks.length})
@@ -211,12 +222,14 @@ const TermsAgreementPage = () => {
               ))}
             </div>
           </div>
-        )}
-
-        {!loading && !error && tourBookings.length === 0 && selectedTourId && (
-          <p className="text-center text-gray-500 italic py-10">
-            No bookings found for this tour.
-          </p>
+        ) : (
+          selectedTourId &&
+          !loading &&
+          !error && (
+            <p className="text-center text-gray-500 italic py-10">
+              No bookings with active travellers found for this tour.
+            </p>
+          )
         )}
       </div>
     </div>
