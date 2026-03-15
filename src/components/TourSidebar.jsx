@@ -13,6 +13,7 @@ import {
   FileText,
   User,
   IndianRupee,
+  Banknote,
   TicketX,
   CalendarCheck,
   OctagonAlert,
@@ -192,6 +193,7 @@ const tourMenuItems = [
   },
   { to: "/tour-termspage", icon: FileText, label: "Traveller Consent Form" },
   { to: "/tour-updateBalance", icon: IndianRupee, label: "Payment controller" },
+  { to: "/payment-details", icon: Banknote, label: "Payment Details" },
   {
     to: "/tour-cancelTraveller",
     icon: TicketX,

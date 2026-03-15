@@ -1468,6 +1468,125 @@ const TourContextProvider = (props) => {
       return { success: false, message: msg, status: error.response?.status };
     }
   };
+  const getPaymentMethods = useCallback(async () => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/payment-methods`,
+        {
+          headers: { ttoken },
+          timeout: 10000,
+        },
+      );
+
+      if (data.success) {
+        return {
+          success: true,
+          paymentMethods: data.paymentMethods || [],
+          count: data.count || 0,
+        };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Network/server error";
+
+      return { success: false, message: msg };
+    }
+  }, [backendUrl, ttoken]);
+
+  const createNewPaymentMethod = async (formData) => {
+    // formData should be FormData object (with file if QR)
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/create-payment-methods`, // ← MATCHES YOUR CURRENT ROUTE
+        formData,
+        {
+          headers: {
+            ttoken,
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 15000, // longer timeout for file upload
+        },
+      );
+
+      if (data.success) {
+        return { success: true, paymentMethod: data.paymentMethod };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create payment method";
+
+      return { success: false, message: msg };
+    }
+  };
+
+  const updateExistingPaymentMethod = async (id, formData) => {
+    if (!id) {
+      return { success: false, message: "ID required" };
+    }
+
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/update-payment-methods/${id}`, // ← MATCHES YOUR CURRENT ROUTE
+        formData,
+        {
+          headers: {
+            ttoken,
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 15000,
+        },
+      );
+
+      if (data.success) {
+        return { success: true, paymentMethod: data.paymentMethod };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update payment method";
+
+      return { success: false, message: msg };
+    }
+  };
+  const deletePaymentMethodById = async (id) => {
+    if (!id) {
+      return { success: false, message: "ID required" };
+    }
+
+    try {
+      // FIXED: Use the exact route from your backend
+      const deleteUrl = `${backendUrl}/api/tour/delete-payment-methods/${id}`;
+
+      const { data } = await axios.delete(deleteUrl, {
+        headers: { ttoken },
+        timeout: 8000,
+      });
+
+      if (data.success) {
+        return { success: true };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to delete payment method. Please try again.";
+
+      return { success: false, message: msg };
+    }
+  };
   // ==================== Context Value ====================
   const value = {
     ttoken,
@@ -1538,6 +1657,10 @@ const TourContextProvider = (props) => {
     updateTourVehicle,
     toggleSeatSelection,
     deleteTourVehicle,
+    getPaymentMethods,
+    createNewPaymentMethod,
+    updateExistingPaymentMethod,
+    deletePaymentMethodById,
   };
 
   return (

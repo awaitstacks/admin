@@ -36,6 +36,7 @@ import AddTourDetail from "./pages/Doctor/AddTourDetail.jsx";
 import TernsAgreement from "./pages/Doctor/TernsAgreement.jsx";
 import TourVehicles from "./pages/Doctor/TourVehicles.jsx";
 import AdminTourVehicles from "./pages/Admin/AdminTourVehicles.jsx";
+import PaymentDetails from "./pages/Doctor/PaymentDetails.jsx";
 
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
@@ -80,6 +81,7 @@ const TourApp = () => {
             <Route path="/tour-managebooking" element={<ManageBooking />} />
             <Route path="/tour-roomlist" element={<TourRoomList />} />
             <Route path="/tour-termspage" element={<TernsAgreement />} />
+            <Route path="/payment-details" element={<PaymentDetails />} />
 
             <Route path="/tour-allbookings" element={<AllTourBookings />} />
             <Route path="/add-tourDetail" element={<AddTourDetail />} />
