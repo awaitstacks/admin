@@ -170,7 +170,7 @@ const PaymentDetailsAdmin = () => {
                       <div className="space-y-2.5 text-base text-gray-700 mb-6">
                         <p>
                           <span className="font-medium text-gray-800">
-                            Phone (GPay/PhonePe):
+                            Phone (GPay(only)):
                           </span>{" "}
                           {method.phone}
                         </p>
