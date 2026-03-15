@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css"; // Make sure this is imported
+import "react-toastify/dist/ReactToastify.css";
 import {
   Loader2,
   Plus,
@@ -27,6 +27,8 @@ const PaymentDetails = () => {
   const [formType, setFormType] = useState("bank");
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
+    bankName: "",
+    branchName: "",
     accountNumber: "",
     ifsc: "",
     swift: "",
@@ -51,18 +53,16 @@ const PaymentDetails = () => {
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
-      containerId: "payment-details-toast", // Unique container ID for this page
+      containerId: "payment-details-toast",
     });
     toastIds.current.push(id);
   };
 
-  // Cleanup: Dismiss ALL toasts from this page when unmounting (navigating away)
+  // Cleanup: Dismiss ALL toasts from this page when unmounting
   useEffect(() => {
     return () => {
-      // Dismiss every tracked toast
       toastIds.current.forEach((id) => toast.dismiss(id));
       toastIds.current = [];
-      // Also clear any remaining toasts in this container
       toast.dismiss({ containerId: "payment-details-toast" });
     };
   }, []);
@@ -112,13 +112,20 @@ const PaymentDetails = () => {
   const validateForm = () => {
     if (formType === "bank") {
       if (
+        !formData.bankName.trim() ||
+        !formData.branchName.trim() ||
         !formData.accountNumber.trim() ||
         !formData.ifsc.trim() ||
         !formData.beneficiary.trim() ||
         !formData.accountType.trim()
       ) {
-        setFormError("All bank fields except Swift are required.");
-        showToast("error", "All bank fields except Swift are required.");
+        setFormError(
+          "All bank fields (Bank Name, Branch Name, Account Number, IFSC, Beneficiary, Account Type) are required.",
+        );
+        showToast(
+          "error",
+          "All bank fields (Bank Name, Branch Name, Account Number, IFSC, Beneficiary, Account Type) are required.",
+        );
         return false;
       }
     } else if (formType === "upi") {
@@ -141,11 +148,19 @@ const PaymentDetails = () => {
     data.append("type", formType);
 
     if (formType === "bank") {
+      data.append("bankName", formData.bankName.trim());
+      data.append("branchName", formData.branchName.trim());
       data.append("accountNumber", formData.accountNumber.trim());
       data.append("ifsc", formData.ifsc.trim().toUpperCase());
       if (formData.swift.trim()) data.append("swift", formData.swift.trim());
       data.append("beneficiary", formData.beneficiary.trim());
-      data.append("accountType", formData.accountType.trim());
+
+      // Normalize accountType to match enum (first letter capital)
+      const rawType = formData.accountType.trim();
+      const normalizedType = rawType
+        ? rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase()
+        : "";
+      data.append("accountType", normalizedType);
     } else {
       data.append("upiId", formData.upiId.trim());
       data.append("phone", formData.phone.trim());
@@ -154,7 +169,6 @@ const PaymentDetails = () => {
 
     return data;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -193,6 +207,8 @@ const PaymentDetails = () => {
     setFormType(method.type);
     setEditingId(method._id);
     setFormData({
+      bankName: method.bankName || "",
+      branchName: method.branchName || "",
       accountNumber: method.accountNumber || "",
       ifsc: method.ifsc || "",
       swift: method.swift || "",
@@ -236,6 +252,8 @@ const PaymentDetails = () => {
     setFormType("bank");
     setEditingId(null);
     setFormData({
+      bankName: "",
+      branchName: "",
       accountNumber: "",
       ifsc: "",
       swift: "",
@@ -264,7 +282,7 @@ const PaymentDetails = () => {
         draggable
         pauseOnHover
         theme="light"
-        limit={3} // Limit to 3 toasts visible at once
+        limit={3}
       />
 
       <div className="min-h-screen bg-gray-50/50 py-6 px-4 sm:px-6 lg:px-8">
@@ -278,6 +296,17 @@ const PaymentDetails = () => {
               Securely manage bank accounts and UPI / QR options for your
               travellers
             </p>
+          </div>
+
+          {/* Add Button */}
+          <div className="flex justify-center sm:justify-end mb-10">
+            <button
+              onClick={resetForm}
+              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-md text-base font-medium"
+            >
+              <Plus size={20} className="mr-2" />
+              Add New Payment Method
+            </button>
           </div>
 
           {/* Form Card */}
@@ -319,7 +348,35 @@ const PaymentDetails = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      Account Number
+                      Bank Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="bankName"
+                      value={formData.bankName}
+                      onChange={handleInputChange}
+                      className="w-full px-5 py-3.5 border border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-medium text-gray-700 mb-2">
+                      Branch Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="branchName"
+                      value={formData.branchName}
+                      onChange={handleInputChange}
+                      className="w-full px-5 py-3.5 border border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-medium text-gray-700 mb-2">
+                      Account Number <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -333,7 +390,7 @@ const PaymentDetails = () => {
 
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      IFSC Code
+                      IFSC Code <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -360,7 +417,7 @@ const PaymentDetails = () => {
 
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      Beneficiary Name
+                      Beneficiary Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -374,7 +431,7 @@ const PaymentDetails = () => {
 
                   <div className="md:col-span-2">
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      Account Type
+                      Account Type <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -391,7 +448,7 @@ const PaymentDetails = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      UPI ID
+                      UPI ID <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -406,7 +463,8 @@ const PaymentDetails = () => {
 
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      Phone Number (GPay / PhonePe)
+                      Phone Number (GPay / PhonePe){" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
@@ -535,6 +593,18 @@ const PaymentDetails = () => {
 
                           {method.type === "bank" ? (
                             <div className="text-lg text-gray-700 space-y-2">
+                              <p>
+                                <span className="font-semibold text-gray-800">
+                                  Bank Name:
+                                </span>{" "}
+                                {method.bankName}
+                              </p>
+                              <p>
+                                <span className="font-semibold text-gray-800">
+                                  Branch Name:
+                                </span>{" "}
+                                {method.branchName}
+                              </p>
                               <p>
                                 <span className="font-semibold text-gray-800">
                                   Account Number:

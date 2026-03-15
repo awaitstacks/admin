@@ -159,6 +159,7 @@ const adminMenuItems = [
   { to: "/cancel-centre", icon: TicketX, label: "Cancellation approvals" },
   { to: "/terms", icon: FileText, label: "Terms & Conditions" },
   { to: "/all-bookings", icon: Calendar, label: "Rejection centre" },
+  { to: "/admin-payment-details", icon: Banknote, label: "Payment Details" },
   { to: "/tour-list", icon: Users, label: "Tour Controls and Data" },
   { to: "/cancel-rule", icon: FileText, label: "Cancellation Rule" },
   { to: "/db-migration", icon: OctagonAlert, label: "DB Migration centre" },

@@ -37,6 +37,7 @@ import TernsAgreement from "./pages/Doctor/TernsAgreement.jsx";
 import TourVehicles from "./pages/Doctor/TourVehicles.jsx";
 import AdminTourVehicles from "./pages/Admin/AdminTourVehicles.jsx";
 import PaymentDetails from "./pages/Doctor/PaymentDetails.jsx";
+import PaymentDetailsAdmin from "./pages/Admin/PaymentDetailsAdmin.jsx";
 
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
@@ -65,6 +66,10 @@ const TourApp = () => {
             <Route path="/all-users" element={<UsersData />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/admin-vehicles" element={<AdminTourVehicles />} />
+            <Route
+              path="/admin-payment-details"
+              element={<PaymentDetailsAdmin />}
+            />
 
             {/* Tour Routes */}
             <Route path="/task-dashboard" element={<TaskDashboard />} />

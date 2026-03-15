@@ -998,7 +998,34 @@ const TourAdminContextProvider = (props) => {
       return { success: false, message: msg, status: error.response?.status };
     }
   };
+  const getPaymentMethods = useCallback(async () => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/touradmin/payment-methods`,
+        {
+          headers: { aToken },
+          timeout: 10000,
+        },
+      );
 
+      if (data.success) {
+        return {
+          success: true,
+          paymentMethods: data.paymentMethods || [],
+          count: data.count || 0,
+        };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Network/server error";
+
+      return { success: false, message: msg };
+    }
+  }, [backendUrl, aToken]);
   const value = {
     aToken,
     setAToken,
@@ -1069,6 +1096,7 @@ const TourAdminContextProvider = (props) => {
     updateTourVehicle,
     toggleSeatSelection,
     deleteTourVehicle,
+    getPaymentMethods,
   };
 
   return (
