@@ -326,7 +326,24 @@ const VehicleSeatAllocation = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {[...vehicle.travellers]
-                        .sort((a, b) => a.tnr.localeCompare(b.tnr))
+                        .sort((a, b) => {
+                          const getSeatParts = (seat) => {
+                            if (!seat || seat === "—") return ["ZZZ", Infinity];
+                            const match = seat.match(/^([A-Za-z]+)(\d+)$/);
+                            if (!match) return ["ZZZ", Infinity];
+                            const [, prefix, numStr] = match;
+                            return [prefix.toUpperCase(), parseInt(numStr, 10)];
+                          };
+
+                          const [prefixA, numA] = getSeatParts(a.seat);
+                          const [prefixB, numB] = getSeatParts(b.seat);
+
+                          if (prefixA !== prefixB) {
+                            return prefixA.localeCompare(prefixB);
+                          }
+
+                          return numA - numB;
+                        })
                         .map((t, i) => (
                           <tr key={i} className="hover:bg-gray-50">
                             <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap font-medium text-gray-900 text-sm">
