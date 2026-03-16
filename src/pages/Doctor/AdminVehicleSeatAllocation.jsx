@@ -48,7 +48,6 @@ const AdminVehicleSeatAllocation = () => {
     tourList.find((t) => t._id === selectedTourId)?.tourName ||
     "Select a tour";
 
-  // ── PDF Download Function ──
   const downloadPdf = () => {
     if (!seatAllocation?.vehicles?.length) {
       toast.info("No data available to download");
@@ -61,31 +60,29 @@ const AdminVehicleSeatAllocation = () => {
       format: "a4",
     });
 
-    let y = 15; // starting Y position
+    let y = 15;
 
     // Title
     doc.setFontSize(18);
-    doc.setTextColor(0, 0, 0);
     doc.text("Vehicle & Seat Allocation Report", 20, y);
     y += 10;
 
-    // Tour name & stats
+    // Tour info
     doc.setFontSize(12);
     doc.text(`Tour: ${selectedTourName}`, 20, y);
     y += 7;
     doc.text(
-      `Total seated travellers: ${seatAllocation.totalTravellers}`,
+      `Total seated travellers: ${seatAllocation.totalTravellers || 0}`,
       20,
       y,
     );
     y += 7;
-    doc.text(`Total bookings: ${seatAllocation.totalBookings}`, 20, y);
+    doc.text(`Total bookings: ${seatAllocation.totalBookings || 0}`, 20, y);
     y += 12;
 
     seatAllocation.vehicles.forEach((vehicle, index) => {
       // Vehicle header
       doc.setFontSize(14);
-      doc.setTextColor(40, 40, 40);
       doc.text(
         `${vehicle.vehicleName}${vehicle.capacity ? ` (${vehicle.capacity} seats)` : ""}`,
         20,
@@ -106,10 +103,25 @@ const AdminVehicleSeatAllocation = () => {
         doc.text("No seated travellers in this vehicle", 20, y);
         y += 15;
       } else {
-        // Sort by TNR
-        const sorted = [...vehicle.travellers].sort((a, b) =>
-          a.tnr.localeCompare(b.tnr),
-        );
+        // ── SAME SORTING LOGIC AS UI ──
+        const sorted = [...vehicle.travellers].sort((a, b) => {
+          const getSeatParts = (seat) => {
+            if (!seat || seat === "—") return ["ZZZ", Infinity];
+            const match = seat.match(/^([A-Za-z]+)(\d+)$/);
+            if (!match) return ["ZZZ", Infinity];
+            const [, prefix, numStr] = match;
+            return [prefix.toUpperCase(), parseInt(numStr, 10)];
+          };
+
+          const [prefixA, numA] = getSeatParts(a.seat);
+          const [prefixB, numB] = getSeatParts(b.seat);
+
+          if (prefixA !== prefixB) {
+            return prefixA.localeCompare(prefixB);
+          }
+
+          return numA - numB;
+        });
 
         const tableBody = sorted.map((t) => [
           t.tnr || "-",
@@ -118,7 +130,6 @@ const AdminVehicleSeatAllocation = () => {
           t.locked || "No",
         ]);
 
-        // FIX: Changed from doc.autoTable to autoTable(doc, ...)
         autoTable(doc, {
           startY: y,
           head: [["TNR", "Name", "Seat", "Locked"]],
@@ -132,23 +143,21 @@ const AdminVehicleSeatAllocation = () => {
             halign: "left",
           },
           columnStyles: {
-            0: { cellWidth: 35 }, // TNR
-            1: { cellWidth: 70 }, // Name
-            2: { cellWidth: 30 }, // Seat
-            3: { cellWidth: 25 }, // Locked
+            0: { cellWidth: 35 },
+            1: { cellWidth: 70 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 25 },
           },
           margin: { left: 20, right: 20 },
           didParseCell(data) {
             if (data.column.index === 3 && data.cell.text[0] === "Yes") {
-              data.cell.styles.fillColor = [255, 245, 157]; // light yellow
+              data.cell.styles.fillColor = [255, 245, 157];
             }
           },
         });
 
-        // Use doc.lastAutoTable.finalY to track the new Y position
         y = doc.lastAutoTable.finalY + 15;
 
-        // Page break if needed
         if (y > 270 && index < seatAllocation.vehicles.length - 1) {
           doc.addPage();
           y = 15;
@@ -156,7 +165,7 @@ const AdminVehicleSeatAllocation = () => {
       }
     });
 
-    // Footer / timestamp
+    // Footer on all pages
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -171,7 +180,6 @@ const AdminVehicleSeatAllocation = () => {
     doc.save(`${selectedTourName.replace(/[^a-zA-Z0-9]/g, "-")}-SAM.pdf`);
     toast.success("PDF downloaded successfully");
   };
-
   return (
     <div className="p-4 sm:p-6 max-w-full md:max-w-7xl mx-auto">
       {/* Header + Tour Selector */}
