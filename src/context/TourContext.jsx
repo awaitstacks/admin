@@ -29,6 +29,10 @@ const TourContextProvider = (props) => {
   const [vehiclesError, setVehiclesError] = useState(null);
 
   const [currentTourId, setCurrentTourId] = useState(null);
+
+  const [seatAllocation, setSeatAllocation] = useState(null);
+  const [seatAllocationLoading, setSeatAllocationLoading] = useState(false);
+  const [seatAllocationError, setSeatAllocationError] = useState(null);
   // ==================== GET ALL BOOKINGS ====================
   const getAllBookings = useCallback(async () => {
     try {
@@ -1587,6 +1591,58 @@ const TourContextProvider = (props) => {
       return { success: false, message: msg };
     }
   };
+  const getVehicleSeatAllocation = useCallback(
+    async (tourId) => {
+      if (!tourId) {
+        setSeatAllocation(null);
+        setSeatAllocationError("Tour ID is required");
+        return { success: false, message: "Tour ID is required" };
+      }
+
+      setSeatAllocationLoading(true);
+      setSeatAllocationError(null);
+
+      try {
+        const { data } = await axios.get(
+          `${backendUrl}/api/tour/${tourId}/vehicle-seat-allocation`,
+          {
+            headers: { ttoken },
+            timeout: 12000,
+          },
+        );
+
+        if (data.success) {
+          setSeatAllocation(data);
+          if (tourId !== currentTourId) setCurrentTourId(tourId);
+          return { success: true, allocation: data };
+        } else {
+          setSeatAllocation(null);
+          setSeatAllocationError(
+            data.message || "Failed to load seat allocation",
+          );
+          toast.error(data.message || "Could not fetch seat allocation");
+          return { success: false, message: data.message };
+        }
+      } catch (error) {
+        console.error("getVehicleSeatAllocation error:", error);
+
+        const msg =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Network/server error while fetching seat allocation";
+
+        setSeatAllocationError(msg);
+        setSeatAllocation(null);
+        toast.error(msg);
+
+        return { success: false, message: msg };
+      } finally {
+        setSeatAllocationLoading(false);
+      }
+    },
+    [backendUrl, ttoken, currentTourId],
+  );
   // ==================== Context Value ====================
   const value = {
     ttoken,
@@ -1651,12 +1707,17 @@ const TourContextProvider = (props) => {
     vehiclesError,
     currentTourId,
     setCurrentTourId,
-
     getTourVehicles,
     createTourVehicle,
     updateTourVehicle,
     toggleSeatSelection,
     deleteTourVehicle,
+    //SEAT ALLOCATION
+    seatAllocation,
+    seatAllocationLoading,
+    seatAllocationError,
+    getVehicleSeatAllocation,
+
     getPaymentMethods,
     createNewPaymentMethod,
     updateExistingPaymentMethod,

@@ -38,6 +38,8 @@ import TourVehicles from "./pages/Doctor/TourVehicles.jsx";
 import AdminTourVehicles from "./pages/Admin/AdminTourVehicles.jsx";
 import PaymentDetails from "./pages/Doctor/PaymentDetails.jsx";
 import PaymentDetailsAdmin from "./pages/Admin/PaymentDetailsAdmin.jsx";
+import VehicleSeatAllocation from "./pages/Doctor/VehicleSeatAllocation.jsx";
+import AdminVehicleSeatAllocation from "./pages/Admin/AdminVehicleSeatAllocation.jsx";
 
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
@@ -70,7 +72,10 @@ const TourApp = () => {
               path="/admin-payment-details"
               element={<PaymentDetailsAdmin />}
             />
-
+            <Route
+              path="/admin-seat-allocation-details"
+              element={<AdminVehicleSeatAllocation />}
+            />
             {/* Tour Routes */}
             <Route path="/task-dashboard" element={<TaskDashboard />} />
             <Route path="/tour-dashboard" element={<TourDashboard />} />
@@ -91,6 +96,10 @@ const TourApp = () => {
             <Route path="/tour-allbookings" element={<AllTourBookings />} />
             <Route path="/add-tourDetail" element={<AddTourDetail />} />
             <Route path="/vehicles" element={<TourVehicles />} />
+            <Route
+              path="/seat-allocation-data"
+              element={<VehicleSeatAllocation />}
+            />
           </Routes>
         </main>
       </div>
