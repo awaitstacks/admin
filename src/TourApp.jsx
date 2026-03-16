@@ -39,7 +39,7 @@ import AdminTourVehicles from "./pages/Admin/AdminTourVehicles.jsx";
 import PaymentDetails from "./pages/Doctor/PaymentDetails.jsx";
 import PaymentDetailsAdmin from "./pages/Admin/PaymentDetailsAdmin.jsx";
 import VehicleSeatAllocation from "./pages/Doctor/VehicleSeatAllocation.jsx";
-import AdminVehicleSeatAllocation from "./pages/Admin/AdminVehicleSeatAllocation.jsx";
+import AdminVehicleSeatAllocation from "./pages/Doctor/AdminVehicleSeatAllocation.jsx";
 
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
