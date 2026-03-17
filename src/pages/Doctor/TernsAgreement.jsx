@@ -55,7 +55,6 @@ const TermsAgreementPage = () => {
     }
   };
 
-  // Helper: check if booking has at least one active (non-cancelled) traveller
   const hasActiveTraveller = (booking) => {
     if (!booking.travellers || booking.travellers.length === 0) return false;
     return booking.travellers.some(
@@ -63,7 +62,6 @@ const TermsAgreementPage = () => {
     );
   };
 
-  // Generate links only for bookings with at least one active traveller
   useEffect(() => {
     if (tourBookings.length > 0) {
       const links = tourBookings
@@ -127,185 +125,184 @@ const TermsAgreementPage = () => {
     }
   };
 
-  // Summary counts
   const agreedCount = generatedLinks.filter((link) => link.isAgreed).length;
   const pendingCount = generatedLinks.length - agreedCount;
   const totalActive = generatedLinks.length;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full bg-gray-50 py-4 px-2 sm:px-4 md:py-8 lg:px-8">
       <ToastContainer position="top-right" autoClose={3000} theme="light" />
 
-      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-6 sm:p-8 lg:p-10">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center">
-          Terms Agreement Links Generator
-        </h1>
+      <div className="w-full max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-10">
+        {/* Responsive Header */}
+        <header className="mb-6 sm:mb-10 text-center">
+          <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+            Terms Agreement Links
+          </h1>
+          <p className="mt-2 text-sm sm:text-base text-gray-500">
+            Generate and share agreement links for your active bookings.
+          </p>
+        </header>
 
-        {/* Summary Section */}
+        {/* Responsive Summary Section */}
         {selectedTourId && !loading && generatedLinks.length > 0 && (
-          <div className="mb-10 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100">
-            <h3 className="text-xl font-semibold text-gray-800 mb-5 text-center">
-              Current Tour Summary
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6 text-center">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <p className="text-4xl font-bold text-indigo-600">
+          <div className="mb-8 bg-indigo-50/50 p-4 sm:p-6 rounded-2xl border border-indigo-100">
+            <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-6">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-indigo-100 flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-3xl font-bold text-indigo-600">
                   {totalActive}
-                </p>
-                <p className="text-gray-600 mt-2 font-medium">
-                  Active Bookings
-                </p>
+                </span>
+                <span className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-gray-500 mt-1">
+                  Total
+                </span>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <p className="text-4xl font-bold text-green-600">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-green-100 flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-3xl font-bold text-green-600">
                   {agreedCount}
-                </p>
-                <p className="text-gray-600 mt-2 font-medium">
-                  Agreed / Submitted
-                </p>
+                </span>
+                <span className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-gray-500 mt-1">
+                  Agreed
+                </span>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <p className="text-4xl font-bold text-amber-600">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-3xl font-bold text-amber-600">
                   {pendingCount}
-                </p>
-                <p className="text-gray-600 mt-2 font-medium">Pending</p>
+                </span>
+                <span className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-gray-500 mt-1">
+                  Pending
+                </span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tour Selector */}
-        <div className="mb-10">
-          <label className="block text-xl font-medium text-gray-700 mb-3">
-            Select Tour
+        {/* Select Tour Input */}
+        <div className="mb-8">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">
+            Select Tour Batch
           </label>
           <select
             value={selectedTourId}
             onChange={handleTourChange}
-            className="w-full px-5 py-4 border border-gray-300 rounded-xl text-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition shadow-sm"
+            className="w-full px-4 py-3.5 sm:py-4 bg-gray-50 border border-gray-200 rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 1rem center",
+              backgroundSize: "1em",
+            }}
           >
-            <option value="">-- Select a Tour --</option>
+            <option value="">Choose a tour...</option>
             {tourList.map((tour) => (
               <option key={tour._id} value={tour._id}>
-                {tour.title} ({tour.batch})
+                {tour.title} — {tour.batch}
               </option>
             ))}
           </select>
         </div>
 
-        {loading && (
-          <div className="flex justify-center my-16">
-            <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+        {/* Content Area */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-10 w-10 animate-spin text-indigo-600 mb-4" />
+            <p className="text-gray-500 animate-pulse">Fetching bookings...</p>
           </div>
-        )}
-
-        {error && !loading && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-5 rounded-xl mb-8 text-center">
+        ) : error ? (
+          <div className="bg-red-50 border border-red-100 text-red-600 p-6 rounded-xl text-center font-medium">
             {error}
           </div>
-        )}
-
-        {generatedLinks.length > 0 ? (
-          <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h2 className="text-2xl font-semibold text-gray-800">
-                Agreement Links ({generatedLinks.length})
-              </h2>
-              {pendingCount > 0 && (
-                <span className="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-800 rounded-full font-medium text-sm">
-                  {pendingCount} forms still pending
-                </span>
-              )}
+        ) : generatedLinks.length > 0 ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-lg font-bold text-gray-800">Bookings List</h2>
+              <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">
+                {generatedLinks.length} Items
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Responsive Card Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
               {generatedLinks.map((link) => (
                 <div
                   key={link.tnr}
-                  className={`p-6 rounded-xl border transition-all duration-200 ${
+                  className={`relative flex flex-col h-full rounded-2xl border transition-all ${
                     link.isAgreed
-                      ? "bg-green-50 border-green-200 opacity-90"
-                      : "bg-white border-gray-200 hover:shadow-lg hover:border-indigo-300"
+                      ? "bg-green-50/30 border-green-100"
+                      : "bg-white border-gray-100 shadow-sm hover:shadow-md"
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="font-semibold text-lg text-gray-900">
-                        {link.leadName}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="text-sm text-gray-500 font-mono">
-                          TNR: <strong>{link.tnr}</strong>
+                  <div className="p-5 flex-grow">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="max-w-[70%]">
+                        <h3 className="font-bold text-gray-900 leading-tight truncate">
+                          {link.leadName}
+                        </h3>
+                        <div className="flex items-center gap-1 mt-1 text-gray-500">
+                          <span className="text-xs font-mono">{link.tnr}</span>
+                          <button
+                            onClick={() => copyToClipboard(link.tnr)}
+                            className="hover:text-indigo-600"
+                          >
+                            <Copy size={12} />
+                          </button>
                         </div>
-                        <button
-                          onClick={() =>
-                            copyToClipboard(link.tnr, "TNR copied!")
-                          }
-                          title="Copy TNR"
-                          className="text-gray-500 hover:text-indigo-600 transition-colors p-1 rounded hover:bg-gray-100"
-                        >
-                          <Copy size={16} />
-                        </button>
                       </div>
+
+                      {link.isAgreed ? (
+                        <div className="flex items-center gap-1 text-green-600 bg-green-100/80 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                          <CheckCircle size={12} />
+                          <span>Agreed</span>
+                        </div>
+                      ) : (
+                        <div className="text-amber-600 bg-amber-100/80 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                          Pending
+                        </div>
+                      )}
                     </div>
 
+                    <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                      <p className="text-[11px] font-mono text-gray-500 break-all line-clamp-2">
+                        {link.url}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="p-4 pt-0 mt-auto">
                     {link.isAgreed ? (
-                      <div className="flex items-center gap-2 text-green-600 bg-green-100 px-3 py-1 rounded-full text-sm font-medium shrink-0">
-                        <CheckCircle size={18} />
-                        Agreed
+                      <div className="w-full py-3 text-center text-green-700 bg-green-100/50 rounded-xl text-sm font-semibold border border-green-200">
+                        Completed
                       </div>
                     ) : (
-                      <span className="text-amber-700 bg-amber-100 px-3 py-1 rounded-full text-sm font-medium shrink-0">
-                        Pending
-                      </span>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => copyToClipboard(link.copyText)}
+                          className="flex items-center justify-center gap-2 py-3 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-colors text-sm font-bold"
+                        >
+                          <Copy size={16} /> Copy
+                        </button>
+                        <button
+                          onClick={() =>
+                            shareLink(link.copyText, link.leadName)
+                          }
+                          className="flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-sm transition-all text-sm font-bold"
+                        >
+                          <Share2 size={16} /> Share
+                        </button>
+                      </div>
                     )}
                   </div>
-
-                  <div className="text-sm text-gray-600 mb-5 break-all font-mono bg-gray-50 p-3 rounded-lg">
-                    {link.url}
-                  </div>
-
-                  {link.isAgreed ? (
-                    <div className="bg-green-100 text-green-800 px-5 py-4 rounded-lg text-center font-medium">
-                      Terms & Conditions Already Agreed
-                    </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <button
-                        onClick={() =>
-                          copyToClipboard(
-                            link.copyText,
-                            "Message & link copied!",
-                          )
-                        }
-                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium shadow-sm"
-                      >
-                        <Copy size={18} />
-                        Copy Message
-                      </button>
-
-                      <button
-                        onClick={() => shareLink(link.copyText, link.leadName)}
-                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium shadow-sm"
-                      >
-                        <Share2 size={18} />
-                        Share
-                      </button>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           </div>
-        ) : (
-          selectedTourId &&
-          !loading &&
-          !error && (
-            <div className="text-center py-16 text-gray-500 italic text-lg">
-              No bookings with active travellers found for this tour.
-            </div>
-          )
-        )}
+        ) : selectedTourId ? (
+          <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+            <p className="text-gray-400 font-medium">
+              No active bookings found for this batch.
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   );
