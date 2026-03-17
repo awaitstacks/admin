@@ -67,7 +67,7 @@ const TermsAgreementPage = () => {
   useEffect(() => {
     if (tourBookings.length > 0) {
       const links = tourBookings
-        .filter((booking) => hasActiveTraveller(booking)) // ← only keep bookings with ≥1 active traveller
+        .filter((booking) => hasActiveTraveller(booking))
         .map((booking) => {
           const leadTraveller = booking.travellers?.[0] || {};
           const title = leadTraveller.title || "";
@@ -102,15 +102,15 @@ const TermsAgreementPage = () => {
     }
   }, [tourBookings]);
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text, successMessage = "Copied!") => {
     navigator.clipboard
       .writeText(text)
-      .then(() => toast.success("Message & link copied!"))
+      .then(() => toast.success(successMessage))
       .catch(() => toast.error("Failed to copy"));
   };
 
   const shareLink = async (copyText, leadName) => {
-    copyToClipboard(copyText);
+    copyToClipboard(copyText, "Message & link copied!");
     try {
       if (navigator.share) {
         await navigator.share({
@@ -127,17 +127,56 @@ const TermsAgreementPage = () => {
     }
   };
 
+  // Summary counts
+  const agreedCount = generatedLinks.filter((link) => link.isAgreed).length;
+  const pendingCount = generatedLinks.length - agreedCount;
+  const totalActive = generatedLinks.length;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <ToastContainer position="top-right" autoClose={3000} theme="light" />
 
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-6 sm:p-10">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
-          Generate Terms Agreement Links
+      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-6 sm:p-8 lg:p-10">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center">
+          Terms Agreement Links Generator
         </h1>
 
-        <div className="mb-8">
-          <label className="block text-lg font-medium text-gray-700 mb-3">
+        {/* Summary Section */}
+        {selectedTourId && !loading && generatedLinks.length > 0 && (
+          <div className="mb-10 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100">
+            <h3 className="text-xl font-semibold text-gray-800 mb-5 text-center">
+              Current Tour Summary
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6 text-center">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <p className="text-4xl font-bold text-indigo-600">
+                  {totalActive}
+                </p>
+                <p className="text-gray-600 mt-2 font-medium">
+                  Active Bookings
+                </p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <p className="text-4xl font-bold text-green-600">
+                  {agreedCount}
+                </p>
+                <p className="text-gray-600 mt-2 font-medium">
+                  Agreed / Submitted
+                </p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <p className="text-4xl font-bold text-amber-600">
+                  {pendingCount}
+                </p>
+                <p className="text-gray-600 mt-2 font-medium">Pending</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tour Selector */}
+        <div className="mb-10">
+          <label className="block text-xl font-medium text-gray-700 mb-3">
             Select Tour
           </label>
           <select
@@ -155,55 +194,91 @@ const TermsAgreementPage = () => {
         </div>
 
         {loading && (
-          <div className="flex justify-center my-10">
-            <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+          <div className="flex justify-center my-16">
+            <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
           </div>
         )}
 
         {error && !loading && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 p-5 rounded-xl mb-8 text-center">
             {error}
           </div>
         )}
 
         {generatedLinks.length > 0 ? (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Agreement Links ({generatedLinks.length})
-            </h2>
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Agreement Links ({generatedLinks.length})
+              </h2>
+              {pendingCount > 0 && (
+                <span className="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-800 rounded-full font-medium text-sm">
+                  {pendingCount} forms still pending
+                </span>
+              )}
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {generatedLinks.map((link) => (
                 <div
                   key={link.tnr}
-                  className={`p-5 rounded-xl border transition ${
+                  className={`p-6 rounded-xl border transition-all duration-200 ${
                     link.isAgreed
-                      ? "bg-gray-100 border-gray-300 opacity-75 cursor-not-allowed"
-                      : "bg-gray-50 border-gray-200 hover:shadow-md"
+                      ? "bg-green-50 border-green-200 opacity-90"
+                      : "bg-white border-gray-200 hover:shadow-lg hover:border-indigo-300"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-lg text-gray-900">
-                      {link.leadName}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="font-semibold text-lg text-gray-900">
+                        {link.leadName}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="text-sm text-gray-500 font-mono">
+                          TNR: <strong>{link.tnr}</strong>
+                        </div>
+                        <button
+                          onClick={() =>
+                            copyToClipboard(link.tnr, "TNR copied!")
+                          }
+                          title="Copy TNR"
+                          className="text-gray-500 hover:text-indigo-600 transition-colors p-1 rounded hover:bg-gray-100"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
                     </div>
-                    {link.isAgreed && (
-                      <CheckCircle className="h-6 w-6 text-green-600" />
+
+                    {link.isAgreed ? (
+                      <div className="flex items-center gap-2 text-green-600 bg-green-100 px-3 py-1 rounded-full text-sm font-medium shrink-0">
+                        <CheckCircle size={18} />
+                        Agreed
+                      </div>
+                    ) : (
+                      <span className="text-amber-700 bg-amber-100 px-3 py-1 rounded-full text-sm font-medium shrink-0">
+                        Pending
+                      </span>
                     )}
                   </div>
 
-                  <div className="text-sm text-gray-600 mb-4 break-all">
+                  <div className="text-sm text-gray-600 mb-5 break-all font-mono bg-gray-50 p-3 rounded-lg">
                     {link.url}
                   </div>
 
                   {link.isAgreed ? (
-                    <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-center font-medium">
-                      Form Submitted / Already Agreed
+                    <div className="bg-green-100 text-green-800 px-5 py-4 rounded-lg text-center font-medium">
+                      Terms & Conditions Already Agreed
                     </div>
                   ) : (
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <button
-                        onClick={() => copyToClipboard(link.copyText)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                        onClick={() =>
+                          copyToClipboard(
+                            link.copyText,
+                            "Message & link copied!",
+                          )
+                        }
+                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium shadow-sm"
                       >
                         <Copy size={18} />
                         Copy Message
@@ -211,10 +286,10 @@ const TermsAgreementPage = () => {
 
                       <button
                         onClick={() => shareLink(link.copyText, link.leadName)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium shadow-sm"
                       >
                         <Share2 size={18} />
-                        Share + Copy
+                        Share
                       </button>
                     </div>
                   )}
@@ -226,9 +301,9 @@ const TermsAgreementPage = () => {
           selectedTourId &&
           !loading &&
           !error && (
-            <p className="text-center text-gray-500 italic py-10">
+            <div className="text-center py-16 text-gray-500 italic text-lg">
               No bookings with active travellers found for this tour.
-            </p>
+            </div>
           )
         )}
       </div>
