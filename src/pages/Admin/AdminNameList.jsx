@@ -594,8 +594,8 @@ const AdminNameList = () => {
                           {String(idx + 1).padStart(2, "0")}.
                         </div>
                         <div>
-                          <span className="font-semibold">TNR: </span>+{" "}
-                          {trav.tnr}+{" "}
+                          <span className="font-semibold">TNR: </span>
+                          {trav.tnr}
                         </div>
                         <div>
                           <span className="font-semibold">Name: </span>
