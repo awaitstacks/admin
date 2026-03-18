@@ -614,15 +614,17 @@ const TourAdminDashboard = () => {
   };
 
   const ManageRequestItem = ({ booking }) => {
-    const first = booking.travellers?.[0] || {};
+    const realBooking = booking.bookingId || booking; // fallback if structure changes
+    const firstTraveller = realBooking.travellers?.[0] || {};
     const name =
-      `${first.firstName || ""} ${first.lastName || ""}`.trim() ||
+      `${firstTraveller.firstName || ""} ${firstTraveller.lastName || ""}`.trim() ||
       "Unknown Traveller";
+    const displayTnr = realBooking.tnr || "N/A";
 
     return (
       <div
         className="bg-white rounded-xl shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
-        onClick={() => toggleExpand("manageRequests", booking.tnr)}
+        onClick={() => toggleExpand("manageRequests", displayTnr)}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -643,10 +645,9 @@ const TourAdminDashboard = () => {
           </span>
         </div>
 
-        {expanded["manageRequests"]?.[booking.tnr] && (
+        {expanded["manageRequests"]?.[displayTnr] && ( // ← FIX 3: use displayTnr here too
           <div className="mt-4 pt-4 border-t border-pink-100 space-y-4 text-sm text-gray-700">
-            <TnrDisplay tnr={booking.tnr} color="pink" />
-
+            <TnrDisplay tnr={displayTnr} color="pink" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <p>
                 <strong>Email:</strong> {booking.contact?.email || "—"}

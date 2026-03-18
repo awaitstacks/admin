@@ -37,9 +37,7 @@ const TourNameList = () => {
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   // Protection condition → tour select பண்ணி traveller data visible ஆனால்
   const shouldProtect = Boolean(
-    selectedTourId &&
-    !isLoadingBookings &&
-    tableData.travellers.length > 0
+    selectedTourId && !isLoadingBookings && tableData.travellers.length > 0,
   );
   const location = useLocation();
 
@@ -49,13 +47,13 @@ const TourNameList = () => {
 
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = '';   // Browser default "Leave site?" dialog
+      e.returnValue = ""; // Browser default "Leave site?" dialog
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [shouldProtect]);
 
@@ -70,10 +68,10 @@ const TourNameList = () => {
       setShowConfirmLeave(true);
     };
 
-    window.addEventListener('popstate', handlePopState);
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
-      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, [shouldProtect]);
 
@@ -275,6 +273,7 @@ const TourNameList = () => {
           }
 
           travellersList.push({
+            tnr: booking.tnr || "—",
             id: trav._id,
             name: `${trav.firstName || ""} ${trav.lastName || ""}`.trim(),
             age: trav.age ?? "",
@@ -364,6 +363,7 @@ const TourNameList = () => {
     const head = [
       [
         "SL NO",
+        "TNR",
         "NAME",
         "AGE",
         "GENDER",
@@ -377,6 +377,7 @@ const TourNameList = () => {
 
     const body = filteredTravellers.map((trav, idx) => [
       String(idx + 1).padStart(2, "0"),
+      trav.tnr || "—",
       trav.name || "—",
       trav.age ?? "—",
       getDisplayGender(trav.age, trav.gender, trav.sharingType),
@@ -966,6 +967,11 @@ const TourNameList = () => {
                       SL NO
                     </th>
                     <th
+                      className={`p-2 sm:p-3 border border-gray-200 text-center text-xs sm:text-sm lg:text-base font-semibold min-w-[90px]`}
+                    >
+                      TNR
+                    </th>
+                    <th
                       className={`p-2 sm:p-3 border border-gray-200 text-center text-xs sm:text-sm lg:text-base font-semibold min-w-[100px] sm:min-w-[120px]`}
                     >
                       NAME
@@ -1073,6 +1079,9 @@ const TourNameList = () => {
                     <tr key={trav.id}>
                       <td className="p-2 sm:p-3 border border-gray-200 text-center text-xs sm:text-sm lg:text-base">
                         {String(idx + 1).padStart(2, "0")}.
+                      </td>
+                      <td className="p-2 sm:p-3 border border-gray-200 text-center text-xs sm:text-sm lg:text-base font-mono">
+                        {trav.tnr}
                       </td>
                       <td
                         className="p-2 sm:p-3 border border-gray-200 text-xs sm:text-sm lg:text-base truncate max-w-[100px] sm:max-w-[120px]"
@@ -1225,6 +1234,9 @@ const TourNameList = () => {
                       {String(idx + 1).padStart(2, "0")}.
                     </div>
                     <div>
+                      <span className="font-semibold">TNR: </span> {trav.tnr}
+                    </div>
+                    <div>
                       <span className="font-semibold">Name: </span>
                       {trav.name}
                     </div>
@@ -1314,60 +1326,69 @@ const TourNameList = () => {
       {showConfirmLeave && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            backgroundColor: "rgba(0,0,0,0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 9999,
-            padding: '16px'
+            padding: "16px",
           }}
         >
           <div
             style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '440px',
-              width: '100%',
-              textAlign: 'center',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)'
+              backgroundColor: "white",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "440px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)",
             }}
           >
-            <h2 style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: 'bold', 
-              marginBottom: '16px', 
-              color: '#111827' 
-            }}>
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                marginBottom: "16px",
+                color: "#111827",
+              }}
+            >
               Leave this page?
             </h2>
 
-            <p style={{ 
-              color: '#4b5563', 
-              marginBottom: '24px', 
-              lineHeight: '1.6' 
-            }}>
+            <p
+              style={{
+                color: "#4b5563",
+                marginBottom: "24px",
+                lineHeight: "1.6",
+              }}
+            >
               You are currently viewing the traveller name list for{" "}
               <strong>
-                {tourList.find(t => t._id === selectedTourId)?.title || "this tour"}
-              </strong>.<br />
-              Leaving will clear the current list and filters.<br />
+                {tourList.find((t) => t._id === selectedTourId)?.title ||
+                  "this tour"}
+              </strong>
+              .<br />
+              Leaving will clear the current list and filters.
+              <br />
               Are you sure you want to leave?
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+            <div
+              style={{ display: "flex", gap: "16px", justifyContent: "center" }}
+            >
               <button
                 onClick={handleCancelLeave}
                 style={{
-                  padding: '12px 28px',
-                  backgroundColor: '#e5e7eb',
-                  color: '#1f2937',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  border: 'none',
-                  cursor: 'pointer'
+                  padding: "12px 28px",
+                  backgroundColor: "#e5e7eb",
+                  color: "#1f2937",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
                 Cancel (Stay)
@@ -1376,13 +1397,13 @@ const TourNameList = () => {
               <button
                 onClick={handleConfirmLeave}
                 style={{
-                  padding: '12px 28px',
-                  backgroundColor: '#dc2626',
-                  color: 'white',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  border: 'none',
-                  cursor: 'pointer'
+                  padding: "12px 28px",
+                  backgroundColor: "#dc2626",
+                  color: "white",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
                 Yes, Leave

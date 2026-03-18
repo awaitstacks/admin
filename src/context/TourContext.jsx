@@ -836,7 +836,6 @@ const TourContextProvider = (props) => {
   const viewTourAdvance = async (tnr) => {
     try {
       if (!tnr || typeof tnr !== "string" || tnr.trim().length !== 6) {
-        toast.error("Valid 6-character TNR is required");
         return { success: false, message: "Valid 6-character TNR is required" };
       }
 
@@ -849,7 +848,6 @@ const TourContextProvider = (props) => {
 
       if (data.success) {
         setAdvanceDetails(data.data);
-        toast.success("Advance details loaded successfully");
       } else {
         toast.error(data.message || "Failed to load advance details");
       }
@@ -859,19 +857,17 @@ const TourContextProvider = (props) => {
       console.error("viewTourAdvance error:", error);
       const msg =
         error.response?.data?.message || error.message || "Network error";
-      toast.error(msg);
+
       return { success: false, message: msg };
     }
   };
   const updateTourAdvance = async (tnr, updates) => {
     try {
       if (!tnr || typeof tnr !== "string" || tnr.trim().length !== 6) {
-        toast.error("Valid 6-character TNR is required");
         return { success: false, message: "Valid 6-character TNR is required" };
       }
 
       if (!Array.isArray(updates) || updates.length === 0) {
-        toast.error("Updates array is required and cannot be empty");
         return { success: false, message: "Updates array is required" };
       }
 
@@ -960,8 +956,6 @@ const TourContextProvider = (props) => {
             isTripCompleted: true,
           }));
         }
-      } else {
-        toast.error(data.message || "Failed to update advance");
       }
 
       return data;
@@ -1061,7 +1055,6 @@ const TourContextProvider = (props) => {
       );
 
       if (data.success) {
-        toast.success("Balance details loaded successfully");
         setBalanceDetails(data.data);
       }
 
