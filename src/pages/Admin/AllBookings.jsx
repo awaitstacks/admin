@@ -7,14 +7,20 @@ import "react-toastify/dist/ReactToastify.css";
 import { ChevronDown, ChevronRight, Copy } from "lucide-react";
 
 const AllBookings = () => {
-  const { aToken, bookings, getAllBookings, rejectBooking } =
-    useContext(TourAdminContext);
+  const {
+    aToken,
+    bookings,
+    getAllBookings,
+    rejectBooking,
+    deleteBooking, // ← NEW: coming from context
+  } = useContext(TourAdminContext);
+
   const location = useLocation();
 
   const [expandedRow, setExpandedRow] = useState(null);
   const [filters, setFilters] = useState({
     tour: "",
-    tnr: "", // ← TNR filter added
+    tnr: "",
     contact: "",
     payment: "",
     status: "",
@@ -24,24 +30,23 @@ const AllBookings = () => {
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const shouldProtect = Boolean(bookings && bookings.length > 0 && !isLoading);
 
-  // 1. Reload / close tab / browser navigate away
+  // ─── Browser close / reload protection ─────────────────────────────
   useEffect(() => {
     if (!shouldProtect) return;
 
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = ""; // Browser default "Leave site?" prompt
+      e.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [shouldProtect]);
 
-  // 2. Back button / mobile swipe back
+  // ─── Back button protection ────────────────────────────────────────
   useEffect(() => {
     if (!shouldProtect) return;
 
-    // Dummy history push → triggers popstate on back
     window.history.pushState(null, null, window.location.href);
 
     const handlePopState = () => {
@@ -52,7 +57,6 @@ const AllBookings = () => {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [shouldProtect]);
 
-  // Confirm & Cancel functions
   const handleConfirmLeave = () => {
     setShowConfirmLeave(false);
     window.history.back();
@@ -60,7 +64,6 @@ const AllBookings = () => {
 
   const handleCancelLeave = () => {
     setShowConfirmLeave(false);
-    // Re-trap the back button
     window.history.pushState(null, null, window.location.href);
   };
 
@@ -71,52 +74,38 @@ const AllBookings = () => {
     };
   }, [location]);
 
-  // Handle API responses
+  // Handle API responses uniformly
   const handleApiResponse = useCallback(
     (response, successMessage, errorMessage) => {
-      console.log(
-        "API Response at",
-        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-        response,
-      );
       if (response && typeof response === "object" && "success" in response) {
         if (response.success) {
-          toast.success(successMessage || "Operation completed successfully");
+          toast.success(successMessage || "Operation completed");
           return true;
         } else {
           toast.error(response.message || errorMessage || "Operation failed");
           return false;
         }
       } else {
-        toast.error("Invalid response from server");
+        toast.error("Invalid server response");
         return false;
       }
     },
     [],
   );
 
-  // Fetch bookings
+  // Fetch all bookings
   useEffect(() => {
     if (aToken) {
-      console.log(
-        "Fetching all bookings at",
-        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-      );
       setIsLoading(true);
       getAllBookings()
         .then((response) => {
           handleApiResponse(
             response,
-            "Bookings fetched successfully",
-            "Failed to fetch bookings",
+            "Bookings loaded successfully",
+            "Failed to load bookings",
           );
         })
         .catch((error) => {
-          console.error(
-            "Fetch bookings error at",
-            new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-            error,
-          );
           toast.error(
             error.response?.data?.message ||
               error.message ||
@@ -131,7 +120,6 @@ const AllBookings = () => {
     setExpandedRow(expandedRow === index ? null : index);
   };
 
-  // Copy to clipboard
   const copyToClipboard = (text, label = "TNR") => {
     if (!text) {
       toast.error(`No ${label} to copy`);
@@ -143,21 +131,85 @@ const AllBookings = () => {
     );
   };
 
-  // Filtered Bookings with new bookings first
+  // ─── Reject handler (existing) ─────────────────────────────────────
+  const handleReject = async (tnr, travellerId) => {
+    const confirmReject = window.confirm(
+      "Are you sure you want to reject this traveller's booking?",
+    );
+    if (!confirmReject) return;
+
+    setIsLoading(true);
+    try {
+      const response = await rejectBooking(tnr, [travellerId]);
+      if (
+        handleApiResponse(
+          response,
+          "Traveller booking rejected successfully",
+          "Failed to reject booking",
+        )
+      ) {
+        setRejectedTravellers((prev) => ({
+          ...prev,
+          [travellerId]: true,
+        }));
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to reject booking",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─── NEW: Delete entire booking handler ────────────────────────────
+  const handleDeleteBooking = (tnr) => {
+    if (!tnr) {
+      toast.error("No booking TNR found");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `⚠️ PERMANENT DELETE WARNING ⚠️\n\n` +
+        `You are about to permanently delete the booking with TNR: ${tnr}\n\n` +
+        `This action:\n` +
+        `• Cannot be undone\n` +
+        `• Will remove all traveller data, payments, seat/room allocations\n` +
+        `• Should only be used for test/fraudulent bookings\n\n` +
+        `Are you absolutely sure?`,
+    );
+
+    if (!confirmDelete) return;
+
+    setIsLoading(true);
+
+    deleteBooking(tnr)
+      .then(() => {
+        // List auto-refreshes inside deleteBooking()
+        toast.success(`Booking ${tnr} permanently deleted`);
+      })
+      .catch((err) => {
+        console.error("Delete failed:", err);
+      })
+      .finally(() => setIsLoading(false));
+  };
+
+  // Filtered & sorted bookings
   const filteredBookings = bookings
     ?.filter((b) => {
-      const firstTraveller =
-        b.travellers && b.travellers.length > 0 ? b.travellers[0] : null;
+      const firstTraveller = b.travellers?.[0];
       const displayName = firstTraveller
         ? `${firstTraveller.firstName} ${firstTraveller.lastName}`.toLowerCase()
-        : "unknown traveller";
+        : "";
 
       const tourMatch = b?.tourData?.title
         ?.toLowerCase()
         .includes(filters.tour.toLowerCase());
 
       const tnrMatch =
-        filters.tnr === "" ||
+        !filters.tnr ||
         (b.tnr && b.tnr.toLowerCase().includes(filters.tnr.toLowerCase()));
 
       const contactMatch =
@@ -186,60 +238,17 @@ const AllBookings = () => {
         tourMatch && tnrMatch && contactMatch && paymentMatch && statusMatch
       );
     })
-    .sort((a, b) => {
-      return (
-        new Date(b.createdAt) - new Date(a.createdAt) ||
-        (b.tnr || "").localeCompare(a.tnr || "")
-      );
-    });
-
-  // Handle reject with confirmation
-  const handleReject = async (tnr, travellerId) => {
-    const confirmReject = window.confirm(
-      "Are you sure you want to reject this booking?",
+    .sort(
+      (a, b) =>
+        new Date(b.bookingDate || b.createdAt) -
+        new Date(a.bookingDate || a.createdAt),
     );
-    if (confirmReject) {
-      setIsLoading(true);
-      try {
-        console.log(
-          `Rejecting booking with TNR ${tnr} for traveller ${travellerId} at`,
-          new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-        );
-        const response = await rejectBooking(tnr, [travellerId]);
-        if (
-          handleApiResponse(
-            response,
-            "Booking rejected successfully",
-            "Failed to reject booking",
-          )
-        ) {
-          setRejectedTravellers((prev) => ({
-            ...prev,
-            [travellerId]: true,
-          }));
-        }
-      } catch (error) {
-        console.error(
-          "Reject booking error at",
-          new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-          error,
-        );
-        toast.error(
-          error.response?.data?.message ||
-            error.message ||
-            "Failed to reject booking",
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
 
   return (
-    <div className="p-1 sm:p-2 md:p-3 lg:p-4 xl:p-6 2xl:p-8 w-full max-w-full">
+    <div className="p-4 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
       <ToastContainer
         position="top-right"
-        autoClose={3000}
+        autoClose={4000}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
@@ -247,393 +256,356 @@ const AllBookings = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        theme="colored"
       />
-      <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold mb-2 sm:mb-3 md:mb-4 lg:mb-6 text-center ml-4 sm:ml-0 md:ml-0 lg:ml-0 xl:ml-0 2xl:ml-0">
-        Super Admin Bookings Dashboard
+
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center md:text-left">
+        Super Admin — All Bookings
       </h1>
 
       {!aToken ? (
-        <div className="text-center">
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-red-500">
-            Unauthorized Access
-          </h2>
-          <p className="text-gray-600 text-xs sm:text-sm md:text-base lg:text-lg">
-            Please login as Admin to continue.
-          </p>
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-semibold text-red-600">Unauthorized</h2>
+          <p className="mt-2 text-gray-600">Please login as Admin</p>
         </div>
-      ) : isLoading ? (
-        <div className="text-center text-gray-500 text-xs sm:text-sm md:text-base lg:text-lg">
+      ) : isLoading && !bookings?.length ? (
+        <div className="text-center py-12 text-gray-500">
           Loading bookings...
         </div>
       ) : !bookings || bookings.length === 0 ? (
-        <p className="text-center text-gray-500 text-xs sm:text-sm md:text-base lg:text-lg">
-          No bookings found
-        </p>
+        <div className="text-center py-12 text-gray-500">No bookings found</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-            <thead className="bg-gray-100 border-b">
-              <tr>
-                <th className="p-1 sm:p-2"></th>
-                <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                  S.No
-                </th>
-                <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                  TNR
-                  <input
-                    type="text"
-                    placeholder="Filter TNR"
-                    value={filters.tnr}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        tnr: e.target.value.toUpperCase().trim(),
-                      })
-                    }
-                    maxLength={6}
-                    className="mt-1 w-full border rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm"
-                    disabled={isLoading}
-                  />
-                </th>
-                <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                  Tour
-                  <input
-                    type="text"
-                    placeholder="Filter tour"
-                    value={filters.tour}
-                    onChange={(e) =>
-                      setFilters({ ...filters, tour: e.target.value })
-                    }
-                    className="mt-1 w-full border rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm"
-                    disabled={isLoading}
-                  />
-                </th>
-                <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                  Contact
-                  <input
-                    type="text"
-                    placeholder="Filter contact"
-                    value={filters.contact}
-                    onChange={(e) =>
-                      setFilters({ ...filters, contact: e.target.value })
-                    }
-                    className="mt-1 w-full border rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm"
-                    disabled={isLoading}
-                  />
-                </th>
-                <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                  Payment
-                  <select
-                    value={filters.payment}
-                    onChange={(e) =>
-                      setFilters({ ...filters, payment: e.target.value })
-                    }
-                    className="mt-1 w-full border rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm"
-                    disabled={isLoading}
-                  >
-                    <option value="">All</option>
-                    <option value="advance-paid">Advance Paid</option>
-                    <option value="advance-pending">Advance Pending</option>
-                    <option value="balance-paid">Balance Paid</option>
-                    <option value="balance-pending">Balance Pending</option>
-                  </select>
-                </th>
-                <th className="p-1 sm:p-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                  Status
-                  <select
-                    value={filters.status}
-                    onChange={(e) =>
-                      setFilters({ ...filters, status: e.target.value })
-                    }
-                    className="mt-1 w-full border rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm"
-                    disabled={isLoading}
-                  >
-                    <option value="">All</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="under completion">Under Completion</option>
-                  </select>
-                </th>
-              </tr>
-            </thead>
+        <>
+          {/* Filters */}
+          <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <input
+              type="text"
+              placeholder="Filter by TNR"
+              value={filters.tnr}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  tnr: e.target.value.toUpperCase().trim(),
+                })
+              }
+              maxLength={6}
+              className="border rounded px-3 py-2 text-sm"
+              disabled={isLoading}
+            />
+            <input
+              type="text"
+              placeholder="Filter by tour name"
+              value={filters.tour}
+              onChange={(e) => setFilters({ ...filters, tour: e.target.value })}
+              className="border rounded px-3 py-2 text-sm"
+              disabled={isLoading}
+            />
+            <input
+              type="text"
+              placeholder="Filter by name / mobile"
+              value={filters.contact}
+              onChange={(e) =>
+                setFilters({ ...filters, contact: e.target.value })
+              }
+              className="border rounded px-3 py-2 text-sm"
+              disabled={isLoading}
+            />
+            <select
+              value={filters.payment}
+              onChange={(e) =>
+                setFilters({ ...filters, payment: e.target.value })
+              }
+              className="border rounded px-3 py-2 text-sm"
+              disabled={isLoading}
+            >
+              <option value="">All Payment Status</option>
+              <option value="advance-paid">Advance Paid</option>
+              <option value="advance-pending">Advance Pending</option>
+              <option value="balance-paid">Balance Paid</option>
+              <option value="balance-pending">Balance Pending</option>
+            </select>
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
+              className="border rounded px-3 py-2 text-sm"
+              disabled={isLoading}
+            >
+              <option value="">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="under completion">Under Completion</option>
+            </select>
+          </div>
 
-            <tbody>
-              {filteredBookings.map((booking, index) => {
-                const firstTraveller =
-                  booking.travellers && booking.travellers.length > 0
-                    ? booking.travellers[0]
-                    : null;
-                const displayName = firstTraveller
-                  ? `${firstTraveller.firstName} ${firstTraveller.lastName}`
-                  : "Unknown Traveller";
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200 bg-white">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10"></th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    S.No
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    TNR
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tour
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredBookings.map((booking, index) => {
+                  const firstTraveller = booking.travellers?.[0];
+                  const displayName = firstTraveller
+                    ? `${firstTraveller.title || ""} ${firstTraveller.firstName} ${firstTraveller.lastName}`.trim()
+                    : "Unknown";
 
-                return (
-                  <React.Fragment key={booking.tnr}>
-                    <tr
-                      className="border-b hover:bg-gray-50 transition cursor-pointer"
-                      onClick={() => toggleRow(index)}
-                    >
-                      <td className="p-1 sm:p-2 text-gray-600">
-                        {expandedRow === index ? (
-                          <ChevronDown size={12} className="sm:w-4 sm:h-4" />
-                        ) : (
-                          <ChevronRight size={12} className="sm:w-4 sm:h-4" />
-                        )}
-                      </td>
-                      <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800">
-                        {index + 1}
-                      </td>
-                      <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800 font-mono font-bold">
-                        <div className="flex items-center gap-1">
-                          {booking.tnr || "N/A"}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyToClipboard(booking.tnr, "TNR");
-                            }}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Copy TNR"
-                          >
-                            <Copy size={14} />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800">
-                        {booking?.tourData?.title || "N/A"}
-                      </td>
-                      <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800">
-                        <div>
-                          <strong>{displayName}</strong>
-                        </div>
-                        <div>{booking?.contact?.mobile}</div>
-                      </td>
-                      <td className="p-1 sm:p-2 text-xs sm:text-sm text-gray-800">
-                        <div>
-                          Advance:{" "}
-                          {booking.payment?.advance?.paid ? (
-                            <span className="text-green-600">Paid</span>
+                  return (
+                    <React.Fragment key={booking._id || booking.tnr || index}>
+                      <tr
+                        className="hover:bg-gray-50 transition cursor-pointer"
+                        onClick={() => toggleRow(index)}
+                      >
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {expandedRow === index ? (
+                            <ChevronDown size={16} />
                           ) : (
-                            <span className="text-red-600">Pending</span>
+                            <ChevronRight size={16} />
                           )}
-                        </div>
-                        <div>
-                          Balance:{" "}
-                          {booking.payment?.balance?.paid ? (
-                            <span className="text-green-600">Paid</span>
-                          ) : (
-                            <span className="text-yellow-600">Pending</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-1 sm:p-2 text-xs sm:text-sm font-medium">
-                        {booking.isBookingCompleted ? (
-                          <span className="text-green-600">Completed</span>
-                        ) : booking.cancelled?.byAdmin ||
-                          booking.cancelled?.byTraveller ? (
-                          <span className="text-red-600">Cancelled</span>
-                        ) : (
-                          <span className="text-yellow-600">
-                            Under completion
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-
-                    {expandedRow === index && (
-                      <tr className="bg-gray-50">
-                        <td></td>
-                        <td
-                          colSpan="6"
-                          className="p-1 sm:p-2 md:p-4 lg:p-6 xl:p-8"
-                        >
-                          {/* TNR with Copy Button */}
-                          <div className="mb-2 flex items-center gap-2 text-xs sm:text-sm">
-                            <strong>TNR:</strong>
-                            <code className="bg-gray-200 px-2 py-1 rounded font-mono text-xs">
-                              {booking.tnr}
-                            </code>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                copyToClipboard(booking.tnr, "TNR");
-                              }}
-                              className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs"
-                              title="Copy TNR"
-                            >
-                              <Copy size={14} />
-                              Copy
-                            </button>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {index + 1}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900">
+                          <div className="flex items-center gap-2">
+                            {booking.tnr || "—"}
+                            {booking.tnr && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyToClipboard(booking.tnr, "TNR");
+                                }}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="Copy TNR"
+                              >
+                                <Copy size={14} />
+                              </button>
+                            )}
                           </div>
-
-                          <h4 className="font-semibold text-gray-700 mb-1 sm:mb-2 text-xs sm:text-sm md:text-base">
-                            Travellers
-                          </h4>
-                          {booking.travellers &&
-                          booking.travellers.length > 0 ? (
-                            <ul className="list-disc list-inside space-y-1 sm:space-y-2">
-                              {booking.travellers.map((t, i) => {
-                                const isCancelledByAdmin = t.cancelled?.byAdmin;
-                                const isCancelledByTraveller =
-                                  t.cancelled?.byTraveller;
-                                const isLocallyRejected =
-                                  rejectedTravellers[t._id];
-
-                                const isDisabled =
-                                  isCancelledByAdmin ||
-                                  isCancelledByTraveller ||
-                                  isLocallyRejected ||
-                                  isLoading;
-
-                                let buttonLabel = "Reject Booking";
-                                if (isCancelledByTraveller) {
-                                  buttonLabel = "Cancelled by Traveller";
-                                } else if (
-                                  isCancelledByAdmin ||
-                                  isLocallyRejected
-                                ) {
-                                  buttonLabel = "Booking Rejected";
-                                }
-
-                                return (
-                                  <li
-                                    key={i}
-                                    className="text-xs sm:text-sm md:text-base text-gray-700 flex justify-between items-center"
-                                  >
-                                    <span>
-                                      {t.title} {t.firstName} {t.lastName} (
-                                      {t.age}y)
-                                    </span>
-
-                                    <button
-                                      disabled={isDisabled}
-                                      onClick={
-                                        !isDisabled
-                                          ? () =>
-                                              handleReject(booking.tnr, t._id)
-                                          : undefined
-                                      }
-                                      className={`ml-1 sm:ml-2 md:ml-4 px-1 sm:px-2 md:px-3 py-0.5 sm:py-1 md:py-1.5 rounded text-xs sm:text-sm md:text-base ${
-                                        isDisabled
-                                          ? "bg-gray-400 text-white cursor-not-allowed"
-                                          : "bg-red-500 text-white hover:bg-red-600"
-                                      }`}
-                                    >
-                                      {isLoading &&
-                                      !isCancelledByAdmin &&
-                                      !isCancelledByTraveller &&
-                                      !isLocallyRejected
-                                        ? "Rejecting..."
-                                        : buttonLabel}
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-900">
+                          {booking?.tourData?.title || "—"}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-900">
+                          <div>{displayName}</div>
+                          <div className="text-gray-600">
+                            {booking?.contact?.mobile || "—"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm">
+                          <div>
+                            Advance:{" "}
+                            {booking.payment?.advance?.paid ? (
+                              <span className="text-green-600 font-medium">
+                                Paid
+                              </span>
+                            ) : (
+                              <span className="text-red-600">Pending</span>
+                            )}
+                          </div>
+                          <div>
+                            Balance:{" "}
+                            {booking.payment?.balance?.paid ? (
+                              <span className="text-green-600 font-medium">
+                                Paid
+                              </span>
+                            ) : (
+                              <span className="text-yellow-600">Pending</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm font-medium">
+                          {booking.isBookingCompleted ? (
+                            <span className="text-green-600">Completed</span>
+                          ) : booking.cancelled?.byAdmin ||
+                            booking.cancelled?.byTraveller ? (
+                            <span className="text-red-600">Cancelled</span>
                           ) : (
-                            <p className="text-xs sm:text-sm md:text-base text-gray-500">
-                              No travellers
-                            </p>
+                            <span className="text-yellow-600">
+                              Under Completion
+                            </span>
                           )}
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
 
-              {filteredBookings.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="7"
-                    className="text-center text-gray-500 p-1 sm:p-2 md:p-4 text-xs sm:text-sm md:text-base"
-                  >
-                    No results match your filters
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      {expandedRow === index && (
+                        <tr className="bg-gray-50">
+                          <td></td>
+                          <td colSpan={6} className="p-6">
+                            <div className="mb-4">
+                              <strong className="block text-base mb-1">
+                                TNR:
+                              </strong>
+                              <div className="flex items-center gap-3">
+                                <code className="bg-gray-200 px-3 py-1 rounded font-mono">
+                                  {booking.tnr || "Not generated"}
+                                </code>
+                                {booking.tnr && (
+                                  <button
+                                    onClick={() =>
+                                      copyToClipboard(booking.tnr, "TNR")
+                                    }
+                                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                  >
+                                    <Copy size={16} /> Copy
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <h4 className="font-semibold text-lg mb-3">
+                              Travellers
+                            </h4>
+
+                            {booking.travellers?.length > 0 ? (
+                              <ul className="space-y-4">
+                                {booking.travellers.map((t, i) => {
+                                  const isCancelledByAdmin =
+                                    t.cancelled?.byAdmin;
+                                  const isCancelledByTraveller =
+                                    t.cancelled?.byTraveller;
+                                  const isLocallyRejected =
+                                    rejectedTravellers[t._id];
+
+                                  const isDisabled =
+                                    isCancelledByAdmin ||
+                                    isCancelledByTraveller ||
+                                    isLocallyRejected ||
+                                    isLoading;
+
+                                  let rejectLabel = "Reject";
+                                  if (isCancelledByTraveller)
+                                    rejectLabel = "Cancelled by User";
+                                  else if (
+                                    isCancelledByAdmin ||
+                                    isLocallyRejected
+                                  )
+                                    rejectLabel = "Rejected";
+
+                                  return (
+                                    <li
+                                      key={t._id || i}
+                                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 py-3 border-b last:border-0"
+                                    >
+                                      <div>
+                                        <span className="font-medium">
+                                          {t.title} {t.firstName} {t.lastName}
+                                        </span>
+                                        <span className="text-gray-600 ml-2">
+                                          ({t.age}y)
+                                        </span>
+                                      </div>
+
+                                      <div className="flex gap-3 self-end sm:self-center">
+                                        <button
+                                          disabled={isDisabled}
+                                          onClick={() =>
+                                            !isDisabled &&
+                                            handleReject(booking.tnr, t._id)
+                                          }
+                                          className={`px-4 py-1.5 rounded-md text-sm font-medium ${
+                                            isDisabled
+                                              ? "bg-gray-400 text-white cursor-not-allowed"
+                                              : "bg-red-600 hover:bg-red-700 text-white"
+                                          }`}
+                                        >
+                                          {isLoading && !isDisabled
+                                            ? "Rejecting..."
+                                            : rejectLabel}
+                                        </button>
+
+                                        <button
+                                          disabled={isLoading}
+                                          onClick={() =>
+                                            handleDeleteBooking(booking.tnr)
+                                          }
+                                          className={`px-4 py-1.5 rounded-md text-sm font-medium ${
+                                            isLoading
+                                              ? "bg-gray-400 text-white cursor-not-allowed"
+                                              : "bg-rose-800 hover:bg-rose-900 text-white"
+                                          }`}
+                                          title="Permanently delete entire booking"
+                                        >
+                                          {isLoading
+                                            ? "Deleting..."
+                                            : "Delete Booking"}
+                                        </button>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : (
+                              <p className="text-gray-500">
+                                No travellers in this booking
+                              </p>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+
+                {filteredBookings.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-gray-500">
+                      No bookings match the current filters
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
-      {/* ── Confirmation Popup ──────────────────────────────────── */}
+
+      {/* Leave page confirmation modal */}
       {showConfirmLeave && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.65)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            padding: "16px",
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "12px",
-              padding: "24px",
-              maxWidth: "420px",
-              width: "100%",
-              textAlign: "center",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: "bold",
-                marginBottom: "16px",
-                color: "#111827",
-              }}
-            >
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
               Leave this page?
             </h2>
-
-            <p
-              style={{
-                color: "#4b5563",
-                marginBottom: "24px",
-                lineHeight: "1.6",
-              }}
-            >
-              You are viewing the bookings dashboard.
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              You're viewing the bookings dashboard.
               <br />
-              Leaving now will refresh the data on return.
+              Leaving now will refresh data when you return.
+              <br />
               <br />
               Are you sure you want to leave?
             </p>
-
-            <div
-              style={{ display: "flex", gap: "16px", justifyContent: "center" }}
-            >
+            <div className="flex gap-4 justify-center">
               <button
                 onClick={handleCancelLeave}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#e5e7eb",
-                  color: "#1f2937",
-                  borderRadius: "8px",
-                  fontWeight: "600",
-                  border: "none",
-                  cursor: "pointer",
-                }}
+                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium"
               >
                 Cancel (Stay)
               </button>
-
               <button
                 onClick={handleConfirmLeave}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#dc2626",
-                  color: "white",
-                  borderRadius: "8px",
-                  fontWeight: "600",
-                  border: "none",
-                  cursor: "pointer",
-                }}
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
               >
                 Yes, Leave
               </button>

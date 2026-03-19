@@ -355,7 +355,37 @@ const TourAdminContextProvider = (props) => {
       );
     }
   };
+  const deleteBooking = async (tnr) => {
+    try {
+      if (!tnr || tnr.trim().length !== 6) {
+        throw new Error("Valid 6-character TNR is required");
+      }
 
+      const normalized = tnr.trim().toUpperCase();
+
+      const { data } = await axios.post(
+        `${backendUrl}/api/touradmin/delete-booking`,
+        { tnr: normalized },
+        { headers: { aToken } },
+      );
+
+      const validated = validateApiResponse(data, "Failed to delete booking");
+
+      if (validated.success) {
+        // Refresh bookings list
+        await getAllBookings();
+      }
+
+      return validated;
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to delete booking";
+
+      throw new Error(msg);
+    }
+  };
   const releaseBooking = async (tnr, travellerIds) => {
     try {
       if (!tnr || typeof tnr !== "string" || tnr.trim().length !== 6) {
@@ -1117,6 +1147,7 @@ const TourAdminContextProvider = (props) => {
     rejectCancellation,
 
     rejectBooking,
+    deleteBooking,
     releaseBooking,
     getPendingApprovals,
     approveBookingUpdate,
