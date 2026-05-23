@@ -242,10 +242,6 @@ const TourDashboard = () => {
     try {
       let res;
       if (type === "advance") {
-        if (!booking.payment?.advance?.paid) {
-          toast.error("Advance payment not marked as paid yet.");
-          return;
-        }
         res = await markAdvanceReceiptSent(booking.tnr, selectedTourId);
       } else if (type === "balance") {
         if (!booking.payment?.balance?.paid) {
@@ -254,10 +250,6 @@ const TourDashboard = () => {
         }
         res = await markBalanceReceiptSent(booking.tnr, selectedTourId);
       } else if (type === "modify") {
-        if (!booking.isTripCompleted) {
-          toast.error("Trip not marked as completed yet.");
-          return;
-        }
         res = await markModifyReceipt(booking.tnr, selectedTourId);
       }
 
@@ -267,9 +259,15 @@ const TourDashboard = () => {
           newSet.add(booking.tnr);
           return newSet;
         });
+
+        // 🔥 Force refresh bookings so BalanceUpdatePage updates instantly
+        if (type === "balance" && getBookings) {
+          await getBookings(selectedTourId);
+          toast.success("Balance receipt completed! ✅");
+        }
       }
     } catch (err) {
-      toast.error(err.message || "Failed to update receipt status");
+      toast.error(err.message || "Failed to update");
     } finally {
       setIsLoading(false);
     }
@@ -364,11 +362,10 @@ const TourDashboard = () => {
                         handleMarkReceipt(booking, type);
                       }}
                       disabled={isLoading}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                        isLoading
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${isLoading
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                           : "bg-green-600 text-white hover:bg-green-700"
-                      }`}
+                        }`}
                     >
                       {isLoading ? "Processing..." : "Mark Complete"}
                     </button>
@@ -394,11 +391,10 @@ const TourDashboard = () => {
                       {booking.travellers?.map((t, idx) => (
                         <div
                           key={idx}
-                          className={`p-4 rounded-lg border ${
-                            t.cancelled?.byTraveller || t.cancelled?.byAdmin
+                          className={`p-4 rounded-lg border ${t.cancelled?.byTraveller || t.cancelled?.byAdmin
                               ? "bg-red-50 border-red-200"
                               : "bg-gray-50 border-gray-200"
-                          }`}
+                            }`}
                         >
                           <p className="font-medium">
                             {t.title} {t.firstName} {t.lastName}
@@ -441,20 +437,20 @@ const TourDashboard = () => {
                           )}
                           {(t.cancelled?.byTraveller ||
                             t.cancelled?.byAdmin) && (
-                            <p className="mt-2 text-red-600 font-medium">
-                              Cancelled (
-                              {t.cancelled.byAdmin
-                                ? "by Admin"
-                                : "by Traveller"}
-                              )
-                            </p>
-                          )}
+                              <p className="mt-2 text-red-600 font-medium">
+                                Cancelled (
+                                {t.cancelled.byAdmin
+                                  ? "by Admin"
+                                  : "by Traveller"}
+                                )
+                              </p>
+                            )}
                         </div>
                       )) || (
-                        <p className="text-gray-500 col-span-2">
-                          No travellers
-                        </p>
-                      )}
+                          <p className="text-gray-500 col-span-2">
+                            No travellers
+                          </p>
+                        )}
                     </div>
                   </div>
 
@@ -531,40 +527,40 @@ const TourDashboard = () => {
                   {/* Admin Remarks */}
                   {(booking.adminRemarks?.length > 0 ||
                     booking.advanceAdminRemarks?.length > 0) && (
-                    <div>
-                      <h3 className="font-semibold mb-2 flex items-center gap-2">
-                        <FileText size={16} /> Admin Remarks
-                      </h3>
-                      <div className="space-y-2">
-                        {booking.advanceAdminRemarks?.map((r, i) => (
-                          <div
-                            key={i}
-                            className="bg-gray-50 p-3 rounded text-sm"
-                          >
-                            <p>
-                              {r.remark} (₹{r.amount || 0})
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(r.addedAt).toLocaleString()}
-                            </p>
-                          </div>
-                        ))}
-                        {booking.adminRemarks?.map((r, i) => (
-                          <div
-                            key={i}
-                            className="bg-gray-50 p-3 rounded text-sm"
-                          >
-                            <p>
-                              {r.remark} (₹{r.amount || 0})
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(r.addedAt).toLocaleString()}
-                            </p>
-                          </div>
-                        ))}
+                      <div>
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          <FileText size={16} /> Admin Remarks
+                        </h3>
+                        <div className="space-y-2">
+                          {booking.advanceAdminRemarks?.map((r, i) => (
+                            <div
+                              key={i}
+                              className="bg-gray-50 p-3 rounded text-sm"
+                            >
+                              <p>
+                                {r.remark} (₹{r.amount || 0})
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(r.addedAt).toLocaleString()}
+                              </p>
+                            </div>
+                          ))}
+                          {booking.adminRemarks?.map((r, i) => (
+                            <div
+                              key={i}
+                              className="bg-gray-50 p-3 rounded text-sm"
+                            >
+                              <p>
+                                {r.remark} (₹{r.amount || 0})
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(r.addedAt).toLocaleString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
             </div>

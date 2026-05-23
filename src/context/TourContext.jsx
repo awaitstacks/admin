@@ -82,13 +82,13 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  receipts: {
-                    ...b.receipts,
-                    advanceReceiptSent: true,
-                    advanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...b,
+                receipts: {
+                  ...b.receipts,
+                  advanceReceiptSent: true,
+                  advanceReceiptSentAt: new Date(),
+                },
+              }
               : b,
           ),
         );
@@ -97,13 +97,13 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  receipts: {
-                    ...b.receipts,
-                    advanceReceiptSent: true,
-                    advanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...b,
+                receipts: {
+                  ...b.receipts,
+                  advanceReceiptSent: true,
+                  advanceReceiptSentAt: new Date(),
+                },
+              }
               : b,
           ),
         );
@@ -148,13 +148,13 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  receipts: {
-                    ...b.receipts,
-                    balanceReceiptSent: true,
-                    balanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...b,
+                receipts: {
+                  ...b.receipts,
+                  balanceReceiptSent: true,
+                  balanceReceiptSentAt: new Date(),
+                },
+              }
               : b,
           ),
         );
@@ -163,13 +163,13 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  receipts: {
-                    ...b.receipts,
-                    balanceReceiptSent: true,
-                    balanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...b,
+                receipts: {
+                  ...b.receipts,
+                  balanceReceiptSent: true,
+                  balanceReceiptSentAt: new Date(),
+                },
+              }
               : b,
           ),
         );
@@ -248,10 +248,10 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  isBookingCompleted: true,
-                  bookingCompletedAt: new Date(),
-                }
+                ...b,
+                isBookingCompleted: true,
+                bookingCompletedAt: new Date(),
+              }
               : b,
           ),
         );
@@ -260,10 +260,10 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  isBookingCompleted: true,
-                  bookingCompletedAt: new Date(),
-                }
+                ...b,
+                isBookingCompleted: true,
+                bookingCompletedAt: new Date(),
+              }
               : b,
           ),
         );
@@ -540,17 +540,17 @@ const TourContextProvider = (props) => {
           prevBookings.map((booking) =>
             booking.tnr === tnr
               ? {
-                  ...booking,
-                  payment: {
-                    ...booking.payment,
-                    advance: {
-                      ...booking.payment.advance,
-                      paid: true,
-                      paymentVerified: true,
-                      paidAt: new Date(),
-                    },
+                ...booking,
+                payment: {
+                  ...booking.payment,
+                  advance: {
+                    ...booking.payment.advance,
+                    paid: true,
+                    paymentVerified: true,
+                    paidAt: new Date(),
                   },
-                }
+                },
+              }
               : booking,
           ),
         );
@@ -585,17 +585,17 @@ const TourContextProvider = (props) => {
           prevBookings.map((booking) =>
             booking.tnr === tnr
               ? {
-                  ...booking,
-                  payment: {
-                    ...booking.payment,
-                    balance: {
-                      ...booking.payment.balance,
-                      paid: true,
-                      paymentVerified: true,
-                      paidAt: new Date(),
-                    },
+                ...booking,
+                payment: {
+                  ...booking.payment,
+                  balance: {
+                    ...booking.payment.balance,
+                    paid: true,
+                    paymentVerified: true,
+                    paidAt: new Date(),
                   },
-                }
+                },
+              }
               : booking,
           ),
         );
@@ -632,10 +632,10 @@ const TourContextProvider = (props) => {
           prevBookings.map((booking) =>
             booking.tnr === tnr
               ? {
-                  ...booking,
-                  isBookingCompleted: true,
-                  bookingCompletedAt: new Date(),
-                }
+                ...booking,
+                isBookingCompleted: true,
+                bookingCompletedAt: new Date(),
+              }
               : booking,
           ),
         );
@@ -645,10 +645,10 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  isBookingCompleted: true,
-                  bookingCompletedAt: new Date(),
-                }
+                ...b,
+                isBookingCompleted: true,
+                bookingCompletedAt: new Date(),
+              }
               : b,
           ),
         );
@@ -727,13 +727,13 @@ const TourContextProvider = (props) => {
           prevBookings.map((booking) =>
             booking.tnr === tnr
               ? {
-                  ...booking,
-                  receipts: {
-                    ...booking.receipts,
-                    advanceReceiptSent: true,
-                    advanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...booking,
+                receipts: {
+                  ...booking.receipts,
+                  advanceReceiptSent: true,
+                  advanceReceiptSentAt: new Date(),
+                },
+              }
               : booking,
           ),
         );
@@ -743,13 +743,13 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  receipts: {
-                    ...b.receipts,
-                    advanceReceiptSent: true,
-                    advanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...b,
+                receipts: {
+                  ...b.receipts,
+                  advanceReceiptSent: true,
+                  advanceReceiptSentAt: new Date(),
+                },
+              }
               : b,
           ),
         );
@@ -789,13 +789,13 @@ const TourContextProvider = (props) => {
           prevBookings.map((booking) =>
             booking.tnr === tnr
               ? {
-                  ...booking,
-                  receipts: {
-                    ...booking.receipts,
-                    balanceReceiptSent: true,
-                    balanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...booking,
+                receipts: {
+                  ...booking.receipts,
+                  balanceReceiptSent: true,
+                  balanceReceiptSentAt: new Date(),
+                },
+              }
               : booking,
           ),
         );
@@ -805,13 +805,13 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === tnr
               ? {
-                  ...b,
-                  receipts: {
-                    ...b.receipts,
-                    balanceReceiptSent: true,
-                    balanceReceiptSentAt: new Date(),
-                  },
-                }
+                ...b,
+                receipts: {
+                  ...b.receipts,
+                  balanceReceiptSent: true,
+                  balanceReceiptSentAt: new Date(),
+                },
+              }
               : b,
           ),
         );
@@ -888,23 +888,23 @@ const TourContextProvider = (props) => {
           prevBookings.map((booking) =>
             booking.tnr === normalizedTnr
               ? {
-                  ...booking,
-                  payment: {
-                    ...booking.payment,
-                    advance: {
-                      ...booking.payment.advance,
-                      amount: updatedData.updatedAdvanceAmount,
-                    },
-                    balance: {
-                      ...booking.payment.balance,
-                      amount: updatedData.updatedBalanceAmount,
-                      paid: false,
-                      paymentVerified: false,
-                    },
+                ...booking,
+                payment: {
+                  ...booking.payment,
+                  advance: {
+                    ...booking.payment.advance,
+                    amount: updatedData.updatedAdvanceAmount,
                   },
-                  advanceAdminRemarks: updatedData.advanceAdminRemarks,
-                  isTripCompleted: true,
-                }
+                  balance: {
+                    ...booking.payment.balance,
+                    amount: updatedData.updatedBalanceAmount,
+                    paid: false,
+                    paymentVerified: false,
+                  },
+                },
+                advanceAdminRemarks: updatedData.advanceAdminRemarks,
+                isTripCompleted: true,
+              }
               : booking,
           ),
         );
@@ -914,23 +914,23 @@ const TourContextProvider = (props) => {
           prev.map((b) =>
             b.tnr === normalizedTnr
               ? {
-                  ...b,
-                  payment: {
-                    ...b.payment,
-                    advance: {
-                      ...b.payment.advance,
-                      amount: updatedData.updatedAdvanceAmount,
-                    },
-                    balance: {
-                      ...b.payment.balance,
-                      amount: updatedData.updatedBalanceAmount,
-                      paid: false,
-                      paymentVerified: false,
-                    },
+                ...b,
+                payment: {
+                  ...b.payment,
+                  advance: {
+                    ...b.payment.advance,
+                    amount: updatedData.updatedAdvanceAmount,
                   },
-                  advanceAdminRemarks: updatedData.advanceAdminRemarks,
-                  isTripCompleted: true,
-                }
+                  balance: {
+                    ...b.payment.balance,
+                    amount: updatedData.updatedBalanceAmount,
+                    paid: false,
+                    paymentVerified: false,
+                  },
+                },
+                advanceAdminRemarks: updatedData.advanceAdminRemarks,
+                isTripCompleted: true,
+              }
               : b,
           ),
         );
@@ -998,17 +998,17 @@ const TourContextProvider = (props) => {
           prev.map((booking) =>
             booking.tnr === normalizedTnr
               ? {
-                  ...booking,
-                  payment: {
-                    ...booking.payment,
-                    balance: {
-                      ...booking.payment.balance,
-                      amount: data.data.updatedBalance,
-                    },
+                ...booking,
+                payment: {
+                  ...booking.payment,
+                  balance: {
+                    ...booking.payment.balance,
+                    amount: data.data.updatedBalance,
                   },
-                  adminRemarks: data.data.adminRemarks,
-                  isTripCompleted: data.data.isTripCompleted,
-                }
+                },
+                adminRemarks: data.data.adminRemarks,
+                isTripCompleted: data.data.isTripCompleted,
+              }
               : booking,
           );
 
@@ -1086,9 +1086,9 @@ const TourContextProvider = (props) => {
           prevBookings.map((booking) =>
             booking.tnr === tnr
               ? {
-                  ...booking,
-                  isTripCompleted: false,
-                }
+                ...booking,
+                isTripCompleted: false,
+              }
               : booking,
           ),
         );
@@ -1465,6 +1465,11 @@ const TourContextProvider = (props) => {
       return { success: false, message: msg, status: error.response?.status };
     }
   };
+
+  // ==================== PAYMENT METHODS (Tour Specific) ====================
+
+
+
   const getPaymentMethods = useCallback(async () => {
     try {
       const { data } = await axios.get(
@@ -1584,6 +1589,124 @@ const TourContextProvider = (props) => {
       return { success: false, message: msg };
     }
   };
+
+
+  const getTourPaymentMethods = useCallback(async (tourId) => {
+    if (!tourId) {
+      return { success: false, message: "Tour ID is required" };
+    }
+
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/${tourId}/payment-methods`,
+        {
+          headers: { ttoken },
+          timeout: 10000
+        }
+      );
+
+      return {
+        success: data.success,
+        paymentMethods: data.paymentMethods || [],
+        count: data.count || 0,
+      };
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Failed to fetch payment methods";
+      console.error("getTourPaymentMethods error:", error);
+      return { success: false, message: msg };
+    }
+  }, [backendUrl, ttoken]);
+
+  const createTourPaymentMethod = async (tourId, formData) => {
+    if (!tourId) return { success: false, message: "Tour ID is required" };
+
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/${tourId}/create-payment-methods`,
+        formData,
+        {
+          headers: {
+            ttoken,
+            "Content-Type": "multipart/form-data"
+          },
+          timeout: 20000,
+        }
+      );
+
+      return data;
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Failed to create payment method";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+
+  // ==================== NEW: UPDATE & DELETE for Specific Tour ====================
+
+  const updateTourPaymentMethod = async (tourId, id, formData) => {
+    if (!tourId || !id) {
+      return { success: false, message: "Tour ID and Payment ID are required" };
+    }
+
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/${tourId}/update-payment-methods/${id}`,
+        formData,
+        {
+          headers: {
+            ttoken,
+            "Content-Type": "multipart/form-data"
+          },
+          timeout: 20000,
+        }
+      );
+
+      if (data.success) {
+        toast.success("Payment method updated successfully");
+      } else {
+        toast.error(data.message || "Update failed");
+      }
+
+      return data;
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Failed to update payment method";
+      toast.error(msg);
+      console.error("updateTourPaymentMethod error:", error);
+      return { success: false, message: msg };
+    }
+  };
+
+  const deleteTourPaymentMethod = async (tourId, id) => {
+    if (!tourId || !id) {
+      return { success: false, message: "Tour ID and Payment ID are required" };
+    }
+
+    try {
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/${tourId}/delete-payment-methods/${id}`,
+        {
+          headers: { ttoken },
+          timeout: 10000,
+        }
+      );
+
+      if (data.success) {
+        toast.success("Payment method deleted successfully");
+      } else {
+        toast.error(data.message || "Delete failed");
+      }
+
+      return data;
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Failed to delete payment method";
+      toast.error(msg);
+      console.error("deleteTourPaymentMethod error:", error);
+      return { success: false, message: msg };
+    }
+  };
+
+
   const getVehicleSeatAllocation = useCallback(
     async (tourId) => {
       if (!tourId) {
@@ -1636,6 +1759,8 @@ const TourContextProvider = (props) => {
     },
     [backendUrl, ttoken, currentTourId],
   );
+
+
   // ==================== Context Value ====================
   const value = {
     ttoken,
@@ -1711,10 +1836,18 @@ const TourContextProvider = (props) => {
     seatAllocationError,
     getVehicleSeatAllocation,
 
+
     getPaymentMethods,
     createNewPaymentMethod,
     updateExistingPaymentMethod,
     deletePaymentMethodById,
+
+    getTourPaymentMethods,
+    createTourPaymentMethod,
+    updateTourPaymentMethod,
+    deleteTourPaymentMethod,
+
+
   };
 
   return (

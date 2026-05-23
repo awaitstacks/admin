@@ -40,6 +40,8 @@ import {
   HousePlugIcon,
   HousePlus,
   CarTaxiFrontIcon,
+  PenIcon,
+  PenSquareIcon,
 } from "lucide-react";
 
 const TourSidebar = () => {
@@ -200,6 +202,7 @@ const tourMenuItems = [
     label: "SAM",
   },
   { to: "/tour-termspage", icon: FileText, label: "Traveller Consent Form" },
+  { to: "/tour-balancepage", icon: PenSquareIcon, label: "Balance Reminder" },
   { to: "/tour-updateBalance", icon: IndianRupee, label: "Payment controller" },
   { to: "/payment-details", icon: Banknote, label: "Payment Details" },
   {
