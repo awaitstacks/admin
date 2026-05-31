@@ -6,7 +6,10 @@ import { toast } from "react-toastify";
 export const TourContext = createContext();
 
 const TourContextProvider = (props) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+  console.log("🚀 Backend URL Used:", backendUrl);   // இது முக்கியம்
 
   const [ttoken, setttoken] = useState(
     localStorage.getItem("ttoken") ? localStorage.getItem("ttoken") : "",
@@ -1909,7 +1912,7 @@ const TourContextProvider = (props) => {
     updateAdvanceRemark,
     deleteBalanceRemark,
     deleteAdvanceRemark,
-  
+
     balanceDetails,
     setBalanceDetails,
     markModifyReceipt,
