@@ -1203,7 +1203,7 @@ We are committed to making your current tour a memorable one.
             {/* Statistics */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
               <div className="bg-blue-50 rounded-2xl p-5 shadow-sm border text-center">
-                <p className="text-sm text-blue-600 font-medium">Total Bookings</p>
+                <p className="text-sm text-blue-600 font-medium">Total TNRS</p>
                 <p className="text-4xl font-bold text-blue-600 mt-2">{stats.totalBookings}</p>
               </div>
 

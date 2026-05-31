@@ -6,19 +6,10 @@ import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  ChevronDown,
-  ChevronUp,
-  IndianRupee,
-  Users,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  Copy,
-  FileText,
+  ChevronDown, ChevronUp, IndianRupee, Users, Mail, Phone, MapPin,
+  Calendar, CheckCircle, Clock, AlertTriangle, Copy, FileText,
+  XCircle
+
 } from "lucide-react";
 
 const TourDashboard = () => {
@@ -120,7 +111,6 @@ const TourDashboard = () => {
     }
   }, [ttoken, selectedTourId, getDashData, getBookings, handleApiResponse]);
 
-  // Stats calculation (unchanged)
   const stats = useMemo(() => {
     if (!bookings?.length) {
       return {
@@ -128,6 +118,9 @@ const TourDashboard = () => {
         totalTravellers: 0,
         completedBookings: 0,
         pendingBookings: 0,
+        unverifiedBookings: 0,
+        cancelledBookings: 0,
+        rejectedBookings: 0,
         advancePending: [],
         balancePending: [],
         uncompleted: [],
@@ -135,77 +128,84 @@ const TourDashboard = () => {
       };
     }
 
-    const uniqueUsers = new Set();
-    let travellerCount = 0;
+    let totalBookingsCount = 0;
+    let totalTravellersCount = 0;
+
     let completed = 0;
     let pending = 0;
+    let unverified = 0;
+    let cancelled = 0;
+    let rejected = 0;
+
     let advancePending = [];
     let balancePending = [];
     let uncompleted = [];
     let modifyReceiptPending = [];
 
     bookings.forEach((b) => {
-      if (b.userId?._id) uniqueUsers.add(b.userId._id.toString());
+      if (b.tnr) totalBookingsCount++;
 
-      const activeTravellers =
-        b.travellers?.filter(
-          (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
-        ) || [];
+      const advanceVerified = !!b.payment?.advance?.paymentVerified;
 
-      if (b.payment?.advance?.paid && activeTravellers.length > 0) {
-        travellerCount += activeTravellers.length;
+      // === NAME LIST LOGIC EXACTLY ===
+      if (advanceVerified) {
+        const validTravellers = b.travellers?.filter((trav) => {
+          if (!trav) return false;
+          // Skip if cancelled by anyone
+          if (trav.cancelled?.byTraveller || trav.cancelled?.byAdmin) {
+            return false;
+          }
+          return true;
+        }) || [];
+
+        totalTravellersCount += validTravellers.length;
       }
 
-      const allCancelled =
-        b.travellers?.every(
-          (t) => t.cancelled?.byTraveller || t.cancelled?.byAdmin,
-        ) || b.travellers?.length === 0;
+      // Booking level status
+      const isFullyCancelled = b.travellers?.length > 0 &&
+        b.travellers.every((t) => t.cancelled?.byTraveller && t.cancelled?.byAdmin);
 
-      if (b.isBookingCompleted && !allCancelled) {
-        completed++;
-      } else if (!allCancelled) {
-        pending++;
-        uncompleted.push(b);
-      }
+      const isRejectedByAdmin = b.travellers?.length > 0 &&
+        b.travellers.every((t) => t.cancelled?.byAdmin && !t.cancelled?.byTraveller);
 
-      if (
-        b.payment?.advance?.paid &&
-        !b.receipts?.advanceReceiptSent &&
-        activeTravellers.length > 0
-      ) {
+      const advancePaid = !!b.payment?.advance?.paid;
+      const balancePaid = !!b.payment?.balance?.paid;
+
+      if (isFullyCancelled) cancelled++;
+      else if (isRejectedByAdmin) rejected++;
+      else if (advancePaid && balancePaid) completed++;
+      else if (advancePaid && !balancePaid) pending++;
+      else unverified++;
+
+      // Pending sections
+      if (advanceVerified && !b.receipts?.advanceReceiptSent) {
         advancePending.push(b);
       }
-
-      if (
-        b.payment?.balance?.paid &&
-        !b.receipts?.balanceReceiptSent &&
-        activeTravellers.length > 0
-      ) {
+      if (balancePaid && !b.receipts?.balanceReceiptSent) {
         balancePending.push(b);
       }
-
-      if (b.isTripCompleted && !allCancelled) {
+      if (b.isTripCompleted && !isFullyCancelled) {
         modifyReceiptPending.push(b);
+      }
+      if (!b.isBookingCompleted && !isFullyCancelled) {
+        uncompleted.push(b);
       }
     });
 
+    console.log("✅ Final Total Travellers Count (Name List Logic):", totalTravellersCount);
+
     return {
-      totalBookings: uniqueUsers.size,
-      totalTravellers: travellerCount,
+      totalBookings: totalBookingsCount,
+      totalTravellers: totalTravellersCount,
       completedBookings: completed,
       pendingBookings: pending,
-      advancePending: advancePending.sort(
-        (a, b) => new Date(b.bookingDate) - new Date(a.bookingDate),
-      ),
-      balancePending: balancePending.sort(
-        (a, b) => new Date(b.bookingDate) - new Date(a.bookingDate),
-      ),
-      uncompleted: uncompleted.sort(
-        (a, b) => new Date(b.bookingDate) - new Date(a.bookingDate),
-      ),
-      modifyReceiptPending: modifyReceiptPending.sort(
-        (a, b) => new Date(b.bookingDate) - new Date(a.bookingDate),
-      ),
+      unverifiedBookings: unverified,
+      cancelledBookings: cancelled,
+      rejectedBookings: rejected,
+      advancePending: advancePending.sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate)),
+      balancePending: balancePending.sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate)),
+      uncompleted: uncompleted.sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate)),
+      modifyReceiptPending: modifyReceiptPending.sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate)),
     };
   }, [bookings]);
 
@@ -363,8 +363,8 @@ const TourDashboard = () => {
                       }}
                       disabled={isLoading}
                       className={`px-4 py-2 text-sm font-medium rounded-lg transition ${isLoading
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-green-600 text-white hover:bg-green-700"
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-green-600 text-white hover:bg-green-700"
                         }`}
                     >
                       {isLoading ? "Processing..." : "Mark Complete"}
@@ -392,8 +392,8 @@ const TourDashboard = () => {
                         <div
                           key={idx}
                           className={`p-4 rounded-lg border ${t.cancelled?.byTraveller || t.cancelled?.byAdmin
-                              ? "bg-red-50 border-red-200"
-                              : "bg-gray-50 border-gray-200"
+                            ? "bg-red-50 border-red-200"
+                            : "bg-gray-50 border-gray-200"
                             }`}
                         >
                           <p className="font-medium">
@@ -614,32 +614,75 @@ const TourDashboard = () => {
             </div>
           ) : (
             <div className="space-y-10">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow-sm border">
-                  <p className="text-sm text-gray-600">Total Bookings</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {stats.totalBookings}
-                  </p>
+              {/* ====================== STATISTICS CARDS ====================== */}
+              {/* ====================== CUTE STATISTICS CARDS ====================== */}
+              {/* ====================== CUTE & RESIZED STATISTICS CARDS ====================== */}
+              {/* ====================== PROFESSIONAL STATISTICS CARDS ====================== */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 md:gap-5">
+
+                {/* Total Bookings */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
+                  <div className="w-10 h-10 mx-auto bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
+                    <FileText size={24} />
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">Total TNRS</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalBookings}</p>
                 </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border">
-                  <p className="text-sm text-gray-600">Total Travellers</p>
-                  <p className="text-3xl font-bold text-indigo-600 mt-2">
-                    {stats.totalTravellers}
-                  </p>
+
+                {/* Total Travellers */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
+                  <div className="w-10 h-10 mx-auto bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3">
+                    <Users size={24} />
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">Total Travellers</p>
+                  <p className="text-3xl font-bold text-indigo-600 mt-1">{stats.totalTravellers}</p>
                 </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border">
-                  <p className="text-sm text-gray-600">Completed</p>
-                  <p className="text-3xl font-bold text-green-600 mt-2">
-                    {stats.completedBookings}
-                  </p>
+
+                {/* Completed */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
+                  <div className="w-10 h-10 mx-auto bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-3">
+                    <CheckCircle size={24} />
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">Completed</p>
+                  <p className="text-3xl font-bold text-green-600 mt-1">{stats.completedBookings}</p>
                 </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border">
-                  <p className="text-sm text-gray-600">Pending</p>
-                  <p className="text-3xl font-bold text-orange-600 mt-2">
-                    {stats.pendingBookings}
-                  </p>
+
+                {/* Pending */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
+                  <div className="w-10 h-10 mx-auto bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center mb-3">
+                    <Clock size={24} />
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">Pending</p>
+                  <p className="text-3xl font-bold text-orange-600 mt-1">{stats.pendingBookings}</p>
                 </div>
+
+                {/* Unverified */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
+                  <div className="w-10 h-10 mx-auto bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center mb-3">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">Unverified</p>
+                  <p className="text-3xl font-bold text-gray-500 mt-1">{stats.unverifiedBookings}</p>
+                </div>
+
+                {/* Cancelled */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
+                  <div className="w-10 h-10 mx-auto bg-red-50 text-red-600 rounded-xl flex items-center justify-center mb-3">
+                    <XCircle size={24} />   {/* Note: Add XCircle import if not present */}
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">Cancelled</p>
+                  <p className="text-3xl font-bold text-red-600 mt-1">{stats.cancelledBookings}</p>
+                </div>
+
+                {/* Rejected */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
+                  <div className="w-10 h-10 mx-auto bg-red-50 text-red-700 rounded-xl flex items-center justify-center mb-3">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <p className="text-xs font-medium text-gray-600">Rejected</p>
+                  <p className="text-3xl font-bold text-red-700 mt-1">{stats.rejectedBookings}</p>
+                </div>
+
               </div>
 
               {/* Pending Sections */}

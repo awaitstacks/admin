@@ -1068,6 +1068,124 @@ const TourContextProvider = (props) => {
     }
   };
 
+  // ==================== NEW REMARK FUNCTIONS ====================
+
+  const updateBalanceRemark = async (tnr, remarkIndex, remark, amount) => {
+    try {
+      if (!tnr || tnr.length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
+      }
+
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/balance/${tnr}/remark`,
+        { remarkIndex, remark, amount },
+        { headers: { ttoken } }
+      );
+
+      if (data.success) {
+        toast.success("Balance remark updated");
+        await viewTourBalance(tnr); // Refresh data
+      } else {
+        toast.error(data.message || "Failed to update remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("updateBalanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to update";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const updateAdvanceRemark = async (tnr, remarkIndex, remark, amount) => {
+    try {
+      if (!tnr || tnr.length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
+      }
+
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/advance/${tnr}/remark`,
+        { remarkIndex, remark, amount },
+        { headers: { ttoken } }
+      );
+
+      if (data.success) {
+        toast.success("Advance remark updated");
+        await viewTourAdvance(tnr); // Refresh data
+      } else {
+        toast.error(data.message || "Failed to update remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("updateAdvanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to update";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const deleteBalanceRemark = async (tnr, remarkIndex) => {
+    try {
+      if (!tnr || tnr.length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
+      }
+
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/balance/${tnr}/remark`,
+        {
+          headers: { ttoken },
+          data: { remarkIndex }
+        }
+      );
+
+      if (data.success) {
+        toast.success("Balance remark deleted");
+        await viewTourBalance(tnr);
+      } else {
+        toast.error(data.message || "Failed to delete remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("deleteBalanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to delete";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const deleteAdvanceRemark = async (tnr, remarkIndex) => {
+    try {
+      if (!tnr || tnr.length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
+      }
+
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/advance/${tnr}/remark`,
+        {
+          headers: { ttoken },
+          data: { remarkIndex }
+        }
+      );
+
+      if (data.success) {
+        toast.success("Advance remark deleted");
+        await viewTourAdvance(tnr);
+      } else {
+        toast.error(data.message || "Failed to delete remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("deleteAdvanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to delete";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
   const markModifyReceipt = async (tnr, tourId) => {
     try {
       if (!tnr) {
@@ -1786,6 +1904,12 @@ const TourContextProvider = (props) => {
     viewTourAdvance,
     updateTourBalance,
     viewTourBalance,
+    // NEW REMARK FUNCTIONS
+    updateBalanceRemark,
+    updateAdvanceRemark,
+    deleteBalanceRemark,
+    deleteAdvanceRemark,
+  
     balanceDetails,
     setBalanceDetails,
     markModifyReceipt,
