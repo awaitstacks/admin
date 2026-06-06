@@ -25,8 +25,11 @@ const TourContextProvider = (props) => {
   const [singleBooking, setSingleBooking] = useState(null);
   const [managedBookingsHistory, setManagedBookingsHistory] = useState([]);
   const [roomAllocation, setRoomAllocation] = useState(null);
+  const [manualRooms, setManualRooms] = useState([]);
   const [roomAllocationLoading, setRoomAllocationLoading] = useState(false);
   const [roomAllocationError, setRoomAllocationError] = useState(null);
+  const [manualRoomsLoading, setManualRoomsLoading] = useState(false);
+  const [manualRoomsError, setManualRoomsError] = useState(null);
   const [tourVehicles, setTourVehicles] = useState([]); // list of vehicles for current tour
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [vehiclesError, setVehiclesError] = useState(null);
@@ -1071,144 +1074,144 @@ const TourContextProvider = (props) => {
     }
   };
 
-  
+
   // ==================== REMARK FUNCTIONS - CLEAN & CORRECT ====================
 
-const updateBalanceRemark = async (tnr, remarkIndex, remark, amount) => {
-  try {
-    if (!tnr || tnr.trim().length !== 6) {
-      toast.error("Valid 6-character TNR required");
-      return { success: false, message: "Valid TNR required" };
-    }
-
-    if (typeof remarkIndex !== "number" || remarkIndex < 0) {
-      toast.error("Valid remark index required");
-      return { success: false, message: "Valid remarkIndex required" };
-    }
-
-    const { data } = await axios.put(
-      `${backendUrl}/api/tour/balance/${tnr.trim().toUpperCase()}/remark`,
-      { remarkIndex, remark, amount },
-      { headers: { ttoken } }
-    );
-
-    if (data.success) {
-      toast.success("Balance remark updated successfully");
-      await viewTourBalance(tnr); // Refresh data
-    } else {
-      toast.error(data.message || "Failed to update remark");
-    }
-    return data;
-  } catch (error) {
-    console.error("updateBalanceRemark error:", error);
-    const msg = error.response?.data?.message || error.message || "Failed to update";
-    toast.error(msg);
-    return { success: false, message: msg };
-  }
-};
-
-const updateAdvanceRemark = async (tnr, remarkIndex, remark, amount) => {
-  try {
-    if (!tnr || tnr.trim().length !== 6) {
-      toast.error("Valid 6-character TNR required");
-      return { success: false, message: "Valid TNR required" };
-    }
-
-    if (typeof remarkIndex !== "number" || remarkIndex < 0) {
-      toast.error("Valid remark index required");
-      return { success: false, message: "Valid remarkIndex required" };
-    }
-
-    const { data } = await axios.put(
-      `${backendUrl}/api/tour/advance/${tnr.trim().toUpperCase()}/remark`,
-      { remarkIndex, remark, amount },
-      { headers: { ttoken } }
-    );
-
-    if (data.success) {
-      toast.success("Advance remark updated successfully");
-      await viewTourAdvance(tnr); // Refresh data
-    } else {
-      toast.error(data.message || "Failed to update remark");
-    }
-    return data;
-  } catch (error) {
-    console.error("updateAdvanceRemark error:", error);
-    const msg = error.response?.data?.message || error.message || "Failed to update";
-    toast.error(msg);
-    return { success: false, message: msg };
-  }
-};
-
-const deleteBalanceRemark = async (tnr, remarkIndex) => {
-  try {
-    if (!tnr || tnr.trim().length !== 6) {
-      toast.error("Valid 6-character TNR required");
-      return { success: false, message: "Valid TNR required" };
-    }
-
-    if (typeof remarkIndex !== "number" || remarkIndex < 0) {
-      toast.error("Valid remark index required");
-      return { success: false, message: "Valid remarkIndex required" };
-    }
-
-    const { data } = await axios.delete(
-      `${backendUrl}/api/tour/balance/${tnr.trim().toUpperCase()}/remark`,
-      {
-        headers: { ttoken },
-        data: { remarkIndex }
+  const updateBalanceRemark = async (tnr, remarkIndex, remark, amount) => {
+    try {
+      if (!tnr || tnr.trim().length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
       }
-    );
 
-    if (data.success) {
-      toast.success("Balance remark deleted successfully");
-      await viewTourBalance(tnr);
-    } else {
-      toast.error(data.message || "Failed to delete remark");
-    }
-    return data;
-  } catch (error) {
-    console.error("deleteBalanceRemark error:", error);
-    const msg = error.response?.data?.message || error.message || "Failed to delete";
-    toast.error(msg);
-    return { success: false, message: msg };
-  }
-};
-
-const deleteAdvanceRemark = async (tnr, remarkIndex) => {
-  try {
-    if (!tnr || tnr.trim().length !== 6) {
-      toast.error("Valid 6-character TNR required");
-      return { success: false, message: "Valid TNR required" };
-    }
-
-    if (typeof remarkIndex !== "number" || remarkIndex < 0) {
-      toast.error("Valid remark index required");
-      return { success: false, message: "Valid remarkIndex required" };
-    }
-
-    const { data } = await axios.delete(
-      `${backendUrl}/api/tour/advance/${tnr.trim().toUpperCase()}/remark`,
-      {
-        headers: { ttoken },
-        data: { remarkIndex }
+      if (typeof remarkIndex !== "number" || remarkIndex < 0) {
+        toast.error("Valid remark index required");
+        return { success: false, message: "Valid remarkIndex required" };
       }
-    );
 
-    if (data.success) {
-      toast.success("Advance remark deleted successfully");
-      await viewTourAdvance(tnr);
-    } else {
-      toast.error(data.message || "Failed to delete remark");
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/balance/${tnr.trim().toUpperCase()}/remark`,
+        { remarkIndex, remark, amount },
+        { headers: { ttoken } }
+      );
+
+      if (data.success) {
+        toast.success("Balance remark updated successfully");
+        await viewTourBalance(tnr); // Refresh data
+      } else {
+        toast.error(data.message || "Failed to update remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("updateBalanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to update";
+      toast.error(msg);
+      return { success: false, message: msg };
     }
-    return data;
-  } catch (error) {
-    console.error("deleteAdvanceRemark error:", error);
-    const msg = error.response?.data?.message || error.message || "Failed to delete";
-    toast.error(msg);
-    return { success: false, message: msg };
-  }
-};
+  };
+
+  const updateAdvanceRemark = async (tnr, remarkIndex, remark, amount) => {
+    try {
+      if (!tnr || tnr.trim().length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
+      }
+
+      if (typeof remarkIndex !== "number" || remarkIndex < 0) {
+        toast.error("Valid remark index required");
+        return { success: false, message: "Valid remarkIndex required" };
+      }
+
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/advance/${tnr.trim().toUpperCase()}/remark`,
+        { remarkIndex, remark, amount },
+        { headers: { ttoken } }
+      );
+
+      if (data.success) {
+        toast.success("Advance remark updated successfully");
+        await viewTourAdvance(tnr); // Refresh data
+      } else {
+        toast.error(data.message || "Failed to update remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("updateAdvanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to update";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const deleteBalanceRemark = async (tnr, remarkIndex) => {
+    try {
+      if (!tnr || tnr.trim().length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
+      }
+
+      if (typeof remarkIndex !== "number" || remarkIndex < 0) {
+        toast.error("Valid remark index required");
+        return { success: false, message: "Valid remarkIndex required" };
+      }
+
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/balance/${tnr.trim().toUpperCase()}/remark`,
+        {
+          headers: { ttoken },
+          data: { remarkIndex }
+        }
+      );
+
+      if (data.success) {
+        toast.success("Balance remark deleted successfully");
+        await viewTourBalance(tnr);
+      } else {
+        toast.error(data.message || "Failed to delete remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("deleteBalanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to delete";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const deleteAdvanceRemark = async (tnr, remarkIndex) => {
+    try {
+      if (!tnr || tnr.trim().length !== 6) {
+        toast.error("Valid 6-character TNR required");
+        return { success: false, message: "Valid TNR required" };
+      }
+
+      if (typeof remarkIndex !== "number" || remarkIndex < 0) {
+        toast.error("Valid remark index required");
+        return { success: false, message: "Valid remarkIndex required" };
+      }
+
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/advance/${tnr.trim().toUpperCase()}/remark`,
+        {
+          headers: { ttoken },
+          data: { remarkIndex }
+        }
+      );
+
+      if (data.success) {
+        toast.success("Advance remark deleted successfully");
+        await viewTourAdvance(tnr);
+      } else {
+        toast.error(data.message || "Failed to delete remark");
+      }
+      return data;
+    } catch (error) {
+      console.error("deleteAdvanceRemark error:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to delete";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
 
   const markModifyReceipt = async (tnr, tourId) => {
     try {
@@ -1417,6 +1420,99 @@ const deleteAdvanceRemark = async (tnr, remarkIndex) => {
     },
     [backendUrl, ttoken],
   );
+
+  const getManualRooms = useCallback(async (tourId) => {
+    if (!tourId) return;
+
+    setManualRoomsLoading(true);
+    setManualRoomsError(null);
+
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/${tourId}/manual-rooms`,
+        { headers: { ttoken } }
+      );
+
+      if (data.success) {
+        setManualRooms(data.allManualRooms || []);
+      } else {
+        setManualRooms([]);
+      }
+    } catch (err) {
+      console.error("getManualRooms error:", err);
+      setManualRooms([]);
+      setManualRoomsError(err.response?.data?.error || err.message);
+    } finally {
+      setManualRoomsLoading(false);
+    }
+  }, [backendUrl, ttoken]);
+
+  // 2. Add Guest Room
+  const addGuestRoom = useCallback(async (payload) => {
+    const { tourId, ...roomData } = payload;
+    if (!tourId) throw new Error("Tour ID is required");
+
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/${tourId}/add-guest-room`,
+        roomData,
+        { headers: { ttoken } }
+      );
+
+      // Refresh manual rooms after adding
+      await getManualRooms(tourId);
+      return data;
+    } catch (error) {
+      console.error("addGuestRoom Error:", error.response?.data || error);
+      throw error;
+    }
+  }, [backendUrl, ttoken, getManualRooms]);
+
+  // 3. Add Leader Room
+  const addLeaderRoom = useCallback(async (payload) => {
+    const { tourId, ...roomData } = payload;
+    if (!tourId) throw new Error("Tour ID is required");
+
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/${tourId}/add-leader-room`,
+        roomData,
+        { headers: { ttoken } }
+      );
+
+      // Refresh manual rooms after adding
+      await getManualRooms(tourId);
+      return data;
+    } catch (error) {
+      console.error("addLeaderRoom Error:", error.response?.data || error);
+      throw error;
+    }
+  }, [backendUrl, ttoken, getManualRooms]);
+
+  const deleteLeaderRoom = useCallback(async (tourId, roomId) => {
+    if (!tourId || !roomId) {
+      throw new Error("Tour ID and Room ID are required");
+    }
+
+    try {
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/${tourId}/leader-room/${roomId}`,
+        { headers: { ttoken } }
+      );
+
+      console.log("✅ Leader Room Deleted Successfully:", data);
+
+      // Refresh both lists
+      await getManualRooms(tourId);
+      await getRoomAllocation(tourId);
+
+      return data;
+    } catch (error) {
+      console.error("❌ Delete Leader Room Error:", error.response?.data || error);
+      throw error;
+    }
+  }, [backendUrl, ttoken, getManualRooms, getRoomAllocation]);
+
   const getTourVehicles = useCallback(
     async (tourId) => {
       if (!tourId) {
@@ -1950,6 +2046,16 @@ const deleteAdvanceRemark = async (tnr, remarkIndex) => {
     roomAllocationLoading,
     roomAllocationError,
     getRoomAllocation,
+    getManualRooms,
+    addGuestRoom,
+    addLeaderRoom,
+    deleteLeaderRoom,
+    // NEW: Manual Rooms
+    manualRooms,
+    setManualRooms,
+    manualRoomsLoading,
+    manualRoomsError,
+
 
     // Existing mark functions (unchanged)
     markAdvancePaid,
