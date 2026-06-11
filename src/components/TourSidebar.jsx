@@ -180,6 +180,13 @@ const tourMenuItems = [
     label: "Task Dashboard",
   },
   {
+    to: "/tour-enquiries",
+    icon: MapPinHouse,
+    label: "All Enquiries",
+  },
+
+  
+  {
     to: "/tour-allbookings",
     icon: Calendar,
     label: "All Bookings",

@@ -39,6 +39,8 @@ const TourContextProvider = (props) => {
   const [seatAllocation, setSeatAllocation] = useState(null);
   const [seatAllocationLoading, setSeatAllocationLoading] = useState(false);
   const [seatAllocationError, setSeatAllocationError] = useState(null);
+  const [enquiries, setEnquiries] = useState([]);
+  const [enquiryLoading, setEnquiryLoading] = useState(false);
   // ==================== GET ALL BOOKINGS ====================
   const getAllBookings = useCallback(async () => {
     try {
@@ -1997,6 +1999,165 @@ const TourContextProvider = (props) => {
     },
     [backendUrl, ttoken, currentTourId],
   );
+  // GET /api/tour/enquiry/all
+  const getAllEnquiries = useCallback(async () => {
+    try {
+      setEnquiryLoading(true);
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/enquiry/all`,
+        { headers: { ttoken } }
+      );
+      if (data.success) {
+        setEnquiries(data.data);
+        return { success: true, data: data.data, count: data.count };
+      } else {
+        toast.error(data.message);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    } finally {
+      setEnquiryLoading(false);
+    }
+  }, [backendUrl, ttoken]);
+
+  const adminCreateEnquiry = async (formData) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/enquiry/create`,
+        formData,
+        { headers: { ttoken } }
+      );
+      if (data.success) {
+        toast.success(`✅ ${data.message}`);
+        setEnquiries((prev) => [data.data, ...prev]);
+        return { success: true, fitCode: data.fitCode };
+      } else {
+        toast.error(data.message);
+        return { success: false };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message;
+      toast.error(msg);
+      return { success: false };
+    }
+  };
+
+
+  const getEnquiryById = useCallback(async (id) => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/enquiry/${id}`,
+        { headers: { ttoken } }
+      );
+      if (data.success) {
+        return { success: true, data: data.data };
+      } else {
+        toast.error(data.message);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  }, [backendUrl, ttoken]);
+
+  const updateEnquiry = async (id, updatedData) => {
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/enquiry/${id}/update`,
+        updatedData,
+        { headers: { ttoken } }
+      );
+      if (data.success) {
+        toast.success("Enquiry updated successfully!");
+        setEnquiries((prev) =>
+          prev.map((e) => e._id === id ? { ...e, ...data.data } : e)
+        );
+        return { success: true, data: data.data };
+      } else {
+        toast.error(data.message);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const deleteEnquiry = async (id) => {
+    try {
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/enquiry/${id}/delete`,
+        { headers: { ttoken } }
+      );
+      if (data.success) {
+        toast.success("Enquiry deleted successfully!");
+        setEnquiries((prev) => prev.filter((e) => e._id !== id));
+        return { success: true };
+      } else {
+        toast.error(data.message);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  // ── UPDATED: assignedTo + salesValue + fitStates pass பண்றோம் ──
+  const acceptEnquiry = async (id, extraData = {}) => {
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/enquiry/${id}/accept`,
+        extraData, // { assignedTo, salesValue, fitStates }
+        { headers: { ttoken } }
+      );
+      if (data.success) {
+        toast.success(`✅ ${data.message}`);
+        setEnquiries((prev) =>
+          prev.map((e) => e._id === id ? { ...e, ...data.data } : e)
+        );
+        return { success: true, data: data.data };
+      } else {
+        toast.error(data.message);
+        return { success: false };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false };
+    }
+  };
+
+  const rejectEnquiry = async (id) => {
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/enquiry/${id}/reject`,
+        {},
+        { headers: { ttoken } }
+      );
+      if (data.success) {
+        toast.success("Enquiry rejected!");
+        setEnquiries((prev) =>
+          prev.map((e) => e._id === id ? { ...e, status: "rejected" } : e)
+        );
+        return { success: true };
+      } else {
+        toast.error(data.message);
+        return { success: false };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false };
+    }
+  };
 
 
   // ==================== Context Value ====================
@@ -2101,7 +2262,15 @@ const TourContextProvider = (props) => {
     updateTourPaymentMethod,
     deleteTourPaymentMethod,
 
-
+    enquiries,        // ← state
+    enquiryLoading,
+    adminCreateEnquiry,  // ← loading state
+    getAllEnquiries,
+    getEnquiryById,
+    updateEnquiry,
+    deleteEnquiry,
+    acceptEnquiry,
+    rejectEnquiry,
   };
 
   return (

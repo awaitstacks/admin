@@ -41,6 +41,8 @@ import PaymentDetailsAdmin from "./pages/Admin/PaymentDetailsAdmin.jsx";
 import VehicleSeatAllocation from "./pages/Doctor/VehicleSeatAllocation.jsx";
 import AdminVehicleSeatAllocation from "./pages/Doctor/AdminVehicleSeatAllocation.jsx";
 import BalanceUpdate from "./pages/Doctor/BalanceUpdate.jsx";
+import TripEnquiries from "./pages/Doctor/TripEnquiries.jsx";
+
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
   const { ttoken } = useContext(TourContext);
@@ -78,6 +80,7 @@ const TourApp = () => {
             />
             {/* Tour Routes */}
             <Route path="/task-dashboard" element={<TaskDashboard />} />
+            <Route path="/tour-enquiries" element={<TripEnquiries />} />
             <Route path="/tour-dashboard" element={<TourDashboard />} />
             <Route path="/tour-bookings" element={<TourBookings />} />
             <Route path="/tour-profile" element={<TourProfile />} />
