@@ -182,7 +182,7 @@ const tourMenuItems = [
   {
     to: "/tour-enquiries",
     icon: MapPinHouse,
-    label: "All Enquiries",
+    label: "FIT Enquiries",
   },
 
   

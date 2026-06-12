@@ -751,12 +751,14 @@ const TripEnquiries = () => {
                         localStorage.setItem("gv_lastEditedFields", JSON.stringify(changed));
                         await getAllEnquiries();
                     }
+                    return result;
                 }}
+            
             />
 
             {/* Tabs */}
             <div style={{ marginBottom: "16px", textAlign: "center" }}>
-                <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", margin: "0 0 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>✈️ Trip Enquiries</h1><br />
+                <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", margin: "0 0 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>✈️ FIT Enquiries</h1><br />
                 <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", borderRadius: "10px", padding: "4px", width: "fit-content", margin: "0 auto" }}>
                     {[{ key: "all", label: "📋 All Enquiries" }, { key: "raise", label: "➕ Raise Enquiry" }].map((t) => (
                         <button key={t.key} onClick={() => setActiveTab(t.key)}
