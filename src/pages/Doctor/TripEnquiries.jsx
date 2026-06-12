@@ -227,12 +227,25 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
 
     const allStates = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
 
-    const inp = { width: "100%", border: "0.5px solid #e2e8f0", borderRadius: "8px", padding: "9px 10px", fontSize: "13px", color: "#1e293b", outline: "none", background: "#f8fafc", boxSizing: "border-box", height: "38px" };
-    const lbl = { fontSize: "12px", fontWeight: 600, color: "#374151", display: "block", marginBottom: "5px" };
+    const inp = { width: "100%", border: "0.5px solid #e2e8f0", borderRadius: "8px", padding: "11px 12px", fontSize: "14px", color: "#1e293b", outline: "none", background: "#f8fafc", boxSizing: "border-box", height: "44px" }; const lbl = { fontSize: "12px", fontWeight: 600, color: "#374151", display: "block", marginBottom: "5px" };
     const sec = { fontSize: "13px", fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", paddingBottom: "8px", borderBottom: "1px solid #f1f5f9" };
 
     return (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+            <style>{`
+            .eq-edit-add { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .eq-edit-add { grid-template-columns: 1fr !important; } }
+    .eq-edit-grid2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+    .eq-edit-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .eq-edit-grid2c { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 12px; }
+    .eq-edit-grid3t { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    @media (max-width: 600px) {
+        .eq-edit-grid2  { grid-template-columns: 1fr !important; }
+        .eq-edit-grid3  { grid-template-columns: 1fr !important; }
+        .eq-edit-grid2c { grid-template-columns: 1fr !important; }
+        .eq-edit-grid3t { grid-template-columns: 1fr !important; }
+    }
+`}</style>
             <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "700px", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
 
                 {/* Header */}
@@ -249,29 +262,27 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                     {/* Personal Details */}
                     <div>
                         <div style={sec}><span style={{ background: "#dbeafe", borderRadius: "6px", padding: "4px 8px" }}>👤</span> Personal Details</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-                            {[
-                                { label: "Full Name", name: "fullName", placeholder: "Full name" },
-                                { label: "Mobile Number", name: "mobileNumber", placeholder: "+91 XXXXX XXXXX" },
-                                { label: "Email", name: "email", placeholder: "email@example.com", type: "email" },
-                                { label: "City", name: "city", placeholder: "e.g. Chennai" },
-                            ].map((f) => (
-                                <div key={f.name}>
-                                    <label style={lbl}>{f.label}</label>
-                                    <input name={f.name} value={form[f.name] || ""} onChange={handleChange} type={f.type || "text"} placeholder={f.placeholder} style={inp} />
-                                </div>
-                            ))}
+                        <div className="eq-edit-grid2">                            {[
+                            { label: "Full Name", name: "fullName", placeholder: "Full name" },
+                            { label: "Mobile Number", name: "mobileNumber", placeholder: "+91 XXXXX XXXXX" },
+                            { label: "Email", name: "email", placeholder: "email@example.com", type: "email" },
+                            { label: "City", name: "city", placeholder: "e.g. Chennai" },
+                        ].map((f) => (
+                            <div key={f.name}>
+                                <label style={lbl}>{f.label}</label>
+                                <input name={f.name} value={form[f.name] || ""} onChange={handleChange} type={f.type || "text"} placeholder={f.placeholder} style={inp} />
+                            </div>
+                        ))}
                         </div>
                     </div>
 
                     {/* Tour Details */}
                     <div>
                         <div style={sec}><span style={{ background: "#d1fae5", borderRadius: "6px", padding: "4px 8px" }}>🗺️</span> Tour Details</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-                            <div>
-                                <label style={lbl}>Destination</label>
-                                <input name="destination" value={form.destination || ""} onChange={handleChange} placeholder="e.g. Kerala" style={inp} />
-                            </div>
+                        <div className="eq-edit-grid2c">                            <div>
+                            <label style={lbl}>Destination</label>
+                            <input name="destination" value={form.destination || ""} onChange={handleChange} placeholder="e.g. Kerala" style={inp} />
+                        </div>
                             <div>
                                 <label style={lbl}>Tour Type</label>
                                 <select name="tourType" value={form.tourType || ""} onChange={handleChange} style={{ ...inp, appearance: "none" }}>
@@ -286,7 +297,7 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                                 </select>
                             </div>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+                        <div className="eq-edit-grid3">
                             <div>
                                 <label style={lbl}>Travel Date</label>
                                 <input type="date" name="preferredTravelDate" value={form.preferredTravelDate || ""} onChange={handleChange}
@@ -308,51 +319,50 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                     {/* Travellers */}
                     <div>
                         <div style={sec}><span style={{ background: "#ede9fe", borderRadius: "6px", padding: "4px 8px" }}>👥</span> Travellers</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
-                            {[
-                                { key: "a", label: "Adults", color: "#2563eb", bg: "#dbeafe" },
-                                { key: "c", label: "Children (6–10)", color: "#ec4899", bg: "#fce7f3" },
-                                { key: "i", label: "Infants (0–5)", color: "#f97316", bg: "#ffedd5" },
-                            ].map((t) => (
-                                <div key={t.key} style={{ background: "#f8fafc", border: "0.5px solid #e2e8f0", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
-                                    <div style={{ fontSize: "12px", fontWeight: 600, color: t.color, marginBottom: "8px" }}>{t.label}</div>
-                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                                        <button type="button" onClick={() => changeCount(t.key, -1)} style={{ width: "30px", height: "30px", borderRadius: "6px", background: t.bg, border: "none", color: t.color, fontSize: "18px", cursor: "pointer" }}>−</button>
-                                        <span style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a", minWidth: "24px" }}>{counts[t.key]}</span>
-                                        <button type="button" onClick={() => changeCount(t.key, 1)} style={{ width: "30px", height: "30px", borderRadius: "6px", background: t.bg, border: "none", color: t.color, fontSize: "18px", cursor: "pointer" }}>+</button>
-                                    </div>
+                        <div className="eq-edit-grid3t">                            {[
+                            { key: "a", label: "Adults", color: "#2563eb", bg: "#dbeafe" },
+                            { key: "c", label: "Children (6–10)", color: "#ec4899", bg: "#fce7f3" },
+                            { key: "i", label: "Infants (0–5)", color: "#f97316", bg: "#ffedd5" },
+                        ].map((t) => (
+                            <div key={t.key} style={{ background: "#f8fafc", border: "0.5px solid #e2e8f0", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+                                <div style={{ fontSize: "12px", fontWeight: 600, color: t.color, marginBottom: "8px" }}>{t.label}</div>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                                    <button type="button" onClick={() => changeCount(t.key, -1)} style={{ width: "30px", height: "30px", borderRadius: "6px", background: t.bg, border: "none", color: t.color, fontSize: "18px", cursor: "pointer" }}>−</button>
+                                    <span style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a", minWidth: "24px" }}>{counts[t.key]}</span>
+                                    <button type="button" onClick={() => changeCount(t.key, 1)} style={{ width: "30px", height: "30px", borderRadius: "6px", background: t.bg, border: "none", color: t.color, fontSize: "18px", cursor: "pointer" }}>+</button>
                                 </div>
-                            ))}
+                            </div>
+                        ))}
                         </div>
                     </div>
 
                     {/* Status & Sales */}
-                    <div>
+                    {/* Status & Sales */}
+                    {data?.status === "accepted" && <div>
                         <div style={sec}><span style={{ background: "#fef3c7", borderRadius: "6px", padding: "4px 8px" }}>📊</span> Status & Sales</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                            <div>
-                                <label style={lbl}>Status</label>
-                                <select name="status" value={form.status || ""} onChange={handleChange} style={{ ...inp, appearance: "none" }}>
-                                    <option value="pending">Pending</option>
-                                    <option value="accepted">Accepted</option>
-                                    <option value="rejected">Rejected</option>
-                                </select>
-                            </div>
+                        <div className="eq-edit-grid2">                            <div>
+                            <label style={lbl}>Status</label>
+                            <select name="status" value={form.status || ""} onChange={handleChange} style={{ ...inp, appearance: "none" }}>
+                                <option value="pending">Pending</option>
+                                <option value="accepted">Accepted</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
                             <div>
                                 <label style={lbl}>Sales Value (₹)</label>
                                 <input type="number" name="salesValue" value={form.salesValue || ""} onChange={handleChange} min="0" placeholder="e.g. 25000" style={inp} />
                             </div>
                         </div>
-                    </div>
+                    </div>}
 
                     {/* Pickup Details */}
-                    <div>
+                    {/* Pickup Details */}
+                    {data?.status === "accepted" && <div>
                         <div style={sec}><span style={{ background: "#ffedd5", borderRadius: "6px", padding: "4px 8px" }}>🚐</span> Pickup Details</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-                            <div>
-                                <label style={lbl}>Pickup Date</label>
-                                <input type="date" name="pickupDate" value={form.pickupDate || ""} onChange={handleChange} style={inp} />
-                            </div>
+                        <div className="eq-edit-grid2c">                            <div>
+                            <label style={lbl}>Pickup Date</label>
+                            <input type="date" name="pickupDate" value={form.pickupDate || ""} onChange={handleChange} style={inp} />
+                        </div>
                             <div>
                                 <label style={lbl}>Pickup Time</label>
                                 <input type="time" name="pickupTime" value={form.pickupTime || ""} onChange={handleChange} style={inp} />
@@ -362,10 +372,11 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                             <label style={lbl}>Pickup Place</label>
                             <input type="text" name="pickupPlace" value={form.pickupPlace || ""} onChange={handleChange} placeholder="e.g. Chennai Airport T2" style={inp} />
                         </div>
-                    </div>
+                    </div>}
 
                     {/* FIT States */}
-                    <div>
+                    {/* FIT States */}
+                    {data?.status === "accepted" && <div>
                         <div style={sec}>
                             <span style={{ background: "#E6F1FB", borderRadius: "6px", padding: "4px 8px" }}>🗺</span> FIT States
                             <span style={{ marginLeft: "auto", fontSize: "11px", background: fitStates.length > 0 ? "#EAF3DE" : "#f1f5f9", color: fitStates.length > 0 ? "#3B6D11" : "#94a3b8", padding: "2px 8px", borderRadius: "10px" }}>
@@ -380,22 +391,22 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                                 </button>
                             ))}
                         </div>
-                    </div>
+                    </div>}
 
                     {/* Additional Info */}
                     <div>
                         <div style={sec}><span style={{ background: "#ffedd5", borderRadius: "6px", padding: "4px 8px" }}>💬</span> Additional Info</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                            <div>
-                                <label style={lbl}>Special Requests</label>
-                                <textarea name="specialRequests" value={form.specialRequests || ""} onChange={handleChange} rows={3}
-                                    placeholder="e.g. vegetarian meals..."
-                                    style={{ ...inp, height: "auto", resize: "none" }} />
-                            </div>
+                        <div className="eq-edit-add">                            <div>
+                            <label style={lbl}>Special Requests</label>
+                            <textarea name="specialRequests" value={form.specialRequests || ""} onChange={handleChange} rows={3}
+                                placeholder="e.g. vegetarian meals..."
+                                style={{ ...inp, height: "auto", resize: "none" }} />
+                        </div>
                             <div>
                                 <label style={lbl}>Source</label>
                                 <select name="source" value={form.source || ""} onChange={handleChange} style={{ ...inp, appearance: "none" }}>
                                     <option value="">Select source</option>
+                                    <option value="Regular">Regular</option>
                                     <option value="Google">Google</option>
                                     <option value="Facebook">Facebook</option>
                                     <option value="Instagram">Instagram</option>
@@ -521,7 +532,7 @@ const AdminEnquiryForm = ({ onSuccess }) => {
                             {[
                                 { label: "Full Name *", name: "fullName", placeholder: "Enter full name", required: true },
                                 { label: "Mobile Number *", name: "mobileNumber", placeholder: "+91 XXXXX XXXXX", required: true },
-                                { label: "Email Address *", name: "email", placeholder: "email@example.com", type: "email", required: true },
+                                { label: "Email Address", name: "email", placeholder: "email@example.com", type: "email" },
                                 { label: "City / Location", name: "city", placeholder: "e.g. Chennai" },
                             ].map((f) => (
                                 <div key={f.name}>
@@ -556,24 +567,24 @@ const AdminEnquiryForm = ({ onSuccess }) => {
                         </div>
                         <div className="aeq-tour-r2">
                             <div>
-                                <label className="aeq-lbl" style={lbl}>Travel Date *</label>
+                                <label className="aeq-lbl" style={lbl}>Travel Date</label>
                                 <div style={{ position: "relative" }}>
                                     <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "14px" }}>📅</span>
-                                    <input className="aeq-inp" name="preferredTravelDate" value={formData.preferredTravelDate} onChange={handleChange} required type="date" min={new Date().toISOString().split("T")[0]} style={inp} />
+                                    <input className="aeq-inp" name="preferredTravelDate" value={formData.preferredTravelDate} onChange={handleChange} type="date" min={new Date().toISOString().split("T")[0]} style={inp} />
                                 </div>
                             </div>
                             <div>
-                                <label className="aeq-lbl" style={lbl}>No. of Days *</label>
+                                <label className="aeq-lbl" style={lbl}>No. of Days</label>
                                 <div style={{ position: "relative" }}>
                                     <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "14px" }}>🌤️</span>
-                                    <input className="aeq-inp" name="numberOfDays" value={formData.numberOfDays} onChange={handleChange} required type="number" min="1" placeholder="5" style={inp} />
+                                    <input className="aeq-inp" name="numberOfDays" value={formData.numberOfDays} onChange={handleChange} type="number" min="1" placeholder="5" style={inp} />
                                 </div>
                             </div>
                             <div>
-                                <label className="aeq-lbl" style={lbl}>No. of Nights *</label>
+                                <label className="aeq-lbl" style={lbl}>No. of Nights</label>
                                 <div style={{ position: "relative" }}>
                                     <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "14px" }}>🌙</span>
-                                    <input className="aeq-inp" name="numberOfNights" value={formData.numberOfNights} onChange={handleChange} required type="number" min="0" placeholder="4" style={inp} />
+                                    <input className="aeq-inp" name="numberOfNights" value={formData.numberOfNights} onChange={handleChange} type="number" min="0" placeholder="4" style={inp} />
                                 </div>
                             </div>
                         </div>
@@ -612,6 +623,7 @@ const AdminEnquiryForm = ({ onSuccess }) => {
                                 <label style={lbl}>Source</label>
                                 <select name="source" value={formData.source} onChange={handleChange} style={inp}>
                                     <option value="">Select Source</option>
+                                    <option value="Regular">Regular</option>
                                     <option value="Google">Google</option><option value="Facebook">Facebook</option>
                                     <option value="Instagram">Instagram</option><option value="YouTube">YouTube</option>
                                     <option value="Friends & Family">Friends & Family</option>
@@ -643,9 +655,10 @@ const TripEnquiries = () => {
     const [modal, setModal] = useState({ open: false, type: "", id: "", name: "", fitCode: "" });
     const [editModal, setEditModal] = useState({ open: false, data: null });
     const [loadingId, setLoadingId] = useState(null);
-    const [lastEditedId, setLastEditedId] = useState(null);
-    const [lastEditedFields, setLastEditedFields] = useState({});
-    useEffect(() => { getAllEnquiries(); }, []);
+    const [lastEditedId, setLastEditedId] = useState(() => localStorage.getItem("gv_lastEditedId") || null);
+    const [lastEditedFields, setLastEditedFields] = useState(() => {
+        try { return JSON.parse(localStorage.getItem("gv_lastEditedFields") || "{}"); } catch { return {}; }
+    }); useEffect(() => { getAllEnquiries(); }, []);
 
     const handleFilter = (e) => { const { name, value } = e.target; setFilters((p) => ({ ...p, [name]: value })); };
     const clearFilters = () => setFilters({ search: "", destination: "", tourType: "", status: "pending", fromDate: "", toDate: "", raisedBy: "", fitCode: "" });
@@ -734,9 +747,10 @@ const TripEnquiries = () => {
                     if (result?.success) {
                         setLastEditedId(id);
                         setLastEditedFields(changed);
+                        localStorage.setItem("gv_lastEditedId", String(id));
+                        localStorage.setItem("gv_lastEditedFields", JSON.stringify(changed));
                         await getAllEnquiries();
                     }
-                    return result;
                 }}
             />
 
@@ -918,7 +932,7 @@ const TripEnquiries = () => {
                                 const isExp = expandedId === e._id;           // ← இது இருக்கா confirm பண்ணுங்க
                                 const total = (e.adults || 0) + (e.children || 0) + (e.infants || 0); return (
                                     <div key={e._id} style={{ borderBottom: "0.5px solid #f1f5f9" }}>
-                                        <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", background: isExp ? "#f8fafc" : "#fff" }}
+                                        <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", background: isExp ? "#f8fafc" : e.status === "accepted" ? "#f0fdf4" : "#fff" }}
                                             onClick={() => setExpandedId(isExp ? null : e._id)}>
                                             <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: 0 }}>
                                                 <span style={{ minWidth: "22px", height: "22px", borderRadius: "6px", background: "#e2e8f0", color: "#475569", fontSize: "10px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
@@ -963,7 +977,7 @@ const TripEnquiries = () => {
                                                             </span>
                                                         </div>
                                                     )}
-                                                    <div style={{ padding: "6px 0" }}><strong>Duration:</strong> {e.numberOfDays}D / {e.numberOfNights || 0}N</div>
+                                                    <div style={{ padding: "6px 0" }}><strong>Duration:</strong> {e.numberOfDays || 0}D / {e.numberOfNights || 0}N</div>
                                                 </div>
                                                 {/* Travellers */}
                                                 <div style={{ background: "#fff", borderRadius: "10px", padding: "14px", border: "0.5px solid #e2e8f0", marginBottom: "12px" }}>
@@ -1060,9 +1074,9 @@ const TripEnquiries = () => {
                                 const isLoading = loadingId === e._id + "_accept" || loadingId === e._id + "_reject";
                                 return (
                                     <div key={e._id} style={{ borderBottom: "0.5px solid #f1f5f9" }}>
-                                        <div style={{ display: "grid", gridTemplateColumns: col, alignItems: "center", background: isExp ? "#f8fafc" : "#fff", transition: "background 0.1s", cursor: "pointer" }}
-                                            onMouseEnter={(ev) => { if (!isExp) ev.currentTarget.style.background = "#f8fafc"; }}
-                                            onMouseLeave={(ev) => { if (!isExp) ev.currentTarget.style.background = "#fff"; }}
+                                        <div style={{ display: "grid", gridTemplateColumns: col, alignItems: "center", background: isExp ? "#f8fafc" : e.status === "accepted" ? "#f0fdf4" : "#fff", transition: "background 0.1s", cursor: "pointer" }}
+                                            onMouseEnter={(ev) => { if (!isExp) ev.currentTarget.style.background = e.status === "accepted" ? "#f0fdf4" : "#f8fafc"; }}
+                                            onMouseLeave={(ev) => { if (!isExp) ev.currentTarget.style.background = e.status === "accepted" ? "#f0fdf4" : "#fff"; }}
                                             onClick={() => setExpandedId(isExp ? null : e._id)}>
 
                                             <div style={{ padding: P, display: "flex", alignItems: "center", gap: "4px" }}>
@@ -1080,8 +1094,7 @@ const TripEnquiries = () => {
                                             </div>
                                             <div style={{ padding: P, overflow: "hidden" }}>
                                                 <div style={{ fontSize: "13px", fontWeight: 600, color: "#711c66ff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{destFmt(e.destination)}</div>
-                                                <div style={{ fontSize: "11px", color: "#94a3b8" }}>{e.numberOfDays}D/{e.numberOfNights || 0}N</div>
-                                            </div>
+                                                <div style={{ fontSize: "11px", color: "#94a3b8" }}>{e.numberOfDays || 0}D/{e.numberOfNights || 0}N</div>                                            </div>
                                             {/* Travel date + pickup date in red below */}
                                             <div style={{ padding: P, overflow: "hidden" }}>
                                                 <div style={{ fontSize: "12px", color: "#475569", whiteSpace: "nowrap" }}>
@@ -1136,7 +1149,7 @@ const TripEnquiries = () => {
                                                         },
                                                         {
                                                             head: "✈️ Trip", color: "#059669",
-                                                            rows: [["Destination", destFmt(e.destination)], ["Tour type", e.tourType], ["Travel date", e.preferredTravelDate ? new Date(e.preferredTravelDate).toLocaleDateString("en-IN") : "—"], ["Duration", `${e.numberOfDays}D/${e.numberOfNights || 0}N`], ["Pax", `${total}(${e.adults || 0}A ${e.children || 0}C ${e.infants || 0}I)`]],
+                                                            rows: [["Destination", destFmt(e.destination)], ["Tour type", e.tourType], ["Travel date", e.preferredTravelDate ? new Date(e.preferredTravelDate).toLocaleDateString("en-IN") : "—"], ["Duration", `${e.numberOfDays || 0}D/${e.numberOfNights || 0}N`], ["Pax", `${total}(${e.adults || 0}A ${e.children || 0}C ${e.infants || 0}I)`]],
                                                             pickupDate: e.pickupDate,
                                                             pickupTime: e.pickupTime,
                                                         },
