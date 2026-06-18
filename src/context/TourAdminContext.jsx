@@ -41,6 +41,16 @@ const TourAdminContextProvider = (props) => {
   const [seatAllocationLoading, setSeatAllocationLoading] = useState(false);
   const [seatAllocationError, setSeatAllocationError] = useState(null);
 
+  // ─── Analytics state ───────────────────────────────────────────────
+  const [analyticsSummary, setAnalyticsSummary] = useState(null);
+  const [analyticsYearWise, setAnalyticsYearWise] = useState([]);
+  const [analyticsMonthWise, setAnalyticsMonthWise] = useState([]);
+  const [analyticsCancellation, setAnalyticsCancellation] = useState([]);
+  const [analyticsTourList, setAnalyticsTourList] = useState([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
+
+
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -1111,6 +1121,184 @@ const TourAdminContextProvider = (props) => {
     },
     [backendUrl, aToken, currentTourId],
   );
+
+  // ─── Analytics functions ───────────────────────────────────────────
+
+  // 1. Summary — stat cards
+  // GET /api/touradmin/analytics-summary?year=&month=&tourId=
+  const getAnalyticsSummaryData = useCallback(
+    async ({ year = "", month = "", tourId = "" } = {}) => {
+      try {
+        const params = new URLSearchParams({
+          ...(year && { year }),
+          ...(month && { month }),
+          ...(tourId && { tourId }),
+        }).toString();
+
+        const { data } = await axios.get(
+          `${backendUrl}/api/touradmin/analytics-summary?${params}`,
+          { headers: { aToken } },
+        );
+
+        if (data.success) {
+          setAnalyticsSummary(data.data);
+          return { success: true, data: data.data };
+        }
+        return { success: false, message: data.message };
+      } catch (error) {
+        const msg = error.response?.data?.message || error.message || "Failed to fetch summary";
+        setAnalyticsError(msg);
+        return { success: false, message: msg };
+      }
+    },
+    [backendUrl, aToken],
+  );
+
+  // 2. Year-wise travellers — bar chart
+  // GET /api/touradmin/analytics-year-wise
+  const getAnalyticsYearWise = useCallback(async () => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/touradmin/analytics-year-wise`,
+        { headers: { aToken } },
+      );
+      if (data.success) {
+        setAnalyticsYearWise(data.data || []);
+        return { success: true, data: data.data };
+      }
+      return { success: false, message: data.message };
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Failed to fetch year wise data";
+      setAnalyticsError(msg);
+      return { success: false, message: msg };
+    }
+  }, [backendUrl, aToken]);
+
+  // 3. Month-wise travellers — line chart
+  // GET /api/touradmin/analytics-month-wise?year=2026
+  const getAnalyticsMonthWise = useCallback(
+    async (year = new Date().getFullYear()) => {
+      try {
+        const { data } = await axios.get(
+          `${backendUrl}/api/touradmin/analytics-month-wise?year=${year}`,
+          { headers: { aToken } },
+        );
+        if (data.success) {
+          setAnalyticsMonthWise(data.data || []);
+          return { success: true, data: data.data };
+        }
+        return { success: false, message: data.message };
+      } catch (error) {
+        const msg = error.response?.data?.message || error.message || "Failed to fetch month wise data";
+        setAnalyticsError(msg);
+        return { success: false, message: msg };
+      }
+    },
+    [backendUrl, aToken],
+  );
+
+  // 4. Year-wise cancellation pool — bar chart
+  // GET /api/touradmin/analytics-cancellation
+  // const getAnalyticsCancellation = useCallback(async () => {
+  //   try {
+  //     const { data } = await axios.get(
+  //       `${backendUrl}/api/touradmin/analytics-cancellation`,
+  //       { headers: { aToken } },
+  //     );
+  //     if (data.success) {
+  //       setAnalyticsCancellation(data.data || []);
+  //       return { success: true, data: data.data };
+  //     }
+  //     return { success: false, message: data.message };
+  //   } catch (error) {
+  //     const msg = error.response?.data?.message || error.message || "Failed to fetch cancellation data";
+  //     setAnalyticsError(msg);
+  //     return { success: false, message: msg };
+  //   }
+  // }, [backendUrl, aToken]);
+
+
+  const getAnalyticsCancellation = useCallback(async ({ view = "year", year } = {}) => {
+    try {
+      const params = { view };
+      if (year) params.year = year;
+
+      const { data } = await axios.get(
+        `${backendUrl}/api/touradmin/analytics-cancellation`,
+        { headers: { aToken }, params },
+      );
+      if (data.success) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, message: data.message };
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Failed to fetch cancellation data";
+      return { success: false, message: msg };
+    }
+  }, [backendUrl, aToken]);
+  // 5. Tour list — table
+  // GET /api/touradmin/analytics-tour-list?year=&month=&type=&status=&tourId=
+  const getAnalyticsTourList = useCallback(
+    async ({ year = "", month = "", type = "", status = "", tourId = "" } = {}) => {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      try {
+        const params = new URLSearchParams({
+          ...(year && { year }),
+          ...(month && { month }),
+          ...(type && { type }),
+          ...(status && { status }),
+          ...(tourId && { tourId }),
+        }).toString();
+
+        const { data } = await axios.get(
+          `${backendUrl}/api/touradmin/analytics-tour-list?${params}`,
+          { headers: { aToken } },
+        );
+
+        if (data.success) {
+          setAnalyticsTourList(data.data || []);
+          return { success: true, data: data.data };
+        }
+        return { success: false, message: data.message };
+      } catch (error) {
+        const msg = error.response?.data?.message || error.message || "Failed to fetch tour list";
+        setAnalyticsError(msg);
+        return { success: false, message: msg };
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    },
+    [backendUrl, aToken],
+  );
+
+  // 6. Tour name search — starts-with dropdown
+  // GET /api/touradmin/analytics-search?q=K&year=2026
+  const searchAnalyticsTours = useCallback(
+    async ({ q = "", year = "", month = "" } = {}) => {
+      if (!q) return { success: true, data: [] };
+      try {
+        const params = new URLSearchParams({
+          q: q.toUpperCase(),
+          ...(year && { year }),
+          ...(month && { month }),
+        }).toString();
+
+        const { data } = await axios.get(
+          `${backendUrl}/api/touradmin/analytics-search?${params}`,
+          { headers: { aToken } },
+        );
+
+        if (data.success) return { success: true, data: data.data || [] };
+        return { success: false, data: [], message: data.message };
+      } catch (error) {
+        const msg = error.response?.data?.message || error.message || "Search failed";
+        return { success: false, data: [], message: msg };
+      }
+    },
+    [backendUrl, aToken],
+  );
+
   const value = {
     aToken,
     setAToken,
@@ -1187,6 +1375,21 @@ const TourAdminContextProvider = (props) => {
     seatAllocationError,
     getVehicleSeatAllocation,
     getPaymentMethods,
+    // ─── Analytics ───────────────────────────────────────────────────
+    analyticsSummary,
+    analyticsYearWise,
+    analyticsMonthWise,
+    analyticsCancellation,
+    analyticsTourList,
+    analyticsLoading,
+    analyticsError,
+    getAnalyticsSummaryData,
+    getAnalyticsYearWise,
+    getAnalyticsMonthWise,
+    getAnalyticsCancellation,
+    getAnalyticsTourList,
+    searchAnalyticsTours,
+
   };
 
   return (

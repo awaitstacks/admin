@@ -147,6 +147,11 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
 
 const adminMenuItems = [
   { to: "/admin-dashboard", icon: Home, label: "Dashboard" },
+  {
+    to: "/tour-analytics",
+    icon: Home,
+    label: "Sales DashBoard",
+  },
   { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
   { to: "/all-users", icon: User2Icon, label: "All users" },
   { to: "/add-tour", icon: Plus, label: "Add Tour" },

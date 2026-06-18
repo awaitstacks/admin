@@ -9,6 +9,7 @@ import { TourAdminContext } from "./context/TourAdminContext.jsx";
 import { TourContext } from "./context/TourContext.jsx";
 
 import TourAdminDashboard from "./pages/Admin/TourAdminDashboard.jsx";
+import Analytics from "./pages/Admin/Analytics.jsx";  // ← இது மட்டும் இருக்கணும்
 import AllBookings from "./pages/Admin/AllBookings.jsx";
 import AddTour from "./pages/Admin/AddTour.jsx";
 import ToursList from "./pages/Admin/ToursList.jsx";
@@ -21,7 +22,6 @@ import GetBookings from "./pages/Admin/GetBookings.jsx";
 import AdminNameList from "./pages/Admin/AdminNameList.jsx";
 import AdminRoomList from "./pages/Admin/AdminRoomList.jsx";
 import TermsPage from "./pages/Admin/TermsPage.jsx";
-
 import TourDashboard from "./pages/Doctor/TourDashboard.jsx";
 import TourBookings from "./pages/Doctor/TourBookings.jsx";
 import TourProfile from "./pages/Doctor/TourProfile.jsx";
@@ -43,6 +43,7 @@ import AdminVehicleSeatAllocation from "./pages/Doctor/AdminVehicleSeatAllocatio
 import BalanceUpdate from "./pages/Doctor/BalanceUpdate.jsx";
 import TripEnquiries from "./pages/Doctor/TripEnquiries.jsx";
 
+
 const TourApp = () => {
   const { aToken } = useContext(TourAdminContext);
   const { ttoken } = useContext(TourContext);
@@ -57,6 +58,7 @@ const TourApp = () => {
             {/* Admin Routes */}
             <Route path="/" element={<></>} />
             <Route path="/admin-dashboard" element={<TourAdminDashboard />} />
+            <Route path="/tour-analytics" element={<Analytics />} />
             <Route path="/all-bookings" element={<AllBookings />} />
             <Route path="/get-bookings" element={<GetBookings />} />
             <Route path="/add-tour" element={<AddTour />} />
