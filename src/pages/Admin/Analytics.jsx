@@ -1435,6 +1435,12 @@ export default function Analytics() {
   const [searchRes, setSearchRes] = useState([]);
   const [summary, setSummary] = useState({});
   const [yearWise, setYearWise] = useState([]);
+  const [allAvailableYears, setAllAvailableYears] = useState([]);
+  useEffect(() => {
+    getAnalyticsYearWise({}).then(yw => {
+      setAllAvailableYears((yw.data || []).map(d => d._id));
+    }).catch(console.error);
+  }, []);
   const [monthWise, setMonthWise] = useState([]);
   const [cancelYW, setCancelYW] = useState([]);
   const [cancelMW, setCancelMW] = useState([]);
@@ -1784,9 +1790,9 @@ export default function Analytics() {
   const activePlusCancelRequest = (summary.activeTravellers || 0) + (summary.cancellationRequestTravellers || 0);
   const monthRangeLength = (range.fromMonth && range.toMonth)
     ? (() => {
-        const fm = parseInt(range.fromMonth), tm = parseInt(range.toMonth);
-        return fm <= tm ? (tm - fm + 1) : (12 - fm + 1 + tm); // wrap-around e.g. Nov(11)–Feb(2)
-      })()
+      const fm = parseInt(range.fromMonth), tm = parseInt(range.toMonth);
+      return fm <= tm ? (tm - fm + 1) : (12 - fm + 1 + tm); // wrap-around e.g. Nov(11)–Feb(2)
+    })()
     : 12;
   const avgTravellers = rangeMode
     ? Math.round(activePlusCancelRequest / monthRangeLength)
@@ -1814,7 +1820,7 @@ export default function Analytics() {
       <div style={{ ...S.topbar, justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ ...S.h2, fontSize: 29, color: 'blue' }}>
-            📊 Sales dashboard
+            📊 Sales Analytics
           </h2>
           <div style={{ ...S.sub, color: 'gray' }}>
             Overview of travellers, tours and cancellations
@@ -1825,100 +1831,109 @@ export default function Analytics() {
 
       <div style={{ ...S.fbar, marginBottom: 12 }}>
         <div className="an-fbar-grid">
-        <button
-          onClick={() => setRangeMode(p => !p)}
-          style={{
-            fontSize: 11, padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontWeight: 600,
-            border: rangeMode ? "1px solid #7c3aed" : "1px solid #e5e7eb",
-            background: rangeMode ? "#7c3aed" : "#fff",
-            color: rangeMode ? "#fff" : "#666",
-            width: "100%",
-          }}
-        >
-          {rangeMode ? "📅 Range mode" : "📅 Use range"}
-        </button>
+          <button
+            onClick={() => setRangeMode(p => !p)}
+            style={{
+              fontSize: 11, padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontWeight: 600,
+              border: rangeMode ? "1px solid #7c3aed" : "1px solid #e5e7eb",
+              background: rangeMode ? "#7c3aed" : "#fff",
+              color: rangeMode ? "#fff" : "#666",
+              width: "100%",
+            }}
+          >
+            {rangeMode ? "📅 Range mode" : "📅 Use range"}
+          </button>
 
-        {!rangeMode ? (
-          <>
-            <select className="an-sel" style={S.sel} value={filters.year} onChange={e => setFilters(p => ({ ...p, year: e.target.value }))}>
-              <option value="">All years</option>
-              {[...new Set([
-                ...yearWise.map(d => d._id),
-                new Date().getFullYear()
-              ])].sort((a, b) => b - a).map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select className="an-sel" style={S.sel} value={filters.month} onChange={e => setFilters(p => ({ ...p, month: e.target.value }))}>
-              <option value="">All months</option>
-              {MN.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-            </select>
-          </>
-        ) : (
-          <>
-            {/* ── Year range: from / to ── */}
-            <select className="an-sel" style={S.sel} value={range.fromYear} onChange={e => setRange(p => ({ ...p, fromYear: e.target.value }))}>
-              <option value="">Year from</option>
-              {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select className="an-sel" style={S.sel} value={range.toYear} onChange={e => setRange(p => ({ ...p, toYear: e.target.value }))}>
-              <option value="">Year to</option>
-              {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            {/* ── Month range: from / to (applied within EACH matched year independently) ── */}
-            <select className="an-sel" style={S.sel} value={range.fromMonth} onChange={e => setRange(p => ({ ...p, fromMonth: e.target.value }))}>
-              <option value="">Month from</option>
-              {MN.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-            </select>
-            <select className="an-sel" style={S.sel} value={range.toMonth} onChange={e => setRange(p => ({ ...p, toMonth: e.target.value }))}>
-              <option value="">Month to</option>
-              {MN.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-            </select>
-          </>
-        )}
-
-        <select className="an-sel" style={S.sel} value={filters.type} onChange={e => setFilters(p => ({ ...p, type: e.target.value }))}>
-          <option value="">All types</option>
-          <option value="Spiritual">Spiritual</option>
-          <option value="Historical">Historical</option>
-          <option value="International">International</option>
-          <option value="Jolly">Jolly</option>
-        </select>
-        <select className="an-sel" style={S.sel} value={filters.status} onChange={e => setFilters(p => ({ ...p, status: e.target.value }))}>
-          <option value="">All status</option>
-          <option value="Available">Available</option>
-          <option value="Soldout">Soldout</option>
-          <option value="Completed">Completed</option>
-        </select>
-        <div className="an-search-wrap" style={{ position: "relative", gridColumn: rangeMode ? "span 1" : "span 3" }} ref={dropRef}>
-          <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#aaa", pointerEvents: "none" }}>🔍</span>
-          <input style={S.sinp} placeholder="Search tour..." value={searchQ}
-            onChange={e => setSearchQ(e.target.value)}
-            onFocus={() => searchRes.length > 0 && setShowDrop(true)} />
-          {showDrop && searchRes.length > 0 && (
-            <div style={S.drop}>
-              <div style={{ ...S.di, fontWeight: 600, borderBottom: "0.5px solid #eee", color: "#7c3aed" }}
-                onMouseDown={() => { const n = searchRes.filter(r => !selTours.find(s => s._id.toString() === r._id.toString())); setSelTours(p => [...p, ...n]); setSearchQ(""); setShowDrop(false); }}>
-                ✓ Select all ({searchRes.length})
-              </div>
-              {searchRes.map(t => (
-                <div key={t._id} style={{ ...S.di, background: selTours.find(s => s._id.toString() === t._id.toString()) ? "#f3f0ff" : "transparent" }} onMouseDown={() => selTour(t)}>
-                  {t.tourName}<small style={{ display: "block", fontSize: 10, color: "#aaa" }}>{t.tourType}</small>
-                </div>
-              ))}
-            </div>
+          {!rangeMode ? (
+            <>
+              <select className="an-sel" style={S.sel} value={filters.year} onChange={e => setFilters(p => ({ ...p, year: e.target.value }))}>
+                <option value="">All years</option>
+                {[...new Set([
+                  ...allAvailableYears,
+                  new Date().getFullYear()
+                ])].sort((a, b) => b - a).map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <select className="an-sel" style={S.sel} value={filters.month} onChange={e => setFilters(p => ({ ...p, month: e.target.value }))}>
+                <option value="">All months</option>
+                {MN.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+              </select>
+            </>
+          ) : (
+            <>
+              {/* ── Year range: from / to ──
+                 Shows ONLY the exact years present in yearWise (DB data),
+                 sorted ascending. No buffer years, no future estimation —
+                 if a tour exists for a given year, it appears here; if
+                 not, it doesn't. ── */}
+              {(() => {
+                const yearOptions = [...new Set(allAvailableYears)].sort((a, b) => a - b); return (
+                  <>
+                    <select className="an-sel" style={S.sel} value={range.fromYear} onChange={e => setRange(p => ({ ...p, fromYear: e.target.value }))}>
+                      <option value="">Year from</option>
+                      {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <select className="an-sel" style={S.sel} value={range.toYear} onChange={e => setRange(p => ({ ...p, toYear: e.target.value }))}>
+                      <option value="">Year to</option>
+                      {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </>
+                );
+              })()}            {/* ── Month range: from / to (applied within EACH matched year independently) ── */}
+              <select className="an-sel" style={S.sel} value={range.fromMonth} onChange={e => setRange(p => ({ ...p, fromMonth: e.target.value }))}>
+                <option value="">Month from</option>
+                {MN.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+              </select>
+              <select className="an-sel" style={S.sel} value={range.toMonth} onChange={e => setRange(p => ({ ...p, toMonth: e.target.value }))}>
+                <option value="">Month to</option>
+                {MN.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+              </select>
+            </>
           )}
-        </div>
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
-          {selTours.length === 0
-            ? <span style={{ ...S.chip, background: "#f4f6fb", color: "#888" }}>🔽 All tours</span>
-            : selTours.map(t => (
-              <span key={t._id} style={S.chip}>
-                {t.tourName?.split(" ").slice(0, 3).join(" ")}
-                <button onClick={() => removeTour(t._id)} style={{ background: "none", border: "none", color: "#7c3aed", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>×</button>
-              </span>
-            ))
-          }
-        </div>
-        <button className="an-clr-btn" style={{ ...S.clr, width: "100%" }} onClick={clearAll}>✕ Clear</button>
+
+          <select className="an-sel" style={S.sel} value={filters.type} onChange={e => setFilters(p => ({ ...p, type: e.target.value }))}>
+            <option value="">All types</option>
+            <option value="Spiritual">Spiritual</option>
+            <option value="Historical">Historical</option>
+            <option value="International">International</option>
+            <option value="Jolly">Jolly</option>
+          </select>
+          <select className="an-sel" style={S.sel} value={filters.status} onChange={e => setFilters(p => ({ ...p, status: e.target.value }))}>
+            <option value="">All status</option>
+            <option value="Available">Available</option>
+            <option value="Soldout">Soldout</option>
+            <option value="Completed">Completed</option>
+          </select>
+          <div className="an-search-wrap" style={{ position: "relative", gridColumn: rangeMode ? "span 1" : "span 3" }} ref={dropRef}>
+            <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#aaa", pointerEvents: "none" }}>🔍</span>
+            <input style={S.sinp} placeholder="Search tour..." value={searchQ}
+              onChange={e => setSearchQ(e.target.value)}
+              onFocus={() => searchRes.length > 0 && setShowDrop(true)} />
+            {showDrop && searchRes.length > 0 && (
+              <div style={S.drop}>
+                <div style={{ ...S.di, fontWeight: 600, borderBottom: "0.5px solid #eee", color: "#7c3aed" }}
+                  onMouseDown={() => { const n = searchRes.filter(r => !selTours.find(s => s._id.toString() === r._id.toString())); setSelTours(p => [...p, ...n]); setSearchQ(""); setShowDrop(false); }}>
+                  ✓ Select all ({searchRes.length})
+                </div>
+                {searchRes.map(t => (
+                  <div key={t._id} style={{ ...S.di, background: selTours.find(s => s._id.toString() === t._id.toString()) ? "#f3f0ff" : "transparent" }} onMouseDown={() => selTour(t)}>
+                    {t.tourName}<small style={{ display: "block", fontSize: 10, color: "#aaa" }}>{t.tourType}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+            {selTours.length === 0
+              ? <span style={{ ...S.chip, background: "#f4f6fb", color: "#888" }}>🔽 All tours</span>
+              : selTours.map(t => (
+                <span key={t._id} style={S.chip}>
+                  {t.tourName?.split(" ").slice(0, 3).join(" ")}
+                  <button onClick={() => removeTour(t._id)} style={{ background: "none", border: "none", color: "#7c3aed", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>×</button>
+                </span>
+              ))
+            }
+          </div>
+          <button className="an-clr-btn" style={{ ...S.clr, width: "100%" }} onClick={clearAll}>✕ Clear</button>
         </div>
       </div>
 
@@ -2051,10 +2066,10 @@ export default function Analytics() {
               {rangeMode
                 ? (range.fromYear || range.toYear || range.fromMonth || range.toMonth)
                   ? `Range: ${[
-                      range.fromYear && range.toYear ? `${range.fromYear}–${range.toYear}` : range.fromYear || range.toYear,
-                      range.fromMonth && range.toMonth ? `${MN[+range.fromMonth]}–${MN[+range.toMonth]}` : range.fromMonth ? MN[+range.fromMonth] : range.toMonth ? MN[+range.toMonth] : "",
-                      filters.type, filters.status
-                    ].filter(Boolean).join(" · ")}`
+                    range.fromYear && range.toYear ? `${range.fromYear}–${range.toYear}` : range.fromYear || range.toYear,
+                    range.fromMonth && range.toMonth ? `${MN[+range.fromMonth]}–${MN[+range.toMonth]}` : range.fromMonth ? MN[+range.fromMonth] : range.toMonth ? MN[+range.toMonth] : "",
+                    filters.type, filters.status
+                  ].filter(Boolean).join(" · ")}`
                   : "Range mode — pick a year/month range"
                 : (filters.year || filters.month || filters.type || filters.status || selTours.length)
                   ? `Filtered: ${[filters.year, filters.month ? MN[+filters.month] : "", filters.type, filters.status].filter(Boolean).join(" · ")}`
@@ -2078,83 +2093,83 @@ export default function Analytics() {
         )}
 
         {showTable && (
-        <div className="an-desk-table-wrap" style={{ WebkitOverflowScrolling: "touch" }}>
-          <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", tableLayout: "fixed" }}>
-            <colgroup>
-              <col style={{ width: "28px" }} />
-              <col style={{ width: "19%" }} />
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "7%" }} />
-              <col style={{ width: "7%" }} />
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "8%" }} />
-            </colgroup>
-            <thead>
-              <tr style={{ background: "#f8f9fa" }}>
-                {["S.No", "Tour name", "TNR", "Travellers", "Cancelled", "Female", "Male", "Child", "GV cancel", "IRCTC cancel", "Total cancel", "Status"].map((h, i) => (
-                  <th key={i} style={{ ...S.th, textAlign: i === 0 ? "center" : i === 1 ? "left" : "center", padding: i === 0 ? "7px 2px" : i === 1 ? "7px 6px 7px 4px" : S.th.padding }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tableLoading ? (
-                <tr><td colSpan={12} style={{ ...S.td, textAlign: "center", padding: 24, color: "#aaa" }}>Loading...</td></tr>
-              ) : tourList.length === 0 ? (
-                <tr><td colSpan={12} style={{ ...S.td, textAlign: "center", padding: 24, color: "#aaa" }}>No tours match</td></tr>
-              ) : (
-                <>
-                  {tourList.map((t, i) => {
-                    const status = t.isCompleted === 1 ? "Completed" : t.available === false ? "Soldout" : "Available";
-                    const tot = (t.gvPool || 0) + (t.irctcPool || 0);
-                    const isOpen = expandedRow === t._id;
-                    return (
-                      <React.Fragment key={t._id}>
-                        <tr
-                          onClick={() => setExpandedRow(isOpen ? null : t._id)}
-                          style={{ cursor: "pointer", background: isOpen ? "#f3f0ff" : "transparent" }}
-                          onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = "#fafafa"; }}
-                          onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = "transparent"; }}>
-                          <td style={{ ...S.td, color: "#ccc", fontSize: 10, textAlign: "center", padding: "7px 2px" }}>{i + 1}</td>
-                          <td style={{ ...S.td, padding: "7px 6px 7px 4px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                              <span style={{ fontSize: 10, color: "#7c3aed", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform .15s", flexShrink: 0 }}>▸</span>
-                              <div style={{ minWidth: 0, overflow: "hidden" }}>
-                                <div style={{ fontWeight: 600, fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.tourName || "—"}</div>
-                                <small style={{ color: "#aaa", fontSize: 10 }}>{t.tourType || ""}</small>
+          <div className="an-desk-table-wrap" style={{ WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <colgroup>
+                <col style={{ width: "28px" }} />
+                <col style={{ width: "19%" }} />
+                <col style={{ width: "5%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "5%" }} />
+                <col style={{ width: "5%" }} />
+                <col style={{ width: "5%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "8%" }} />
+              </colgroup>
+              <thead>
+                <tr style={{ background: "#f8f9fa" }}>
+                  {["S.No", "Tour name", "TNR", "Travellers", "Cancelled", "Female", "Male", "Child", "GV cancel", "IRCTC cancel", "Total cancel", "Status"].map((h, i) => (
+                    <th key={i} style={{ ...S.th, textAlign: i === 0 ? "center" : i === 1 ? "left" : "center", padding: i === 0 ? "7px 2px" : i === 1 ? "7px 6px 7px 4px" : S.th.padding }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableLoading ? (
+                  <tr><td colSpan={12} style={{ ...S.td, textAlign: "center", padding: 24, color: "#aaa" }}>Loading...</td></tr>
+                ) : tourList.length === 0 ? (
+                  <tr><td colSpan={12} style={{ ...S.td, textAlign: "center", padding: 24, color: "#aaa" }}>No tours match</td></tr>
+                ) : (
+                  <>
+                    {tourList.map((t, i) => {
+                      const status = t.isCompleted === 1 ? "Completed" : t.available === false ? "Soldout" : "Available";
+                      const tot = (t.gvPool || 0) + (t.irctcPool || 0);
+                      const isOpen = expandedRow === t._id;
+                      return (
+                        <React.Fragment key={t._id}>
+                          <tr
+                            onClick={() => setExpandedRow(isOpen ? null : t._id)}
+                            style={{ cursor: "pointer", background: isOpen ? "#f3f0ff" : "transparent" }}
+                            onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = "#fafafa"; }}
+                            onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = "transparent"; }}>
+                            <td style={{ ...S.td, color: "#ccc", fontSize: 10, textAlign: "center", padding: "7px 2px" }}>{i + 1}</td>
+                            <td style={{ ...S.td, padding: "7px 6px 7px 4px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                                <span style={{ fontSize: 10, color: "#7c3aed", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform .15s", flexShrink: 0 }}>▸</span>
+                                <div style={{ minWidth: 0, overflow: "hidden" }}>
+                                  <div style={{ fontWeight: 600, fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.tourName || "—"}</div>
+                                  <small style={{ color: "#aaa", fontSize: 10 }}>{t.tourType || ""}</small>
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                          <td style={{ ...S.td, textAlign: "center", fontWeight: 600 }}>{t.totalTNR || 0}</td>
-                          <td style={{ ...S.td, textAlign: "center", fontWeight: 600, color: "#7c3aed" }}>{t.totalTravellers || 0}</td>
-                          <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#dc2626", "#fef2f2", "#fca5a5")}>{t.cancelledTravellers || 0}</span></td>
-                          <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#9d174d", "#fdf2f8", "#f9a8d4")}>{t.totalFemale || 0}</span></td>
-                          <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#1d4ed8", "#eff6ff", "#93c5fd")}>{t.totalMale || 0}</span></td>
-                          <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#854d0e", "#fef9c3", "#fde68a")}>{t.totalChild || 0}</span></td>
-                          <td style={{ ...S.td, textAlign: "center", color: "#15803d", fontWeight: 600 }}>{fmtFull(t.gvPool || 0)}</td>
-                          <td style={{ ...S.td, textAlign: "center", color: "#b45309", fontWeight: 600 }}>{fmtFull(t.irctcPool || 0)}</td>
-                          <td style={{ ...S.td, textAlign: "center", fontWeight: 600 }}>{fmtFull(tot)}</td>
-                          <td style={{ ...S.td, textAlign: "center" }}><span style={S.badge(status)}>{status}</span></td>
-                        </tr>
-                        {isOpen && (
-                          <tr>
-                            <td colSpan={12} style={{ padding: 0, borderBottom: "0.5px solid #f0f0f0" }}>
-                              <TourBreakdown t={t} compact />
                             </td>
+                            <td style={{ ...S.td, textAlign: "center", fontWeight: 600 }}>{t.totalTNR || 0}</td>
+                            <td style={{ ...S.td, textAlign: "center", fontWeight: 600, color: "#7c3aed" }}>{t.totalTravellers || 0}</td>
+                            <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#dc2626", "#fef2f2", "#fca5a5")}>{t.cancelledTravellers || 0}</span></td>
+                            <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#9d174d", "#fdf2f8", "#f9a8d4")}>{t.totalFemale || 0}</span></td>
+                            <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#1d4ed8", "#eff6ff", "#93c5fd")}>{t.totalMale || 0}</span></td>
+                            <td style={{ ...S.td, textAlign: "center" }}><span style={S.pill("#854d0e", "#fef9c3", "#fde68a")}>{t.totalChild || 0}</span></td>
+                            <td style={{ ...S.td, textAlign: "center", color: "#15803d", fontWeight: 600 }}>{fmtFull(t.gvPool || 0)}</td>
+                            <td style={{ ...S.td, textAlign: "center", color: "#b45309", fontWeight: 600 }}>{fmtFull(t.irctcPool || 0)}</td>
+                            <td style={{ ...S.td, textAlign: "center", fontWeight: 600 }}>{fmtFull(tot)}</td>
+                            <td style={{ ...S.td, textAlign: "center" }}><span style={S.badge(status)}>{status}</span></td>
                           </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </>
-              )}
-            </tbody>
-          </table>
-        </div>
+                          {isOpen && (
+                            <tr>
+                              <td colSpan={12} style={{ padding: 0, borderBottom: "0.5px solid #f0f0f0" }}>
+                                <TourBreakdown t={t} compact />
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
