@@ -1930,7 +1930,7 @@ export default function Analytics() {
         <div className="an-stat-grid" style={{ gridTemplateColumns: `repeat(3, 1fr)` }}>
           {[
             ["TNR", totTNR, "#1a1a2e"],
-            ["Travellers", totPax, "#7c3aed"],
+            ["Travellers (Active+CR+UV)", totPax, "#7c3aed"],
             ["Cancelled trav", totCancelledTrav, "#dc2626"],
             ["Female", totFem, "#9d174d"],
             ["Male", totMal, "#1d4ed8"],
@@ -1965,9 +1965,9 @@ export default function Analytics() {
 
       <Section title="Travellers" cols={3}>
         <StatCard icon="👥" iconBg="#ede9fe" label="Total travellers" value={(summary.totalTravellers || 0).toLocaleString("en-IN")} />
-        <StatCard icon="📊" iconBg="#e0e7ff" label="Average travellers" value={avgTravellers} />
+        <StatCard icon="📊" iconBg="#e0e7ff" label="Average travellers (Active+CR)" value={avgTravellers} />
         <StatCard icon="⏳" iconBg="#fef3c7" label="Unverified travellers" value={summary.unverifiedTravellers || 0} />
-        <StatCard icon="🟢" iconBg="#dcfce7" label="Active travellers" value={summary.activeTravellers || 0} />
+        <StatCard icon="🟢" iconBg="#dcfce7" label="Active travellers (Once Advance paid)" value={summary.activeTravellers || 0} />
         <StatCard icon="🔶" iconBg="#fef3c7" label="Cancelled" value={summary.cancelledTravellers || 0} />
         <StatCard icon="🕐" iconBg="#fde8d8" label="Cancel request" value={summary.cancellationRequestTravellers || 0} />
         <StatCard icon="🚫" iconBg="#fee2e2" label="Rejected" value={summary.rejectedTravellers || 0} />
