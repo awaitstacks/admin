@@ -1,3 +1,237 @@
+// /* eslint-disable no-unused-vars */
+// import React, { useContext, useState } from "react";
+// import { TourContext } from "../context/TourContext";
+// import { TourAdminContext } from "../context/TourAdminContext";
+// import { NavLink, useMatch } from "react-router-dom";
+// import {
+//   Home,
+//   Calendar,
+//   Plus,
+//   Users,
+//   X,
+//   Menu,
+//   FileText,
+//   User,
+//   IndianRupee,
+//   Banknote,
+//   TicketX,
+//   CalendarCheck,
+//   OctagonAlert,
+//   Signature,
+//   Hotel,
+//   UserCircle,
+//   User2Icon,
+//   LucideThermometerSnowflake,
+//   Info,
+//   Book,
+//   BookAIcon,
+//   BookImage,
+//   BookOpen,
+//   BookHeartIcon,
+//   ChartNoAxesColumn,
+//   ListIcon,
+//   HouseIcon,
+//   MapPinHouse,
+//   HouseWifiIcon,
+//   HousePlug,
+//   HomeIcon,
+//   LucideHome,
+//   HotelIcon,
+//   HousePlugIcon,
+//   HousePlus,
+//   CarTaxiFrontIcon,
+//   PenIcon,
+//   PenSquareIcon,
+// } from "lucide-react";
+
+// const TourSidebar = () => {
+//   const { aToken } = useContext(TourAdminContext);
+//   const { ttoken } = useContext(TourContext);
+//   const [isOpen, setIsOpen] = useState(false);
+
+//   return (
+//     <>
+//       {/* Mobile Hamburger Button - Auto sizes with icon */}
+//       <button
+//         onClick={() => setIsOpen(!isOpen)}
+//         className="md:hidden fixed top-20 left-4 z-50
+//                    flex items-center justify-center
+//                    w-10 h-10                /* Fixed size - change here if you want smaller/bigger */
+//                    bg-green-600 text-white
+//                    rounded-full shadow-2xl hover:bg-green-700
+//                    transition-all duration-200"
+//       >
+//         {isOpen ? <X size={28} /> : <Menu size={28} />}{" "}
+//         {/* Just change size here */}
+//       </button>
+
+//       {/* Sidebar */}
+//       <aside
+//         className={`
+//           fixed left-0 top-16 bottom-0 w-72 bg-white border-r border-gray-200 shadow-xl
+//           transform transition-transform duration-300 ease-in-out overflow-y-auto z-40
+//           ${isOpen ? "translate-x-0" : "-translate-x-full"}
+//           md:translate-x-0
+//         `}
+//       >
+//         <div className="pt-20 pb-20 px-6 md:pt-10">
+//           {aToken && (
+//             <nav className="space-y-3">
+//               {adminMenuItems.map((item) => (
+//                 <SidebarItem
+//                   key={item.to}
+//                   {...item}
+//                   onClick={() => setIsOpen(false)}
+//                 />
+//               ))}
+//             </nav>
+//           )}
+
+//           {ttoken && (
+//             <nav className="space-y-3">
+//               {tourMenuItems.map((item) => (
+//                 <SidebarItem
+//                   key={item.to}
+//                   {...item}
+//                   onClick={() => setIsOpen(false)}
+//                 />
+//               ))}
+//             </nav>
+//           )}
+//         </div>
+//       </aside>
+
+//       {/* Backdrop */}
+//       {isOpen && (
+//         <div
+//           className="fixed inset-0 bg-black/50 z-30 md:hidden"
+//           onClick={() => setIsOpen(false)}
+//         />
+//       )}
+//     </>
+//   );
+// };
+
+// const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
+//   const match = useMatch({ path: to, end: true });
+
+//   return (
+//     <NavLink
+//       to={to}
+//       onClick={onClick}
+//       className={`
+//         flex items-center gap-5 
+//         px-1                    /* more left/right padding */
+//         py-2 
+//         rounded-2xl
+//         font-semibold text-base tracking-wide
+//         transition-all duration-200
+//         w-full                  /* forces full width */
+//         justify-start           /* keeps icon + text aligned left */
+//         ${
+//           match
+//             ? "bg-green-600 text-white shadow-lg"
+//             : "text-gray-700 hover:bg-green-100 hover:text-green-800"
+//         }
+//       `}
+//     >
+//       <Icon size={26} className={match ? "text-white" : "text-gray-600"} />
+
+//       {/* Removed truncate → now full text shows */}
+//       <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+//         {label}
+//       </span>
+//     </NavLink>
+//   );
+// };
+
+// const adminMenuItems = [
+//   { to: "/admin-dashboard", icon: Home, label: "Dashboard" },
+//   {
+//     to: "/tour-analytics",
+//     icon: Home,
+//     label: "Sales DashBoard",
+//   },
+//   { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
+//   { to: "/all-users", icon: User2Icon, label: "All users" },
+//   { to: "/add-tour", icon: Plus, label: "Add Tour" },
+//   { to: "/admin-namelist", icon: ListIcon, label: "Admin Name List" },
+//   { to: "/admin-roomlist", icon: HousePlus, label: "Admin Room List" },
+//   {
+//     to: "/admin-vehicles",
+//     icon: CarTaxiFrontIcon,
+//     label: "SAM",
+//   },
+//   {
+//     to: "/admin-seat-allocation-details",
+//     icon: Banknote,
+//     label: "SAM (Report)",
+//   },
+//   { to: "/booking-approvals", icon: Signature, label: "Booking approvals" },
+//   { to: "/cancel-centre", icon: TicketX, label: "Cancellation approvals" },
+//   { to: "/terms", icon: FileText, label: "Terms & Conditions" },
+//   { to: "/all-bookings", icon: Calendar, label: "Rejection centre" },
+//   { to: "/admin-payment-details", icon: Banknote, label: "Payment Details" },
+
+//   { to: "/tour-list", icon: Users, label: "Tour Controls and Data" },
+//   { to: "/cancel-rule", icon: FileText, label: "Cancellation Rule" },
+//   { to: "/db-migration", icon: OctagonAlert, label: "DB Migration centre" },
+// ];
+
+// const tourMenuItems = [
+//   {
+//     to: "/task-dashboard",
+//     icon: LucideThermometerSnowflake,
+//     label: "Task Dashboard",
+//   },
+//   {
+//     to: "/tour-enquiries",
+//     icon: MapPinHouse,
+//     label: "FIT Enquiries",
+//   },
+
+  
+//   {
+//     to: "/tour-allbookings",
+//     icon: Calendar,
+//     label: "All Bookings",
+//   },
+//   { to: "/tour-dashboard", icon: Info, label: "Tour info" },
+//   { to: "/tour-bookings", icon: BookImage, label: "Tour Bookings" },
+//   { to: "/add-tourDetail", icon: Plus, label: "Add Tour" },
+//   { to: "/tour-profile", icon: User, label: "Tour profile" },
+//   { to: "/tour-namelist", icon: FileText, label: "Tour Name List" },
+
+//   {
+//     to: "/tour-roomlist",
+//     icon: Hotel,
+//     label: "Tour Room list",
+//   },
+//   { to: "/seat-allocation-data", icon: FileText, label: "SAM (Report)" },
+//   {
+//     to: "/vehicles",
+//     icon: CarTaxiFrontIcon,
+//     label: "SAM",
+//   },
+//   { to: "/tour-termspage", icon: FileText, label: "Traveller Consent Form" },
+//   { to: "/tour-balancepage", icon: PenSquareIcon, label: "Balance Reminder" },
+//   { to: "/tour-updateBalance", icon: IndianRupee, label: "Payment controller" },
+//   { to: "/payment-details", icon: Banknote, label: "Payment Details" },
+//   {
+//     to: "/tour-cancelTraveller",
+//     icon: TicketX,
+//     label: "Cancellation Controller",
+//   },
+//   {
+//     to: "/tour-managebooking",
+//     icon: CalendarCheck,
+//     label: "Booking controller",
+//   },
+// ];
+
+// export default TourSidebar;
+
+
 /* eslint-disable no-unused-vars */
 import React, { useContext, useState } from "react";
 import { TourContext } from "../context/TourContext";
@@ -42,75 +276,96 @@ import {
   CarTaxiFrontIcon,
   PenIcon,
   PenSquareIcon,
+  ChartAreaIcon,
+  ChartBarIncreasing,
+  ChartPieIcon,
 } from "lucide-react";
+
+/*
+  ── LAYOUT STRATEGY ──────────────────────────────────────────────
+  Desktop sidebar is `position: fixed` so it stays pinned to the
+  screen while the page scrolls (its own content scrolls
+  independently via overflow-y-auto if the nav list is long).
+
+  To avoid the classic "fixed sidebar + manually-matched margin on
+  main" resize glitch, we render an invisible SPACER <div> with the
+  EXACT SAME width class (`w-72`) as a normal flex sibling of <main>
+  in TourApp.jsx. The spacer and the fixed sidebar always have
+  identical width because they share the literal same Tailwind
+  class — there's no separate "w-72 on sidebar" vs "ml-72 on main"
+  pair of numbers that can ever drift apart or repaint a frame apart.
+  Flexbox computes the spacer's width in the same single layout pass
+  as <main>'s remaining width, in both resize directions.
+*/
 
 const TourSidebar = () => {
   const { aToken } = useContext(TourAdminContext);
   const { ttoken } = useContext(TourContext);
   const [isOpen, setIsOpen] = useState(false);
 
+  const navItems = aToken ? adminMenuItems : ttoken ? tourMenuItems : [];
+
   return (
     <>
-      {/* Mobile Hamburger Button - Auto sizes with icon */}
+      {/* ── Mobile hamburger button (only rendered below lg) ── */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-20 left-4 z-50
+        className="lg:hidden fixed top-20 left-4 z-50
                    flex items-center justify-center
-                   w-10 h-10                /* Fixed size - change here if you want smaller/bigger */
+                   w-10 h-10
                    bg-green-600 text-white
                    rounded-full shadow-2xl hover:bg-green-700
-                   transition-all duration-200"
+                   transition-colors duration-200"
       >
-        {isOpen ? <X size={28} /> : <Menu size={28} />}{" "}
-        {/* Just change size here */}
+        {isOpen ? <X size={28} /> : <Menu size={28} />}
       </button>
 
-      {/* Sidebar */}
+      {/* ── Mobile slide-in drawer (fixed + transform, only below lg) ── */}
       <aside
         className={`
-          fixed left-0 top-16 bottom-0 w-72 bg-white border-r border-gray-200 shadow-xl
+          lg:hidden fixed left-0 top-16 bottom-0 w-72 bg-white border-r border-gray-200 shadow-xl
           transform transition-transform duration-300 ease-in-out overflow-y-auto z-40
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0
         `}
       >
-        <div className="pt-20 pb-20 px-6 md:pt-10">
-          {aToken && (
-            <nav className="space-y-3">
-              {adminMenuItems.map((item) => (
-                <SidebarItem
-                  key={item.to}
-                  {...item}
-                  onClick={() => setIsOpen(false)}
-                />
-              ))}
-            </nav>
-          )}
-
-          {ttoken && (
-            <nav className="space-y-3">
-              {tourMenuItems.map((item) => (
-                <SidebarItem
-                  key={item.to}
-                  {...item}
-                  onClick={() => setIsOpen(false)}
-                />
-              ))}
-            </nav>
-          )}
+        <div className="pt-20 pb-20 px-6">
+          <SidebarNav items={navItems} onItemClick={() => setIsOpen(false)} />
         </div>
       </aside>
 
-      {/* Backdrop */}
+      {/* ── Mobile backdrop ── */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="lg:hidden fixed inset-0 bg-black/50 z-30"
           onClick={() => setIsOpen(false)}
         />
       )}
+
+      {/* ── Desktop spacer: invisible, reserves layout space in the flex
+           row inside TourApp.jsx. Same w-72 class as the fixed sidebar
+           below, so widths can never drift apart on resize. ── */}
+      <div className="hidden lg:block w-72 flex-shrink-0" aria-hidden="true" />
+
+      {/* ── Desktop sidebar: position fixed, pinned to the screen.
+           Stays in place while the page scrolls; its own nav list
+           scrolls independently via overflow-y-auto if it's long.
+           Only visible at lg and above. ── */}
+      <aside className="hidden lg:block fixed left-0 top-16 bottom-0 w-72 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto z-30">
+        <div className="pt-10 pb-20 px-6">
+          <SidebarNav items={navItems} />
+        </div>
+      </aside>
     </>
   );
 };
+
+const SidebarNav = ({ items, onItemClick }) => (
+  <nav className="space-y-3">
+    {items.map((item) => (
+      <SidebarItem key={item.to} {...item} onClick={onItemClick} />
+    ))}
+  </nav>
+);
 
 const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
   const match = useMatch({ path: to, end: true });
@@ -120,14 +375,14 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
       to={to}
       onClick={onClick}
       className={`
-        flex items-center gap-5 
-        px-1                    /* more left/right padding */
-        py-2 
+        flex items-center gap-5
+        px-1
+        py-2
         rounded-2xl
         font-semibold text-base tracking-wide
-        transition-all duration-200
-        w-full                  /* forces full width */
-        justify-start           /* keeps icon + text aligned left */
+        transition-colors duration-200
+        w-full
+        justify-start
         ${
           match
             ? "bg-green-600 text-white shadow-lg"
@@ -136,8 +391,6 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
       `}
     >
       <Icon size={26} className={match ? "text-white" : "text-gray-600"} />
-
-      {/* Removed truncate → now full text shows */}
       <span className="whitespace-nowrap overflow-hidden text-ellipsis">
         {label}
       </span>
@@ -149,7 +402,7 @@ const adminMenuItems = [
   { to: "/admin-dashboard", icon: Home, label: "Dashboard" },
   {
     to: "/tour-analytics",
-    icon: Home,
+    icon: ChartPieIcon,
     label: "Sales DashBoard",
   },
   { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
@@ -189,8 +442,6 @@ const tourMenuItems = [
     icon: MapPinHouse,
     label: "FIT Enquiries",
   },
-
-  
   {
     to: "/tour-allbookings",
     icon: Calendar,
