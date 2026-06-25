@@ -1624,26 +1624,26 @@ const TourAdminContextProvider = (props) => {
     }
   }, [aToken, backendUrl, validateApiResponse]);
 
-  const addMissingFields = useCallback(async () => {
-    try {
-      console.log("Adding missing fields to all bookings...");
-      const { data } = await axios.post(
-        `${backendUrl}/api/touradmin/add-missing-fields`,
-        {},
-        { headers: { aToken } },
-      );
+  // const addMissingFields = useCallback(async () => {
+  //   try {
+  //     console.log("Adding missing fields to all bookings...");
+  //     const { data } = await axios.post(
+  //       `${backendUrl}/api/touradmin/add-missing-fields`,
+  //       {},
+  //       { headers: { aToken } },
+  //     );
 
-      const validated = validateApiResponse(
-        data,
-        "Failed to add missing fields",
-      );
+  //     const validated = validateApiResponse(
+  //       data,
+  //       "Failed to add missing fields",
+  //     );
 
-      return validated;
-    } catch (error) {
-      console.error("Add missing fields error:", error);
-      throw error;
-    }
-  }, [aToken, backendUrl, validateApiResponse]);
+  //     return validated;
+  //   } catch (error) {
+  //     console.error("Add missing fields error:", error);
+  //     throw error;
+  //   }
+  // }, [aToken, backendUrl, validateApiResponse]);
 
   const getCancelRule = useCallback(async () => {
     try {
@@ -2776,7 +2776,7 @@ const TourAdminContextProvider = (props) => {
     allUsers,
     getAllUsers,
 
-    addMissingFields,
+    // addMissingFields,
     getCancelRule,
     updateCancelRule,
     getCancellations,

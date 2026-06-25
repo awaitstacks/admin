@@ -1,8 +1,24 @@
 import { useContext, useState } from "react";
 import { TourAdminContext } from "../../context/TourAdminContext";
 import { toast, ToastContainer } from "react-toastify";
-import { Loader2, AlertTriangle, Database } from "lucide-react";
+import { Loader2, AlertTriangle, Database, Lock } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
+
+// ── BOTH MIGRATIONS ARE TEMPORARILY DISABLED ───────────────────────────
+// A previous run of "Add Missing Fields" overwrote emergencyContact,
+// termsAgreed, and termsAgreedAt on bookings that already had valid,
+// user-submitted values — because the original migration used a single
+// $or-matched updateMany that unconditionally $set ALL fields on every
+// matched document, instead of checking each field's existence
+// independently. Both buttons are disabled here until:
+//   1. Data recovery (from an Atlas backup snapshot, if available) is
+//      confirmed complete or confirmed impossible, AND
+//   2. The migration endpoint itself has been fixed server-side to use
+//      independent per-field updateMany calls (matching the safer
+//      pattern already used for gvCancellationPool/irctcCancellationPool).
+// Flip MIGRATIONS_DISABLED back to false only after both conditions are
+// met and a fresh backup has been taken.
+const MIGRATIONS_DISABLED = true;
 
 const DBMigrationCenter = () => {
   const { addMissingFields, generateMissingTNRs } =
@@ -15,6 +31,7 @@ const DBMigrationCenter = () => {
 
   // ─── Add Missing Fields Migration ─────────────────────────────────────
   const handleRunFieldsMigration = () => {
+    if (MIGRATIONS_DISABLED) return;
     setShowConfirmFields(true);
   };
 
@@ -50,6 +67,7 @@ const DBMigrationCenter = () => {
 
   // ─── Generate Missing TNRs ────────────────────────────────────────────
   const handleGenerateTNRs = () => {
+    if (MIGRATIONS_DISABLED) return;
     setShowConfirmTNR(true);
   };
 
@@ -123,6 +141,23 @@ const DBMigrationCenter = () => {
               </p>
             </div>
 
+            {/* Disabled Notice Banner */}
+            {MIGRATIONS_DISABLED && (
+              <div className="bg-gray-800 border-2 border-gray-900 rounded-xl p-6 mb-6 text-left flex items-start gap-4">
+                <Lock className="w-8 h-8 text-yellow-400 flex-shrink-0 mt-1" />
+                <div>
+                  <p className="text-white font-bold text-lg">
+                    Migrations temporarily disabled
+                  </p>
+                  <p className="text-gray-300 text-sm mt-2 leading-relaxed">
+                    A previous migration run overwrote valid data on existing
+                    bookings. Both actions below are locked until data
+                    recovery is confirmed and the migration logic is fixed.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Warning Banner */}
             <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-10 text-left">
               <p className="text-base text-gray-800 leading-relaxed">
@@ -139,15 +174,18 @@ const DBMigrationCenter = () => {
               {/* Button 1: Add Missing Fields */}
               <button
                 onClick={handleRunFieldsMigration}
-                disabled={loadingFields || loadingTNR}
+                disabled={MIGRATIONS_DISABLED || loadingFields || loadingTNR}
+                title={MIGRATIONS_DISABLED ? "Disabled — see notice above" : undefined}
                 className={`
                   flex flex-col items-center justify-center gap-4 p-8 
                   rounded-xl font-bold text-lg text-white shadow-xl
-                  transition-all duration-200 transform hover:scale-105
+                  transition-all duration-200 transform
                   ${
-                    loadingFields || loadingTNR
+                    MIGRATIONS_DISABLED
+                      ? "bg-gray-400 cursor-not-allowed opacity-60"
+                      : loadingFields || loadingTNR
                       ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 active:bg-red-800"
+                      : "bg-red-600 hover:bg-red-700 active:bg-red-800 hover:scale-105"
                   }
                 `}
               >
@@ -155,6 +193,11 @@ const DBMigrationCenter = () => {
                   <>
                     <Loader2 className="w-10 h-10 animate-spin" />
                     <span>Running Fields Migration...</span>
+                  </>
+                ) : MIGRATIONS_DISABLED ? (
+                  <>
+                    <Lock className="w-10 h-10" />
+                    <span>Add Missing Fields (Disabled)</span>
                   </>
                 ) : (
                   <>
@@ -167,15 +210,18 @@ const DBMigrationCenter = () => {
               {/* Button 2: Generate Missing TNRs */}
               <button
                 onClick={handleGenerateTNRs}
-                disabled={loadingFields || loadingTNR}
+                disabled={MIGRATIONS_DISABLED || loadingFields || loadingTNR}
+                title={MIGRATIONS_DISABLED ? "Disabled — see notice above" : undefined}
                 className={`
                   flex flex-col items-center justify-center gap-4 p-8 
                   rounded-xl font-bold text-lg text-white shadow-xl
-                  transition-all duration-200 transform hover:scale-105
+                  transition-all duration-200 transform
                   ${
-                    loadingFields || loadingTNR
+                    MIGRATIONS_DISABLED
+                      ? "bg-gray-400 cursor-not-allowed opacity-60"
+                      : loadingFields || loadingTNR
                       ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800"
+                      : "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 hover:scale-105"
                   }
                 `}
               >
@@ -183,6 +229,11 @@ const DBMigrationCenter = () => {
                   <>
                     <Loader2 className="w-10 h-10 animate-spin" />
                     <span>Generating TNRs...</span>
+                  </>
+                ) : MIGRATIONS_DISABLED ? (
+                  <>
+                    <Lock className="w-10 h-10" />
+                    <span>Generate Missing TNRs (Disabled)</span>
                   </>
                 ) : (
                   <>
@@ -201,7 +252,7 @@ const DBMigrationCenter = () => {
       </div>
 
       {/* Confirmation Modal - Add Missing Fields */}
-      {showConfirmFields && (
+      {showConfirmFields && !MIGRATIONS_DISABLED && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in duration-200">
             <div className="text-center">
@@ -248,7 +299,7 @@ const DBMigrationCenter = () => {
       )}
 
       {/* Confirmation Modal - Generate TNRs */}
-      {showConfirmTNR && (
+      {showConfirmTNR && !MIGRATIONS_DISABLED && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in duration-200">
             <div className="text-center">
