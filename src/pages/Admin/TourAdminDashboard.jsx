@@ -1,3 +1,932 @@
+// /* eslint-disable no-unused-vars */
+// /* eslint-disable react-hooks/exhaustive-deps */
+
+// import React, {
+//   useContext,
+//   useEffect,
+//   useState,
+//   useCallback,
+//   useMemo,
+// } from "react";
+// import { useLocation } from "react-router-dom";
+// import { TourAdminContext } from "../../context/TourAdminContext";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+// import {
+//   Users,
+//   User,
+//   IndianRupee,
+//   Receipt,
+//   CheckCircle,
+//   XCircle,
+//   FileText,
+//   Copy,
+//   Loader2,
+//   FilePenLine,
+//   Clock,
+//   FileCheck,
+//   Briefcase,
+//   MapPin,
+// } from "lucide-react";
+
+// const TourAdminDashboard = () => {
+//   const {
+//     bookings,
+//     getAllBookings,
+//     releaseBooking, // ← This is the API we want for "Reject" (release cancellation)
+//     getPendingApprovals,
+//     pendingApprovals,
+//   } = useContext(TourAdminContext);
+
+//   const [expanded, setExpanded] = useState({});
+//   const [showMore, setShowMore] = useState({});
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [actionLoading, setActionLoading] = useState({}); // per booking loading
+
+//   const location = useLocation();
+
+//   useEffect(() => {
+//     return () => toast.dismiss();
+//   }, [location]);
+
+//   useEffect(() => {
+//     const loadDashboard = async () => {
+//       setIsLoading(true);
+//       try {
+//         await Promise.all([getAllBookings(), getPendingApprovals()]);
+//         toast.success("Dashboard loaded successfully");
+//       } catch (err) {
+//         toast.error("Failed to load dashboard data");
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     };
+//     loadDashboard();
+//   }, [getAllBookings, getPendingApprovals]);
+
+//   const handleApiResponse = useCallback((response, successMsg, errorMsg) => {
+//     if (response?.success) {
+//       toast.success(successMsg || "Success");
+//       return true;
+//     } else {
+//       toast.error(response?.message || errorMsg || "Failed");
+//       return false;
+//     }
+//   }, []);
+
+//   const filters = {
+//     advance: (b) =>
+//       (b.payment?.advance?.paid &&
+//         !b.payment?.balance?.paid &&
+//         !b.receipts?.advanceReceiptSent &&
+//         b.travellers?.some(
+//           (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+//         )) ||
+//       (b.payment?.advance?.paid &&
+//         b.payment?.balance?.paid &&
+//         !b.receipts?.advanceReceiptSent &&
+//         b.travellers?.some(
+//           (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+//         )),
+
+//     balance: (b) =>
+//       b.payment?.advance?.paid &&
+//       b.payment?.balance?.paid &&
+//       !b.receipts?.balanceReceiptSent &&
+//       b.travellers?.some(
+//         (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+//       ),
+
+//     completion: (b) =>
+//       b.payment?.advance?.paid &&
+//       b.payment?.balance?.paid &&
+//       b.receipts?.advanceReceiptSent &&
+//       b.receipts?.balanceReceiptSent &&
+//       b?.isTripCompleted === false &&
+//       !b.isBookingCompleted,
+
+//     cancellation: (b) =>
+//       b.travellers?.some(
+//         (t) => t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+//       ),
+
+//     modifyReceipt: (b) =>
+//       b.isTripCompleted &&
+//       b.travellers?.some(
+//         (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+//       ),
+
+//     unverified: (b) =>
+//       !b?.payment?.advance?.paid &&
+//       !b?.payment?.balance?.paid &&
+//       b.travellers?.some(
+//         (t) => !t?.cancelled?.byTraveller && !t?.cancelled?.byAdmin,
+//       ),
+
+//     cancellationReceipt: (b) => b?.cancellationReceipt === true,
+
+//     manageBookingReceipt: (b) => b?.manageBookingReceipt === true,
+//   };
+
+//   const categorized = {
+//     advance: bookings.filter(filters.advance),
+//     balance: bookings.filter(filters.balance),
+//     completion: bookings.filter(filters.completion),
+//     cancellation: bookings.filter(filters.cancellation),
+//     modifyReceipt: bookings.filter(filters.modifyReceipt),
+//     unverified: bookings.filter(filters.unverified),
+//     manageRequests: Array.isArray(pendingApprovals) ? pendingApprovals : [],
+//     cancellationReceipt: bookings.filter(filters.cancellationReceipt),
+//     manageBookingReceipt: bookings.filter(filters.manageBookingReceipt),
+//   };
+
+//   const totalTravellers = bookings.reduce((count, b) => {
+//     if (
+//       b.payment?.advance?.paid &&
+//       b.payment?.balance?.paid &&
+//       b.isBookingCompleted
+//     ) {
+//       const valid =
+//         b.travellers?.filter(
+//           (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
+//         ) || [];
+//       return count + valid.length;
+//     }
+//     return count;
+//   }, 0);
+
+//   const uniqueUsers = new Set(
+//     bookings.map((b) => b.userData?._id || b.contact?.email),
+//   ).size;
+
+//   const toggleExpand = (category, tnr) => {
+//     setExpanded((prev) => ({
+//       ...prev,
+//       [category]: { ...prev[category], [tnr]: !prev[category]?.[tnr] },
+//     }));
+//   };
+
+//   const toggleShowMore = (category) => {
+//     setShowMore((prev) => ({ ...prev, [category]: !prev[category] }));
+//   };
+
+//   const copyToClipboard = (text, label = "TNR") => {
+//     if (!text) {
+//       toast.error(`No ${label} to copy`);
+//       return;
+//     }
+//     navigator.clipboard.writeText(text).then(
+//       () => toast.success(`${label} copied!`),
+//       () => toast.error(`Failed to copy ${label}`),
+//     );
+//   };
+
+//   const formatDate = (date) => {
+//     return date ? new Date(date).toLocaleString() : "—";
+//   };
+
+//   // Reusable TNR display with copy button
+//   const TnrDisplay = ({ tnr, color = "indigo" }) => (
+//     <div className="flex items-center gap-2 text-sm mb-3">
+//       <strong>TNR:</strong>
+//       <code className="bg-gray-100 px-3 py-1 rounded font-mono font-bold">
+//         {tnr || "N/A"}
+//       </code>
+//       <button
+//         onClick={(e) => {
+//           e.stopPropagation();
+//           copyToClipboard(tnr);
+//         }}
+//         className={`flex items-center gap-1 text-${color}-600 hover:text-${color}-800`}
+//         title="Copy TNR"
+//       >
+//         <Copy size={16} />
+//         Copy
+//       </button>
+//     </div>
+//   );
+
+//   const BookingItem = ({
+//     booking,
+//     category,
+//     statusLabel,
+//     statusColor,
+//     Icon,
+//   }) => {
+//     const first = booking.travellers?.[0] || {};
+//     const name =
+//       `${first.firstName || ""} ${first.lastName || ""}`.trim() ||
+//       "Unknown Traveller";
+
+//     return (
+//       <div
+//         className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
+//         onClick={() => toggleExpand(category, booking.tnr)}
+//       >
+//         <div className="flex justify-between items-center">
+//           <div className="flex items-center gap-3">
+//             <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+//               <Icon className="w-5 h-5 text-blue-600" />
+//             </div>
+//             <div>
+//               <p className="font-medium text-gray-900 text-base">
+//                 {booking.tourData?.title || "Untitled Tour"}
+//               </p>
+//               <p className="text-sm text-gray-600">
+//                 <strong>{name}</strong>
+//               </p>
+//             </div>
+//           </div>
+//           <span
+//             className={`text-xs font-medium ${statusColor} px-2 py-1 rounded-full bg-opacity-10`}
+//           >
+//             {statusLabel}
+//           </span>
+//         </div>
+
+//         {expanded[category]?.[booking.tnr] && (
+//           <div className="mt-4 pt-4 border-t border-gray-100 space-y-4 text-sm text-gray-700">
+//             <TnrDisplay tnr={booking.tnr} />
+
+//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+//               <p>
+//                 <strong>Email:</strong> {booking.contact?.email || "—"}
+//               </p>
+//               <p>
+//                 <strong>Mobile:</strong> {booking.contact?.mobile || "—"}
+//               </p>
+//               <p>
+//                 <strong>Booking Type:</strong> {booking.bookingType || "—"}
+//               </p>
+//               <p>
+//                 <strong>Booking Date:</strong> {formatDate(booking.bookingDate)}
+//               </p>
+//               <p>
+//                 <strong>Trip Completed:</strong>{" "}
+//                 {booking.isTripCompleted ? "Yes" : "No"}
+//               </p>
+//               <p>
+//                 <strong>Booking Completed:</strong>{" "}
+//                 {booking.isBookingCompleted ? "Yes" : "No"}
+//               </p>
+//               <p>
+//                 <strong>Manage Booking:</strong>{" "}
+//                 {booking.manageBooking ? "Yes" : "No"}
+//               </p>
+//               <p>
+//                 <strong>GV Cancellation Pool:</strong>{" "}
+//                 {booking.gvCancellationPool || "—"}
+//               </p>
+//               <p>
+//                 <strong>IRCTC Cancellation Pool:</strong>{" "}
+//                 {booking.irctcCancellationPool || "—"}
+//               </p>
+//             </div>
+
+//             <div>
+//               <h4 className="font-semibold mb-2 text-sm flex items-center gap-1">
+//                 <Users className="w-4 h-4" /> Travellers
+//               </h4>
+//               <div className="space-y-3">
+//                 {booking.travellers?.map((t, i) => (
+//                   <div
+//                     key={i}
+//                     className={`bg-gray-50 p-3 rounded-lg space-y-1 text-xs ${
+//                       t.cancelled?.byTraveller || t.cancelled?.byAdmin
+//                         ? "border-l-4 border-red-400"
+//                         : ""
+//                     }`}
+//                   >
+//                     <p className="font-medium break-words whitespace-normal leading-snug">
+//                       {t.title} {t.firstName} {t.lastName} ({t.age} yrs,{" "}
+//                       {t.gender || "—"})
+//                     </p>
+//                     <p>Sharing Type: {t.sharingType || "—"}</p>
+//                     <p>
+//                       Package Type: {t.packageType || "—"}
+//                       {t.variantPackageIndex !== null
+//                         ? ` (Variant ${t.variantPackageIndex})`
+//                         : ""}
+//                     </p>
+//                     {t.selectedAddon && (
+//                       <p>
+//                         Addon: {t.selectedAddon.name || "—"} (
+//                         {t.selectedAddon.price || 0})
+//                       </p>
+//                     )}
+//                     {t.boardingPoint && (
+//                       <p>
+//                         Boarding Point: {t.boardingPoint.stationName || "—"} (
+//                         {t.boardingPoint.stationCode || "—"})
+//                       </p>
+//                     )}
+//                     {t.deboardingPoint && (
+//                       <p>
+//                         Deboarding Point: {t.deboardingPoint.stationName || "—"}{" "}
+//                         ({t.deboardingPoint.stationCode || "—"})
+//                       </p>
+//                     )}
+//                     {t.trainSeats?.length > 0 && (
+//                       <p>
+//                         Train Seats:{" "}
+//                         {t.trainSeats
+//                           .map(
+//                             (s) => `${s.trainName || "—"}: ${s.seatNo || "—"}`,
+//                           )
+//                           .join(", ")}
+//                       </p>
+//                     )}
+//                     {t.flightSeats?.length > 0 && (
+//                       <p>
+//                         Flight Seats:{" "}
+//                         {t.flightSeats
+//                           .map(
+//                             (s) => `${s.flightName || "—"}: ${s.seatNo || "—"}`,
+//                           )
+//                           .join(", ")}
+//                       </p>
+//                     )}
+//                     <p>Staff Remarks: {t.staffRemarks || "—"}</p>
+//                     <p>Remarks: {t.remarks || "—"}</p>
+//                     {(t.cancelled?.byTraveller || t.cancelled?.byAdmin) && (
+//                       <p className="text-red-600">
+//                         Cancelled by{" "}
+//                         {t.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
+//                         {formatDate(t.cancelled.cancelledAt)}
+//                         {t.cancelled.reason
+//                           ? ` (Reason: ${t.cancelled.reason})`
+//                           : ""}
+//                       </p>
+//                     )}
+//                   </div>
+//                 )) || <p>No travellers</p>}
+//               </div>
+//             </div>
+
+//             <div>
+//               <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+//                 <MapPin className="w-4 h-4" /> Billing Address
+//               </h4>
+//               <p>
+//                 {booking.billingAddress?.addressLine1 || "—"}{" "}
+//                 {booking.billingAddress?.addressLine2 || ""}
+//               </p>
+//               <p>
+//                 {booking.billingAddress?.city || "—"},{" "}
+//                 {booking.billingAddress?.state || "—"} -{" "}
+//                 {booking.billingAddress?.pincode || "—"},{" "}
+//                 {booking.billingAddress?.country || "India"}
+//               </p>
+//             </div>
+
+//             <div>
+//               <h4 className="font-semibold mb-2 text-sm">Payment Details</h4>
+//               <p>
+//                 Advance: ₹{booking.payment?.advance?.amount || 0} -{" "}
+//                 {booking.payment?.advance?.paid
+//                   ? `Paid at ${formatDate(booking.payment.advance.paidAt)}`
+//                   : "Pending"}
+//                 {booking.payment?.advance?.paymentVerified ? " (Verified)" : ""}
+//               </p>
+//               <p>
+//                 Balance: ₹{booking.payment?.balance?.amount || 0} -{" "}
+//                 {booking.payment?.balance?.paid
+//                   ? `Paid at ${formatDate(booking.payment.balance.paidAt)}`
+//                   : "Pending"}
+//                 {booking.payment?.balance?.paymentVerified ? " (Verified)" : ""}
+//               </p>
+//             </div>
+
+//             <div>
+//               <h4 className="font-semibold mb-2 text-sm">Receipts</h4>
+//               <p>
+//                 Advance Receipt Sent:{" "}
+//                 {booking.receipts?.advanceReceiptSent
+//                   ? `Yes at ${formatDate(booking.receipts.advanceReceiptSentAt)}`
+//                   : "No"}
+//               </p>
+//               <p>
+//                 Balance Receipt Sent:{" "}
+//                 {booking.receipts?.balanceReceiptSent
+//                   ? `Yes at ${formatDate(booking.receipts.balanceReceiptSentAt)}`
+//                   : "No"}
+//               </p>
+//               <p>
+//                 Cancellation Receipt:{" "}
+//                 {booking.cancellationReceipt ? "Yes" : "No"}
+//               </p>
+//               <p>
+//                 Manage Booking Receipt:{" "}
+//                 {booking.manageBookingReceipt ? "Yes" : "No"}
+//               </p>
+//             </div>
+
+//             <div>
+//               <h4 className="font-semibold mb-2 text-sm">
+//                 Advance Admin Remarks
+//               </h4>
+//               <div className="space-y-1">
+//                 {booking.advanceAdminRemarks?.map((r, i) => (
+//                   <div key={i} className="bg-gray-50 p-2 rounded text-xs">
+//                     <p>
+//                       {r.remark || "—"} (₹{r.amount || 0})
+//                     </p>
+//                     <p>Added at: {formatDate(r.addedAt)}</p>
+//                   </div>
+//                 )) || <p>None</p>}
+//               </div>
+//             </div>
+
+//             <div>
+//               <h4 className="font-semibold mb-2 text-sm">Admin Remarks</h4>
+//               <div className="space-y-1">
+//                 {booking.adminRemarks?.map((r, i) => (
+//                   <div key={i} className="bg-gray-50 p-2 rounded text-xs">
+//                     <p>
+//                       {r.remark || "—"} (₹{r.amount || 0})
+//                     </p>
+//                     <p>Added at: {formatDate(r.addedAt)}</p>
+//                   </div>
+//                 )) || <p>None</p>}
+//               </div>
+//             </div>
+
+//             {booking.cancelled?.byAdmin || booking.cancelled?.byTraveller ? (
+//               <div className="text-red-600">
+//                 <h4 className="font-semibold mb-2 text-sm">
+//                   Booking Cancellation
+//                 </h4>
+//                 <p>
+//                   Cancelled by{" "}
+//                   {booking.cancelled.byAdmin ? "Admin" : "Traveller"} at{" "}
+//                   {formatDate(booking.cancelled.cancelledAt)}
+//                   {booking.cancelled.reason
+//                     ? ` (Reason: ${booking.cancelled.reason})`
+//                     : ""}
+//                   {booking.cancelled.releaseddAt
+//                     ? `, Released at ${formatDate(booking.cancelled.releaseddAt)}`
+//                     : ""}
+//                 </p>
+//               </div>
+//             ) : null}
+//           </div>
+//         )}
+//       </div>
+//     );
+//   };
+
+//   const CancellationItem = ({ booking }) => {
+//     const first = booking.travellers?.[0] || {};
+//     const name =
+//       `${first.firstName || ""} ${first.lastName || ""}`.trim() ||
+//       "Unknown Traveller";
+
+//     // Get only pending cancellation requests
+//     const pendingCancellations = booking.travellers
+//       .filter((t) => t.cancelled?.byTraveller && !t.cancelled?.byAdmin)
+//       .map((t) => ({
+//         travellerId: t._id,
+//         name: `${t.firstName} ${t.lastName}`,
+//       }));
+//     const handleReleaseCancel = async () => {
+//       if (
+//         !window.confirm(
+//           "Are you sure you want to RELEASE this cancellation request? This will restore the booking.",
+//         )
+//       ) {
+//         return;
+//       }
+
+//       setActionLoading((prev) => ({ ...prev, [booking.tnr]: true }));
+
+//       try {
+//         const travellerIds = pendingCancellations.map((t) => t.travellerId);
+
+//         console.log("Sending release request:", {
+//           // ← add this log
+//           tnr: booking.tnr,
+//           travellerIds,
+//           travellerIdsLength: travellerIds.length,
+//           travellerIdsType: typeof travellerIds,
+//         });
+
+//         if (travellerIds.length === 0) {
+//           toast.info("No eligible travellers to release");
+//           return;
+//         }
+
+//         const result = await releaseBooking(booking.tnr, travellerIds);
+
+//         if (result?.success) {
+//           toast.success("Cancellation released successfully");
+//           await getAllBookings();
+//         }
+//       } catch (err) {
+//         console.error("Release failed with details:", err); // ← more info
+//         toast.error("Failed to release cancellation");
+//       } finally {
+//         setActionLoading((prev) => ({ ...prev, [booking.tnr]: false }));
+//       }
+//     };
+
+//     return (
+//       <div
+//         className="bg-white rounded-xl shadow-sm border border-red-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
+//         onClick={() => toggleExpand("cancellation", booking.tnr)}
+//       >
+//         <div className="flex justify-between items-center">
+//           <div className="flex items-center gap-3">
+//             <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+//               <XCircle className="w-5 h-5 text-red-600" />
+//             </div>
+//             <div>
+//               <p className="font-medium text-gray-900 text-base">
+//                 {booking.tourData?.title || "Untitled Tour"}
+//               </p>
+//               <p className="text-sm text-gray-600">
+//                 <strong>{name}</strong>
+//               </p>
+//             </div>
+//           </div>
+//           <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded-full">
+//             Cancellation Request
+//           </span>
+//         </div>
+
+//         {expanded["cancellation"]?.[booking.tnr] && (
+//           <div className="mt-4 pt-4 border-t border-red-100 space-y-4 text-sm text-gray-700">
+//             <TnrDisplay tnr={booking.tnr} color="red" />
+
+//             <h4 className="font-semibold mb-2 text-sm flex items-center gap-1">
+//               Travellers Requested Cancellation
+//             </h4>
+
+//             <div className="space-y-3">
+//               {pendingCancellations.length === 0 ? (
+//                 <p className="text-gray-500 italic">
+//                   No pending cancellation requests
+//                 </p>
+//               ) : (
+//                 <>
+//                   {pendingCancellations.map((t) => (
+//                     <div
+//                       key={t.travellerId}
+//                       className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-red-50 p-3 rounded-lg"
+//                     >
+//                       <div>
+//                         <p className="font-medium text-red-900">{t.name}</p>
+//                       </div>
+//                     </div>
+//                   ))}
+
+//                   {/* Release (Reject Cancellation) Button */}
+//                   <div className="pt-4 text-right">
+//                     <button
+//                       onClick={(e) => {
+//                         e.stopPropagation();
+//                         handleReleaseCancel();
+//                       }}
+//                       disabled={actionLoading[booking.tnr]}
+//                       className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white transition
+//                         ${
+//                           actionLoading[booking.tnr]
+//                             ? "bg-green-400 cursor-not-allowed"
+//                             : "bg-green-600 hover:bg-green-700"
+//                         }`}
+//                     >
+//                       {actionLoading[booking.tnr] ? (
+//                         <>
+//                           <Loader2 className="w-4 h-4 animate-spin" />
+//                           Releasing...
+//                         </>
+//                       ) : (
+//                         "Release Cancellation"
+//                       )}
+//                     </button>
+//                   </div>
+//                 </>
+//               )}
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     );
+//   };
+
+//   const ManageRequestItem = ({ booking }) => {
+//     const realBooking = booking.bookingId || booking; // fallback if structure changes
+//     const firstTraveller = realBooking.travellers?.[0] || {};
+//     const name =
+//       `${firstTraveller.firstName || ""} ${firstTraveller.lastName || ""}`.trim() ||
+//       "Unknown Traveller";
+//     const displayTnr = realBooking.tnr || "N/A";
+
+//     return (
+//       <div
+//         className="bg-white rounded-xl shadow-sm border border-pink-200 hover:shadow-md transition-all duration-200 p-4 cursor-pointer"
+//         onClick={() => toggleExpand("manageRequests", displayTnr)}
+//       >
+//         <div className="flex justify-between items-center">
+//           <div className="flex items-center gap-3">
+//             <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+//               <FilePenLine className="w-5 h-5 text-pink-600" />
+//             </div>
+//             <div>
+//               <p className="font-medium text-gray-900 text-base">
+//                 {booking.tourData?.title || "Untitled Tour"}
+//               </p>
+//               <p className="text-sm text-gray-600">
+//                 <strong>{name}</strong>
+//               </p>
+//             </div>
+//           </div>
+//           <span className="text-xs font-medium text-pink-600 bg-pink-100 px-2 py-1 rounded-full">
+//             Manage Request
+//           </span>
+//         </div>
+
+//         {expanded["manageRequests"]?.[displayTnr] && ( // ← FIX 3: use displayTnr here too
+//           <div className="mt-4 pt-4 border-t border-pink-100 space-y-4 text-sm text-gray-700">
+//             <TnrDisplay tnr={displayTnr} color="pink" />
+//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+//               <p>
+//                 <strong>Email:</strong> {booking.contact?.email || "—"}
+//               </p>
+//               <p>
+//                 <strong>Mobile:</strong> {booking.contact?.mobile || "—"}
+//               </p>
+//               <p>
+//                 <strong>Tour:</strong> {booking.tourData?.title || "—"}
+//               </p>
+//               <p>
+//                 <strong>Travellers Count:</strong>{" "}
+//                 {booking.travellers?.length || 1}
+//               </p>
+//               <p>
+//                 <strong>Status:</strong> Pending Admin Review
+//               </p>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     );
+//   };
+
+//   const Section = ({ title, category, statusLabel, statusColor, Icon }) => {
+//     const items = categorized[category] || [];
+//     const visible = showMore[category] ? items : items.slice(0, 5);
+
+//     return (
+//       <section className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+//         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 mb-4">
+//           <Icon className="w-6 h-6 text-blue-600" />
+//           {title}{" "}
+//           <span className="text-sm font-normal text-gray-500 ml-1">
+//             ({items.length})
+//           </span>
+//         </h2>
+
+//         {items.length === 0 ? (
+//           <p className="text-center text-gray-500 py-8 text-lg">
+//             No pending actions.
+//           </p>
+//         ) : (
+//           <>
+//             <div className="space-y-4">
+//               {category === "cancellation"
+//                 ? visible.map((b) => (
+//                     <CancellationItem key={b.tnr} booking={b} />
+//                   ))
+//                 : category === "manageRequests"
+//                   ? visible.map((b) => (
+//                       <ManageRequestItem key={b.tnr} booking={b} />
+//                     ))
+//                   : visible.map((b) => (
+//                       <BookingItem
+//                         key={b.tnr}
+//                         booking={b}
+//                         category={category}
+//                         statusLabel={statusLabel}
+//                         statusColor={statusColor}
+//                         Icon={Icon}
+//                       />
+//                     ))}
+//             </div>
+
+//             {items.length > 5 && (
+//               <button
+//                 onClick={() => toggleShowMore(category)}
+//                 className="mt-6 w-full sm:w-auto mx-auto block px-6 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition flex items-center justify-center gap-2"
+//               >
+//                 {showMore[category]
+//                   ? "Show Less"
+//                   : `Show More (${items.length - 5})`}
+//               </button>
+//             )}
+//           </>
+//         )}
+//       </section>
+//     );
+//   };
+
+//   const metrics = [
+//     {
+//       label: "Travellers",
+//       value: totalTravellers,
+//       Icon: Users,
+//       color: "text-blue-600",
+//       bg: "bg-blue-100",
+//     },
+//     {
+//       label: "Users",
+//       value: uniqueUsers,
+//       Icon: User,
+//       color: "text-indigo-600",
+//       bg: "bg-indigo-100",
+//     },
+//     {
+//       label: "Unverified",
+//       value: categorized.unverified.length,
+//       Icon: Clock,
+//       color: "text-teal-600",
+//       bg: "bg-teal-100",
+//     },
+//     {
+//       label: "Advance",
+//       value: categorized.advance.length,
+//       Icon: IndianRupee,
+//       color: "text-green-600",
+//       bg: "bg-green-100",
+//     },
+//     {
+//       label: "Balance",
+//       value: categorized.balance.length,
+//       Icon: Receipt,
+//       color: "text-yellow-600",
+//       bg: "bg-yellow-100",
+//     },
+//     {
+//       label: "Completion",
+//       value: categorized.completion.length,
+//       Icon: CheckCircle,
+//       color: "text-orange-600",
+//       bg: "bg-orange-100",
+//     },
+//     {
+//       label: "Cancellation",
+//       value: categorized.cancellation.length,
+//       Icon: XCircle,
+//       color: "text-red-600",
+//       bg: "bg-red-100",
+//     },
+//     {
+//       label: "Modified",
+//       value: categorized.modifyReceipt.length,
+//       Icon: FileText,
+//       color: "text-purple-600",
+//       bg: "bg-purple-100",
+//     },
+//     {
+//       label: "Manage Requests",
+//       value: categorized.manageRequests.length,
+//       Icon: FilePenLine,
+//       color: "text-pink-600",
+//       bg: "bg-pink-100",
+//     },
+//     {
+//       label: "Cancellation Receipts",
+//       value: categorized.cancellationReceipt.length,
+//       Icon: FileCheck,
+//       color: "text-rose-600",
+//       bg: "bg-rose-100",
+//     },
+//     {
+//       label: "Manage Booking Receipts",
+//       value: categorized.manageBookingReceipt.length,
+//       Icon: Briefcase,
+//       color: "text-indigo-600",
+//       bg: "bg-indigo-100",
+//     },
+//   ];
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 sm:p-6 lg:p-8">
+//       <ToastContainer
+//         position="top-right"
+//         autoClose={3000}
+//         newestOnTop
+//         closeOnClick
+//         pauseOnHover
+//       />
+
+//       <div className="max-w-7xl mx-auto">
+//         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-gray-900 mb-8 sm:mb-10 leading-tight">
+//           Super Admin Dashboard
+//         </h1>
+
+//         {isLoading ? (
+//           <div className="text-center py-12">
+//             <Loader2 className="inline-block animate-spin h-12 w-12 text-blue-600" />
+//             <p className="mt-4 text-gray-600 text-lg">Loading dashboard...</p>
+//           </div>
+//         ) : bookings.length === 0 ? (
+//           <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
+//             <p className="text-gray-500 text-lg">No bookings found.</p>
+//           </div>
+//         ) : (
+//           <>
+//             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-4 mb-10">
+//               {metrics.map((m, i) => (
+//                 <div
+//                   key={i}
+//                   className="bg-white p-4 rounded-xl shadow-sm border hover:shadow-md transition text-center flex flex-col items-center justify-center min-h-[140px]"
+//                 >
+//                   <div
+//                     className={`w-12 h-12 ${m.bg} rounded-full flex items-center justify-center mx-auto mb-3 flex-shrink-0`}
+//                   >
+//                     <m.Icon className={`w-6 h-6 ${m.color}`} />
+//                   </div>
+//                   <p className="text-2xl font-bold text-gray-900">{m.value}</p>
+//                   <p className="text-xs text-gray-500 mt-2 px-2 leading-tight whitespace-normal break-words line-clamp-2 text-center">
+//                     {m.label}
+//                   </p>
+//                 </div>
+//               ))}
+//             </div>
+
+//             <Section
+//               title="Unverified Bookings"
+//               category="unverified"
+//               statusLabel="New"
+//               statusColor="text-teal-600"
+//               Icon={Clock}
+//             />
+//             <Section
+//               title="Advance Receipt Pending"
+//               category="advance"
+//               statusLabel="Pending"
+//               statusColor="text-red-600"
+//               Icon={IndianRupee}
+//             />
+//             <Section
+//               title="Balance Receipt Pending"
+//               category="balance"
+//               statusLabel="Pending"
+//               statusColor="text-red-600"
+//               Icon={Receipt}
+//             />
+//             <Section
+//               title="Modified Receipts Pending"
+//               category="modifyReceipt"
+//               statusLabel="Pending"
+//               statusColor="text-purple-600"
+//               Icon={FileText}
+//             />
+//             <Section
+//               title="Cancellation Receipts Pending"
+//               category="cancellationReceipt"
+//               statusLabel="Marked"
+//               statusColor="text-rose-600"
+//               Icon={FileCheck}
+//             />
+//             <Section
+//               title="Manage Booking Receipts Pending"
+//               category="manageBookingReceipt"
+//               statusLabel="Marked"
+//               statusColor="text-indigo-600"
+//               Icon={Briefcase}
+//             />
+//             <Section
+//               title="Cancellation Request Actions"
+//               category="cancellation"
+//               statusLabel="Request"
+//               statusColor="text-red-600"
+//               Icon={XCircle}
+//             />
+//             <Section
+//               title="Manage Booking Requests"
+//               category="manageRequests"
+//               statusLabel="Pending Approval"
+//               statusColor="text-pink-600"
+//               Icon={FilePenLine}
+//             />
+//             <Section
+//               title="Booking Completion Actions"
+//               category="completion"
+//               statusLabel="Pending"
+//               statusColor="text-orange-600"
+//               Icon={CheckCircle}
+//             />
+//           </>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default TourAdminDashboard;
+
+
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 
@@ -36,6 +965,8 @@ const TourAdminDashboard = () => {
     releaseBooking, // ← This is the API we want for "Reject" (release cancellation)
     getPendingApprovals,
     pendingApprovals,
+    allUsers, // ← total registered users (same source as the "All Users" page)
+    getAllUsers, // ← fetches allUsers
   } = useContext(TourAdminContext);
 
   const [expanded, setExpanded] = useState({});
@@ -53,7 +984,11 @@ const TourAdminDashboard = () => {
     const loadDashboard = async () => {
       setIsLoading(true);
       try {
-        await Promise.all([getAllBookings(), getPendingApprovals()]);
+        await Promise.all([
+          getAllBookings(),
+          getPendingApprovals(),
+          getAllUsers(),
+        ]);
         toast.success("Dashboard loaded successfully");
       } catch (err) {
         toast.error("Failed to load dashboard data");
@@ -62,7 +997,7 @@ const TourAdminDashboard = () => {
       }
     };
     loadDashboard();
-  }, [getAllBookings, getPendingApprovals]);
+  }, [getAllBookings, getPendingApprovals, getAllUsers]);
 
   const handleApiResponse = useCallback((response, successMsg, errorMsg) => {
     if (response?.success) {
@@ -140,24 +1075,22 @@ const TourAdminDashboard = () => {
     manageBookingReceipt: bookings.filter(filters.manageBookingReceipt),
   };
 
+  // ── Travellers metric ───────────────────────────────────────────────
+  // Matches the "Active travellers (Once Advance paid)" definition used
+  // on the Sales Analytics page (getAnalyticsSummary / getAnalyticsYearWise
+  // / getAnalyticsMonthWise on the backend):
+  //   payment.advance.paid = true  AND  byAdmin ≠ true  AND  byTraveller ≠ true
+  // This excludes pending cancellation requests, admin-approved cancellations,
+  // and admin rejections — balance-paid status is irrelevant here.
   const totalTravellers = bookings.reduce((count, b) => {
-    if (
-      b.payment?.advance?.paid &&
-      b.payment?.balance?.paid &&
-      b.isBookingCompleted
-    ) {
-      const valid =
-        b.travellers?.filter(
-          (t) => !t.cancelled?.byTraveller && !t.cancelled?.byAdmin,
-        ) || [];
-      return count + valid.length;
-    }
-    return count;
-  }, 0);
+    if (!b.payment?.advance?.paid) return count;
 
-  const uniqueUsers = new Set(
-    bookings.map((b) => b.userData?._id || b.contact?.email),
-  ).size;
+    const valid = (b.travellers || []).filter(
+      (t) => !t.cancelled?.byAdmin && !t.cancelled?.byTraveller,
+    );
+
+    return count + valid.length;
+  }, 0);
 
   const toggleExpand = (category, tnr) => {
     setExpanded((prev) => ({
@@ -739,7 +1672,7 @@ const TourAdminDashboard = () => {
     },
     {
       label: "Users",
-      value: uniqueUsers,
+      value: allUsers?.length || 0,
       Icon: User,
       color: "text-indigo-600",
       bg: "bg-indigo-100",
