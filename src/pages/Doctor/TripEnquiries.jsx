@@ -1,8 +1,9 @@
+
 import { useContext, useEffect, useState } from "react";
 import { TourContext } from "../../context/TourContext";
 
 // ─────────────────────────────────────────────
-// CONFIRM MODAL (Accept / Reject / Delete)
+// CONFIRM MODAL (Accept / Reject / Delete / Rate Shared)
 // ─────────────────────────────────────────────
 const ConfirmModal = ({ open, type, name, fitCode, onConfirm, onCancel }) => {
     const [salesValue, setSalesValue] = useState("");
@@ -22,15 +23,20 @@ const ConfirmModal = ({ open, type, name, fitCode, onConfirm, onCancel }) => {
     const allStates = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
     const toggleState = (s) => setFitStates((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
 
+    // ── ratePassed uses the same lightweight confirm UI as reject/delete
+    // (icon + title + sub text + Yes/Cancel buttons) — no extra form
+    // fields needed, just a "are you sure" gate before the toggle fires. ──
     const cfg = {
         accept: { iconBg: "#EAF3DE", iconColor: "#3B6D11", title: "Accept Enquiry", btnBg: "#3B6D11", lbl: "✓ Confirm Accept" },
         reject: { icon: "✕", iconBg: "#FCEBEB", iconColor: "#A32D2D", title: "Reject Enquiry?", sub: "This will mark the enquiry as rejected.", btnBg: "#A32D2D", lbl: "Yes, Reject" },
         delete: { icon: "🗑", iconBg: "#FCEBEB", iconColor: "#A32D2D", title: "Delete Enquiry?", sub: "This action cannot be undone.", btnBg: "#A32D2D", lbl: "Yes, Delete" },
+        ratePassed: { icon: "💰", iconBg: "#FEF3C7", iconColor: "#92400E", title: "Mark Rate Shared?", sub: "This will move the enquiry to the Rate Shared queue, out of the regular Pending list.", btnBg: "#92400E", lbl: "Yes, Mark Rate Shared" },
     };
     const c = cfg[type] || cfg.delete;
 
+    // FIT States is OPTIONAL — selecting at least one is no longer
+    // required to enable the Accept button.
     const isAcceptDisabled = type === "accept" && (
-        fitStates.length === 0 ||
         !salesValue || Number(salesValue) <= 0 ||
         !pickupDate || !pickupTime || !pickupPlace.trim()
     );
@@ -66,15 +72,15 @@ const ConfirmModal = ({ open, type, name, fitCode, onConfirm, onCancel }) => {
                             </span>
                         </div>
 
-                        {/* FIT States */}
+                        {/* FIT States — now OPTIONAL */}
                         <div>
                             <label style={lblStyle}>
-                                🗺 FIT States <span style={{ color: "#ef4444" }}>*</span>
+                                🗺 FIT States <span style={{ color: "#94a3b8", fontWeight: 500 }}>(optional)</span>
                                 <span style={{ float: "right", fontSize: "11px", fontWeight: 600, background: fitStates.length > 0 ? "#EAF3DE" : "#f1f5f9", color: fitStates.length > 0 ? "#3B6D11" : "#94a3b8", padding: "2px 8px", borderRadius: "10px" }}>
                                     {fitStates.length} selected
                                 </span>
                             </label>
-                            <div style={{ maxHeight: "160px", overflowY: "auto", display: "flex", flexWrap: "wrap", gap: "6px", padding: "10px", background: "#f8fafc", borderRadius: "10px", border: `1.5px solid ${fitStates.length === 0 ? "#fca5a5" : "#e2e8f0"}` }}>
+                            <div style={{ maxHeight: "160px", overflowY: "auto", display: "flex", flexWrap: "wrap", gap: "6px", padding: "10px", background: "#f8fafc", borderRadius: "10px", border: "1.5px solid #e2e8f0" }}>
                                 {allStates.map((state) => (
                                     <button key={state} type="button" onClick={() => toggleState(state)}
                                         style={{ padding: "5px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 500, cursor: "pointer", border: fitStates.includes(state) ? "none" : "1px solid #e2e8f0", background: fitStates.includes(state) ? "#0C447C" : "#fff", color: fitStates.includes(state) ? "#fff" : "#475569", whiteSpace: "nowrap" }}>
@@ -82,7 +88,6 @@ const ConfirmModal = ({ open, type, name, fitCode, onConfirm, onCancel }) => {
                                     </button>
                                 ))}
                             </div>
-                            {fitStates.length === 0 && <p style={{ fontSize: "11px", color: "#ef4444", marginTop: "4px" }}>⚠ Select at least one state</p>}
                         </div>
 
                         {/* Sales Value */}
@@ -337,7 +342,6 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                     </div>
 
                     {/* Status & Sales */}
-                    {/* Status & Sales */}
                     {data?.status === "accepted" && <div>
                         <div style={sec}><span style={{ background: "#fef3c7", borderRadius: "6px", padding: "4px 8px" }}>📊</span> Status & Sales</div>
                         <div className="eq-edit-grid2">                            <div>
@@ -356,7 +360,6 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                     </div>}
 
                     {/* Pickup Details */}
-                    {/* Pickup Details */}
                     {data?.status === "accepted" && <div>
                         <div style={sec}><span style={{ background: "#ffedd5", borderRadius: "6px", padding: "4px 8px" }}>🚐</span> Pickup Details</div>
                         <div className="eq-edit-grid2c">                            <div>
@@ -374,7 +377,6 @@ const EditEnquiryModal = ({ open, data, onClose, onSave }) => {
                         </div>
                     </div>}
 
-                    {/* FIT States */}
                     {/* FIT States */}
                     {data?.status === "accepted" && <div>
                         <div style={sec}>
@@ -649,7 +651,11 @@ const AdminEnquiryForm = ({ onSuccess }) => {
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
 const TripEnquiries = () => {
-    const { getAllEnquiries, enquiries, enquiryLoading, acceptEnquiry, rejectEnquiry, updateEnquiry } = useContext(TourContext); const [activeTab, setActiveTab] = useState("all");
+    const { getAllEnquiries, enquiries, enquiryLoading, acceptEnquiry, rejectEnquiry, updateEnquiry, toggleRatePassed } = useContext(TourContext);
+    const [activeTab, setActiveTab] = useState("all");
+    // ── "ratePassed" is a virtual filter value layered on top of `status`.
+    //    It does NOT correspond to a real status in the DB — selecting it
+    //    filters to status === "pending" AND isRatePassed === true. ──
     const [filters, setFilters] = useState({ search: "", destination: "", tourType: "", status: "pending", fromDate: "", toDate: "", raisedBy: "", fitCode: "" });
     const [expandedId, setExpandedId] = useState(null);
     const [modal, setModal] = useState({ open: false, type: "", id: "", name: "", fitCode: "" });
@@ -658,18 +664,41 @@ const TripEnquiries = () => {
     const [lastEditedId, setLastEditedId] = useState(() => localStorage.getItem("gv_lastEditedId") || null);
     const [lastEditedFields, setLastEditedFields] = useState(() => {
         try { return JSON.parse(localStorage.getItem("gv_lastEditedFields") || "{}"); } catch { return {}; }
-    }); useEffect(() => { getAllEnquiries(); }, []);
+    });
+
+    useEffect(() => { getAllEnquiries(); }, []);
 
     const handleFilter = (e) => { const { name, value } = e.target; setFilters((p) => ({ ...p, [name]: value })); };
     const clearFilters = () => setFilters({ search: "", destination: "", tourType: "", status: "pending", fromDate: "", toDate: "", raisedBy: "", fitCode: "" });
+
+    const openModal = (type, id, name, fitCode = "") => setModal({ open: true, type, id, name, fitCode });
+    const closeModal = () => setModal({ open: false, type: "", id: "", name: "", fitCode: "" });
+
+    // ── Rate Shared toggle now goes through the SAME confirm modal as
+    // Accept/Reject/Delete — clicking the button no longer fires the
+    // toggle directly, it opens a "are you sure?" gate first. ──────────
     const filtered = (enquiries || []).filter((e) => {
         const s = filters.search.toLowerCase();
+        // "pending" and "ratePassed" are mutually exclusive views over the
+        // same underlying status==="pending" enquiries, split by the
+        // isRatePassed flag. Without this split, toggling Rate Shared on
+        // an enquiry would leave it visible in BOTH the Pending filter
+        // AND the Rate Shared filter — defeating the purpose of the
+        // toggle (it's meant to move enquiries out of the regular
+        // Pending queue into a separate "on hold" queue).
+        const statusMatches = !filters.status
+            ? true
+            : filters.status === "ratePassed"
+                ? (e.status === "pending" && e.isRatePassed === true)
+                : filters.status === "pending"
+                    ? (e.status === "pending" && !e.isRatePassed)
+                    : e.status === filters.status;
         return (
             (!s || e.fullName?.toLowerCase().includes(s) || e.mobileNumber?.includes(s) || e.email?.toLowerCase().includes(s)) &&
             (!filters.destination || e.destination?.toLowerCase().includes(filters.destination.toLowerCase())) &&
             (!filters.fitCode || e.fitCode?.toLowerCase().includes(filters.fitCode.toLowerCase())) &&
             (!filters.tourType || e.tourType === filters.tourType) &&
-            (!filters.status || e.status === filters.status) &&
+            statusMatches &&
             (!filters.raisedBy || e.raisedBy === filters.raisedBy) &&
             (!filters.fromDate || new Date(e.createdAt) >= new Date(filters.fromDate)) &&
             (!filters.toDate || new Date(e.createdAt) <= new Date(filters.toDate))
@@ -687,9 +716,6 @@ const TripEnquiries = () => {
         return numA - numB;
     });
 
-    const openModal = (type, id, name, fitCode = "") => setModal({ open: true, type, id, name, fitCode });
-    const closeModal = () => setModal({ open: false, type: "", id: "", name: "", fitCode: "" });
-
     const handleConfirm = async (extraData = {}) => {
         const { type, id } = modal;
         closeModal();
@@ -697,8 +723,9 @@ const TripEnquiries = () => {
         try {
             if (type === "accept") await acceptEnquiry(id, extraData);
             else if (type === "reject") await rejectEnquiry(id);
+            else if (type === "ratePassed") await toggleRatePassed(id);
         } catch (err) {
-            console.error("Accept/Reject Error:", err);
+            console.error("Accept/Reject/RateShared Error:", err);
         }
         setLoadingId(null);
         await getAllEnquiries();
@@ -710,7 +737,7 @@ const TripEnquiries = () => {
         rejected: { bg: "#FCEBEB", color: "#501313", dot: "#E24B4A", label: "Rejected" },
     };
 
-    const col = "36px 1.5fr 1fr 1fr 0.9fr 1fr 0.8fr 0.9fr 88px";
+    const col = "36px 1.5fr 1fr 1fr 0.9fr 1fr 0.8fr 0.9fr 112px";
     const headers = ["S.No", "Name", "FIT Code", "Destination", "Travel Date", "Enquired On", "Raised By", "Status", "Actions"];
     const fInp = { border: "0.5px solid #e2e8f0", borderRadius: "8px", padding: "7px 10px", fontSize: "12px", outline: "none", background: "#f8fafc", color: "#1e293b", height: "34px", width: "100%" };
     const destFmt = (d) => d ? d.charAt(0).toUpperCase() + d.slice(1).toLowerCase() : "—";
@@ -722,8 +749,9 @@ const TripEnquiries = () => {
                 @keyframes spin { to { transform:rotate(360deg); } }
                 @media (max-width:1000px) { .eq-desk { display:none !important; } }
                 @media (min-width:1001px) { .eq-mob  { display:none !important; } }
-                .eq-stats { display:grid; gap:10px; grid-template-columns:repeat(6,1fr); }
-                @media (max-width:1100px) { .eq-stats { grid-template-columns:repeat(3,1fr) !important; } }
+.eq-stats { display:grid; gap:10px; grid-template-columns:repeat(4,1fr); }
+@media (max-width:900px)  { .eq-stats { grid-template-columns:repeat(3,1fr) !important; } }
+@media (max-width:600px)  { .eq-stats { grid-template-columns:repeat(2,1fr) !important; } }
                 @media (max-width:600px)  { .eq-stats { grid-template-columns:repeat(2,1fr) !important; } }
                 .eq-flt-desk { display:flex; flex-direction:column; gap:10px; }
                 @media (max-width:900px) { .eq-flt-mob { display:block !important; } .eq-flt-desk { display:none !important; } }
@@ -753,7 +781,6 @@ const TripEnquiries = () => {
                     }
                     return result;
                 }}
-            
             />
 
             {/* Tabs */}
@@ -772,11 +799,12 @@ const TripEnquiries = () => {
             {activeTab === "raise" && <AdminEnquiryForm onSuccess={() => { setActiveTab("all"); setFilters(p => ({ ...p, status: "pending" })); getAllEnquiries(); }} />}
             {activeTab === "all" && (
                 <>
-                    {/* Stats */}
+                    {/* Stats — 3 columns on desktop now */}
                     <div className="eq-stats" style={{ marginBottom: "14px" }}>
                         {[
                             { label: "Total", count: (enquiries || []).length, bg: "#E6F1FB", color: "#0C447C", icon: "📋" },
-                            { label: "Pending", count: (enquiries || []).filter(e => e.status === "pending").length, bg: "#FAEEDA", color: "#633806", icon: "⏳" },
+                            { label: "Pending", count: (enquiries || []).filter(e => e.status === "pending" && !e.isRatePassed).length, bg: "#FAEEDA", color: "#633806", icon: "⏳" },
+                            { label: "Rate shared", count: (enquiries || []).filter(e => e.status === "pending" && e.isRatePassed).length, bg: "#FEF3C7", color: "#92400E", icon: "💰" },
                             { label: "Accepted", count: (enquiries || []).filter(e => e.status === "accepted").length, bg: "#EAF3DE", color: "#27500A", icon: "✅" },
                             { label: "Rejected", count: (enquiries || []).filter(e => e.status === "rejected").length, bg: "#FCEBEB", color: "#501313", icon: "❌" },
                             { label: "By Admin", count: (enquiries || []).filter(e => e.raisedBy === "admin").length, bg: "#FFF7ED", color: "#92400e", icon: "🔧" },
@@ -825,6 +853,7 @@ const TripEnquiries = () => {
                                 <select name="status" value={filters.status} onChange={handleFilter} style={fInp}>
                                     <option value="">All</option>
                                     <option value="pending">Pending</option>
+                                    <option value="ratePassed">Rate shared</option>
                                     <option value="accepted">Accepted</option>
                                     <option value="rejected">Rejected</option>
                                 </select>
@@ -884,6 +913,7 @@ const TripEnquiries = () => {
                                     <select name="status" value={filters.status} onChange={handleFilter} style={fInp}>
                                         <option value="">All</option>
                                         <option value="pending">Pending</option>
+                                        <option value="ratePassed">Rate shared</option>
                                         <option value="accepted">Accepted</option>
                                         <option value="rejected">Rejected</option>
                                     </select>
@@ -931,8 +961,10 @@ const TripEnquiries = () => {
                                 const sc = statusConfig[e.status] || statusConfig.pending;
                                 const isDone = e.status !== "pending";
                                 const isEditBlocked = e.status === "rejected";
-                                const isExp = expandedId === e._id;           // ← இது இருக்கா confirm பண்ணுங்க
-                                const total = (e.adults || 0) + (e.children || 0) + (e.infants || 0); return (
+                                const isExp = expandedId === e._id;
+                                const total = (e.adults || 0) + (e.children || 0) + (e.infants || 0);
+                                const isRatePassedLoading = loadingId === e._id + "_ratePassed";
+                                return (
                                     <div key={e._id} style={{ borderBottom: "0.5px solid #f1f5f9" }}>
                                         <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", background: isExp ? "#f8fafc" : e.status === "accepted" ? "#f0fdf4" : "#fff" }}
                                             onClick={() => setExpandedId(isExp ? null : e._id)}>
@@ -944,7 +976,11 @@ const TripEnquiries = () => {
                                                 </div>
                                             </div>
                                             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-                                                <span style={{ background: sc.bg, color: sc.color, padding: "3px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>{sc.label}</span>
+                                                {e.status === "pending" && e.isRatePassed ? (
+                                                    <span style={{ background: "#FEF3C7", color: "#92400E", padding: "3px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>Rate Shared</span>
+                                                ) : (
+                                                    <span style={{ background: sc.bg, color: sc.color, padding: "3px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>{sc.label}</span>
+                                                )}
                                                 <span style={{ transform: isExp ? "rotate(90deg)" : "none", transition: "0.2s" }}>▶</span>
                                             </div>
                                         </div>
@@ -970,7 +1006,6 @@ const TripEnquiries = () => {
                                                     <div style={{ padding: "6px 0", borderBottom: "0.5px solid #f1f5f9" }}><strong>Destination:</strong> {e.destination}</div>
                                                     <div style={{ padding: "6px 0", borderBottom: "0.5px solid #f1f5f9" }}><strong>Tour Type:</strong> {e.tourType}</div>
                                                     <div style={{ padding: "6px 0", borderBottom: "0.5px solid #f1f5f9" }}><strong>Travel Date:</strong> {e.preferredTravelDate ? new Date(e.preferredTravelDate).toLocaleDateString("en-IN") : "—"}</div>
-                                                    {/* Pickup date in red below travel date */}
                                                     {e.pickupDate && (
                                                         <div style={{ padding: "6px 0", borderBottom: "0.5px solid #f1f5f9" }}>
                                                             <strong style={{ color: "#dc2626" }}>🚐 Pickup:</strong>
@@ -1022,18 +1057,26 @@ const TripEnquiries = () => {
                                                     </span>
                                                 </div>
                                                 {/* Action Buttons */}
-                                                <div style={{ display: "flex", gap: "10px" }}>
+                                                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                                                     <button onClick={(ev) => { ev.stopPropagation(); if (!isEditBlocked) setEditModal({ open: true, data: e }); }}
                                                         disabled={isEditBlocked}
-                                                        style={{ flex: 1, padding: "12px", background: isEditBlocked ? "#f1f5f9" : "#EEF2FF", color: isEditBlocked ? "#cbd5e1" : "#4338CA", border: "none", borderRadius: "10px", fontWeight: 600, cursor: isEditBlocked ? "not-allowed" : "pointer" }}>
+                                                        style={{ flex: 1, minWidth: "80px", padding: "12px", background: isEditBlocked ? "#f1f5f9" : "#EEF2FF", color: isEditBlocked ? "#cbd5e1" : "#4338CA", border: "none", borderRadius: "10px", fontWeight: 600, cursor: isEditBlocked ? "not-allowed" : "pointer" }}>
                                                         ✎ Edit
                                                     </button>
-                                                    <button onClick={(ev) => { ev.stopPropagation(); !isDone && openModal("accept", e._id, e.fullName, e.fitCode || ""); }} disabled={isDone}
-                                                        style={{ flex: 1, padding: "12px", background: isDone ? "#f1f5f9" : "#EAF3DE", color: isDone ? "#cbd5e1" : "#3B6D11", border: "none", borderRadius: "10px", fontWeight: 600, cursor: isDone ? "not-allowed" : "pointer" }}>
-                                                        ✓ Accept
-                                                    </button>
+                                                    {e.status === "pending" && !e.isRatePassed && (
+                                                        <button onClick={(ev) => { ev.stopPropagation(); openModal("ratePassed", e._id, e.fullName); }}
+                                                            style={{ flex: 1, minWidth: "120px", padding: "12px", background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", borderRadius: "10px", fontWeight: 600, cursor: "pointer" }}>
+                                                            💰 Rate Shared
+                                                        </button>
+                                                    )}
+                                                    {!(e.status === "pending" && !e.isRatePassed) && (
+                                                        <button onClick={(ev) => { ev.stopPropagation(); !isDone && openModal("accept", e._id, e.fullName, e.fitCode || ""); }} disabled={isDone}
+                                                            style={{ flex: 1, minWidth: "80px", padding: "12px", background: isDone ? "#f1f5f9" : "#EAF3DE", color: isDone ? "#cbd5e1" : "#3B6D11", border: "none", borderRadius: "10px", fontWeight: 600, cursor: isDone ? "not-allowed" : "pointer" }}>
+                                                            ✓ Accept
+                                                        </button>
+                                                    )}
                                                     <button onClick={(ev) => { ev.stopPropagation(); !isDone && openModal("reject", e._id, e.fullName); }} disabled={isDone}
-                                                        style={{ flex: 1, padding: "12px", background: isDone ? "#f1f5f9" : "#FCEBEB", color: isDone ? "#cbd5e1" : "#A32D2D", border: "none", borderRadius: "10px", fontWeight: 600, cursor: isDone ? "not-allowed" : "pointer" }}>
+                                                        style={{ flex: 1, minWidth: "80px", padding: "12px", background: isDone ? "#f1f5f9" : "#FCEBEB", color: isDone ? "#cbd5e1" : "#A32D2D", border: "none", borderRadius: "10px", fontWeight: 600, cursor: isDone ? "not-allowed" : "pointer" }}>
                                                         ✕ Reject
                                                     </button>
                                                 </div>
@@ -1074,6 +1117,7 @@ const TripEnquiries = () => {
                                 const isExp = expandedId === e._id;
                                 const total = (e.adults || 0) + (e.children || 0) + (e.infants || 0);
                                 const isLoading = loadingId === e._id + "_accept" || loadingId === e._id + "_reject";
+                                const isRatePassedLoading = loadingId === e._id + "_ratePassed";
                                 return (
                                     <div key={e._id} style={{ borderBottom: "0.5px solid #f1f5f9" }}>
                                         <div style={{ display: "grid", gridTemplateColumns: col, alignItems: "center", background: isExp ? "#f8fafc" : e.status === "accepted" ? "#f0fdf4" : "#fff", transition: "background 0.1s", cursor: "pointer" }}
@@ -1096,8 +1140,8 @@ const TripEnquiries = () => {
                                             </div>
                                             <div style={{ padding: P, overflow: "hidden" }}>
                                                 <div style={{ fontSize: "13px", fontWeight: 600, color: "#711c66ff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{destFmt(e.destination)}</div>
-                                                <div style={{ fontSize: "11px", color: "#94a3b8" }}>{e.numberOfDays || 0}D/{e.numberOfNights || 0}N</div>                                            </div>
-                                            {/* Travel date + pickup date in red below */}
+                                                <div style={{ fontSize: "11px", color: "#94a3b8" }}>{e.numberOfDays || 0}D/{e.numberOfNights || 0}N</div>
+                                            </div>
                                             <div style={{ padding: P, overflow: "hidden" }}>
                                                 <div style={{ fontSize: "12px", color: "#475569", whiteSpace: "nowrap" }}>
                                                     {e.preferredTravelDate ? new Date(e.preferredTravelDate).toLocaleDateString("en-IN") : "—"}
@@ -1118,21 +1162,32 @@ const TripEnquiries = () => {
                                                 </span>
                                             </div>
                                             <div style={{ padding: P, overflow: "hidden" }}>
-                                                <span style={{ background: sc.bg, color: sc.color, padding: "3px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "3px", whiteSpace: "nowrap" }}>
-                                                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: sc.dot, display: "inline-block", flexShrink: 0 }} />{sc.label}
-                                                </span>
+                                                {e.status === "pending" && e.isRatePassed ? (
+                                                    <span style={{ background: "#FEF3C7", color: "#92400E", padding: "3px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "3px", whiteSpace: "nowrap" }}>
+                                                        <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#EAB308", display: "inline-block", flexShrink: 0 }} /> Rate Shared
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ background: sc.bg, color: sc.color, padding: "3px 8px", borderRadius: "20px", fontSize: "10px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "3px", whiteSpace: "nowrap" }}>
+                                                        <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: sc.dot, display: "inline-block", flexShrink: 0 }} />{sc.label}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div style={{ padding: P }}>
-                                                {isLoading ? (
+                                                {isLoading || isRatePassedLoading ? (
                                                     <div style={{ width: "14px", height: "14px", border: "2px solid #e2e8f0", borderTop: "2px solid #2563eb", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
                                                 ) : (
                                                     <div style={{ display: "flex", gap: "3px" }}>
-                                                        {/* Edit — blocked when accepted/rejected */}
                                                         <button onClick={(ev) => { ev.stopPropagation(); if (!isEditBlocked) setEditModal({ open: true, data: e }); }}
                                                             disabled={isEditBlocked} title="Edit"
                                                             style={{ width: "26px", height: "26px", borderRadius: "6px", border: "none", background: isEditBlocked ? "#f1f5f9" : "#EEF2FF", color: isEditBlocked ? "#cbd5e1" : "#4338CA", cursor: isEditBlocked ? "not-allowed" : "pointer", opacity: isEditBlocked ? 0.4 : 1, fontSize: "13px" }}>✎</button>
-                                                        <button onClick={(ev) => { ev.stopPropagation(); !isDone && openModal("accept", e._id, e.fullName, e.fitCode || ""); }} disabled={isDone}
-                                                            style={{ width: "26px", height: "26px", borderRadius: "6px", border: "none", background: isDone ? "#f1f5f9" : "#EAF3DE", color: isDone ? "#cbd5e1" : "#3B6D11", cursor: isDone ? "not-allowed" : "pointer", opacity: isDone ? 0.4 : 1, fontSize: "12px" }}>✓</button>
+                                                        {e.status === "pending" && !e.isRatePassed && (
+                                                            <button onClick={(ev) => { ev.stopPropagation(); openModal("ratePassed", e._id, e.fullName); }} title="Mark Rate Shared"
+                                                                style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid #FDE68A", background: "#FFFBEB", color: "#92400E", cursor: "pointer", fontSize: "12px" }}>💰</button>
+                                                        )}
+                                                        {!(e.status === "pending" && !e.isRatePassed) && (
+                                                            <button onClick={(ev) => { ev.stopPropagation(); !isDone && openModal("accept", e._id, e.fullName, e.fitCode || ""); }} disabled={isDone}
+                                                                style={{ width: "26px", height: "26px", borderRadius: "6px", border: "none", background: isDone ? "#f1f5f9" : "#EAF3DE", color: isDone ? "#cbd5e1" : "#3B6D11", cursor: isDone ? "not-allowed" : "pointer", opacity: isDone ? 0.4 : 1, fontSize: "12px" }}>✓</button>
+                                                        )}
                                                         <button onClick={(ev) => { ev.stopPropagation(); !isDone && openModal("reject", e._id, e.fullName); }} disabled={isDone}
                                                             style={{ width: "26px", height: "26px", borderRadius: "6px", border: "none", background: isDone ? "#f1f5f9" : "#FCEBEB", color: isDone ? "#cbd5e1" : "#A32D2D", cursor: isDone ? "not-allowed" : "pointer", opacity: isDone ? 0.4 : 1, fontSize: "12px" }}>✕</button>
                                                     </div>
@@ -1159,7 +1214,7 @@ const TripEnquiries = () => {
                                                             head: e.status === "accepted" ? "✅ Acceptance" : "👥 More Info", color: e.status === "accepted" ? "#3B6D11" : "#7c3aed",
                                                             rows: e.status === "accepted"
                                                                 ? [["Sales Value", e.salesValue ? `₹${e.salesValue.toLocaleString("en-IN")}` : "—"], ["Pickup Date", e.pickupDate ? new Date(e.pickupDate).toLocaleDateString("en-IN") : "—"], ["Pickup Time", e.pickupTime || "—"], ["Pickup Place", e.pickupPlace || "—"], ["Source", e.source || "—"], ["Raised By", e.raisedBy === "admin" ? "🔧 Admin" : "🌐 User"]]
-                                                                : [["Adults", `${e.adults || 0}`], ["Children", `${e.children || 0}`], ["Infants", `${e.infants || 0}`], ["Source", e.source || "—"], ["Raised By", e.raisedBy === "admin" ? "🔧 Admin" : "🌐 User"]],
+                                                                : [["Rate Shared", e.isRatePassed ? "💰 Yes" : "No"], ["Adults", `${e.adults || 0}`], ["Children", `${e.children || 0}`], ["Infants", `${e.infants || 0}`], ["Source", e.source || "—"], ["Raised By", e.raisedBy === "admin" ? "🔧 Admin" : "🌐 User"]],
                                                             extra: e.specialRequests,
                                                             fitStates: e.status === "accepted" ? e.fitStates : null,
                                                         },
@@ -1172,7 +1227,6 @@ const TripEnquiries = () => {
                                                                     <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b", textAlign: "right", maxWidth: "60%", wordBreak: "break-word" }}>{v}</span>
                                                                 </div>
                                                             ))}
-                                                            {/* Pickup date in red under Trip card */}
                                                             {card.head.includes("Trip") && card.pickupDate && (
                                                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "0.5px solid #f8fafc" }}>
                                                                     <span style={{ fontSize: "12px", color: "#94a3b8" }}>Pickup date</span>
@@ -1216,5 +1270,4 @@ const TripEnquiries = () => {
 };
 
 export default TripEnquiries;
-
 

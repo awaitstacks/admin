@@ -958,6 +958,14 @@ import {
   MapPin,
 } from "lucide-react";
 
+const fmtCount = (n) => {
+  if (!n) return "0";
+  if (n >= 1000000) return `${parseFloat((n / 1000000).toFixed(1))}M`;
+  if (n >= 1000) return `${parseFloat((n / 1000).toFixed(1))}K`;
+  return String(n);
+};
+
+
 const TourAdminDashboard = () => {
   const {
     bookings,
@@ -1224,11 +1232,10 @@ const TourAdminDashboard = () => {
                 {booking.travellers?.map((t, i) => (
                   <div
                     key={i}
-                    className={`bg-gray-50 p-3 rounded-lg space-y-1 text-xs ${
-                      t.cancelled?.byTraveller || t.cancelled?.byAdmin
-                        ? "border-l-4 border-red-400"
-                        : ""
-                    }`}
+                    className={`bg-gray-50 p-3 rounded-lg space-y-1 text-xs ${t.cancelled?.byTraveller || t.cancelled?.byAdmin
+                      ? "border-l-4 border-red-400"
+                      : ""
+                      }`}
                   >
                     <p className="font-medium break-words whitespace-normal leading-snug">
                       {t.title} {t.firstName} {t.lastName} ({t.age} yrs,{" "}
@@ -1521,10 +1528,9 @@ const TourAdminDashboard = () => {
                       }}
                       disabled={actionLoading[booking.tnr]}
                       className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-white transition
-                        ${
-                          actionLoading[booking.tnr]
-                            ? "bg-green-400 cursor-not-allowed"
-                            : "bg-green-600 hover:bg-green-700"
+                        ${actionLoading[booking.tnr]
+                          ? "bg-green-400 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700"
                         }`}
                     >
                       {actionLoading[booking.tnr] ? (
@@ -1628,22 +1634,22 @@ const TourAdminDashboard = () => {
             <div className="space-y-4">
               {category === "cancellation"
                 ? visible.map((b) => (
-                    <CancellationItem key={b.tnr} booking={b} />
-                  ))
+                  <CancellationItem key={b.tnr} booking={b} />
+                ))
                 : category === "manageRequests"
                   ? visible.map((b) => (
-                      <ManageRequestItem key={b.tnr} booking={b} />
-                    ))
+                    <ManageRequestItem key={b.tnr} booking={b} />
+                  ))
                   : visible.map((b) => (
-                      <BookingItem
-                        key={b.tnr}
-                        booking={b}
-                        category={category}
-                        statusLabel={statusLabel}
-                        statusColor={statusColor}
-                        Icon={Icon}
-                      />
-                    ))}
+                    <BookingItem
+                      key={b.tnr}
+                      booking={b}
+                      category={category}
+                      statusLabel={statusLabel}
+                      statusColor={statusColor}
+                      Icon={Icon}
+                    />
+                  ))}
             </div>
 
             {items.length > 5 && (
@@ -1779,7 +1785,9 @@ const TourAdminDashboard = () => {
                   >
                     <m.Icon className={`w-6 h-6 ${m.color}`} />
                   </div>
-                  <p className="text-2xl font-bold text-gray-900">{m.value}</p>
+                  <p className="text-2xl font-bold text-gray-900" title={Number(m.value).toLocaleString("en-IN")}>
+                    {fmtCount(m.value)}
+                  </p>
                   <p className="text-xs text-gray-500 mt-2 px-2 leading-tight whitespace-normal break-words line-clamp-2 text-center">
                     {m.label}
                   </p>
