@@ -369,23 +369,34 @@ const Avatar = ({ user }) => {
 };
 
 const RESPONSIVE_CSS = `
-  /* Default > 1035px : table */
+  /*
+    Sidebar = w-72 = 288px, appears at lg = 1024px
+    Table minWidth = 680px
+
+    Zones:
+      0    – 812  : mobile       → card
+      813  – 1023 : tab no-sidebar → table (full width available)
+      1024 – 1279 : lg sidebar appears, content = window-288, cramped → card
+      1280+       : content = window-288 >= 992px → table comfortable
+  */
+
+  /* Default (>= 1280px): table */
   .users-table-wrap { display: block; }
   .users-cards-wrap { display: none; }
 
-  /* 1024-1035 : card (sidebar just appeared, cramped) */
-  @media (min-width: 1024px) and (max-width: 1035px) {
+  /* 1024–1279: sidebar appeared, content too narrow → card */
+  @media (min-width: 1024px) and (max-width: 1279px) {
     .users-table-wrap { display: none !important; }
     .users-cards-wrap { display: flex !important; flex-direction: column; gap: 10px; }
   }
 
-  /* 813-1023 : table (no sidebar, full width) */
+  /* 813–1023: no sidebar, full width → table */
   @media (min-width: 813px) and (max-width: 1023px) {
     .users-table-wrap { display: block !important; }
     .users-cards-wrap { display: none !important; }
   }
 
-  /* 0-812 : card (mobile) */
+  /* 0–812: mobile → card */
   @media (max-width: 812px) {
     .users-table-wrap { display: none !important; }
     .users-cards-wrap { display: flex !important; flex-direction: column; gap: 10px; }
@@ -535,7 +546,7 @@ export default function UsersData() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
                 <thead>
                   <tr>
-                    <th style={{ ...thStyle, width: 36, textAlign: "center" }}>S</th>
+                    <th style={{ ...thStyle, width: 48, textAlign: "center" }}>#</th>
                     <th style={{ ...thStyle, width: 44, textAlign: "center" }}>Photo</th>
                     <th style={thStyle}>Name & Email</th>
                     <th style={thStyle}>Phone</th>
@@ -551,7 +562,7 @@ export default function UsersData() {
                       onMouseEnter={e => e.currentTarget.style.background = "#f0f4ff"}
                       onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? "#fff" : "#fafbff"}>
 
-                      <td style={{ ...tdStyle, textAlign: "center", color: "#94a3b8", fontSize: 12, fontWeight: 600 }}>{idx + 1}</td>
+                      <td style={{ ...tdStyle, textAlign: "center", color: "#94a3b8", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>{idx + 1}</td>
 
                       <td style={{ ...tdStyle, textAlign: "center" }}>
                         <div style={{ display: "flex", justifyContent: "center" }}><Avatar user={user} /></div>
@@ -654,3 +665,4 @@ export default function UsersData() {
     </div>
   );
 }
+
