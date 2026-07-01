@@ -522,7 +522,7 @@ export default function UsersData() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
                 <thead>
                   <tr>
-                    <th style={{ ...thStyle, width: 32, textAlign: "center" }}>#</th>
+                    <th style={{ ...thStyle, width: 32, textAlign: "center" }}>S.No</th>
                     <th style={{ ...thStyle, width: 44, textAlign: "center" }}>Photo</th>
                     <th style={{ ...thStyle, minWidth: 160 }}>Name & Email</th>
                     <th style={{ ...thStyle, minWidth: 110 }}>Phone</th>
