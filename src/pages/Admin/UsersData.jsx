@@ -1,3 +1,4 @@
+
 // import React, { useContext, useEffect, useState, useRef } from "react";
 // import { TourAdminContext } from "../../context/TourAdminContext";
 // import { toast, ToastContainer } from "react-toastify";
@@ -17,9 +18,9 @@
 
 // const GenderBadge = ({ gender }) => {
 //   const map = {
-//     Male:         { bg: "#dbeafe", color: "#1d4ed8" },
-//     Female:       { bg: "#fce7f3", color: "#9d174d" },
-//     Other:        { bg: "#ccfbf1", color: "#0f766e" },
+//     Male:           { bg: "#dbeafe", color: "#1d4ed8" },
+//     Female:         { bg: "#fce7f3", color: "#9d174d" },
+//     Other:          { bg: "#ccfbf1", color: "#0f766e" },
 //     "Not Selected": { bg: "#f1f5f9", color: "#94a3b8" },
 //   };
 //   const s = map[gender] || { bg: "#f1f5f9", color: "#94a3b8" };
@@ -48,7 +49,10 @@
 //   .users-table-wrap { display: block; }
 //   .users-cards-wrap { display: none; }
 
-//   @media (max-width: 900px) {
+//   /* ≤ 819px  → cards */
+//   /* 820–1035 → cards (sidebar eats content width) */
+//   /* > 1036   → table */
+//   @media (max-width: 1036px) {
 //     .users-table-wrap { display: none !important; }
 //     .users-cards-wrap { display: flex !important; flex-direction: column; gap: 10px; }
 //   }
@@ -56,12 +60,12 @@
 
 // export default function UsersData() {
 //   const { allUsers, getAllUsers, aToken } = useContext(TourAdminContext);
-//   const [search, setSearch]     = useState("");
-//   const [gender, setGender]     = useState("all");
-//   const [phone, setPhone]       = useState("");
+//   const [search, setSearch]         = useState("");
+//   const [gender, setGender]         = useState("all");
+//   const [phone, setPhone]           = useState("");
 //   const [genderOpen, setGenderOpen] = useState(false);
-//   const [loading, setLoading]   = useState(true);
-//   const [showLeave, setShowLeave] = useState(false);
+//   const [loading, setLoading]       = useState(true);
+//   const [showLeave, setShowLeave]   = useState(false);
 //   const dropRef = useRef(null);
 
 //   useEffect(() => {
@@ -119,13 +123,13 @@
 //   };
 
 //   return (
-//     <div style={{ padding: "20px 16px", background: "#f1f5f9", minHeight: "100vh", fontFamily: "inherit", boxSizing: "border-box" }}>
+//     <div style={{ padding: "20px 16px", background: "#f1f5f9", minHeight: "100vh", fontFamily: "inherit", boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden" }}>
 //       <style>{RESPONSIVE_CSS}</style>
 //       <ToastContainer position="top-right" autoClose={3000} />
 
 //       {/* Header */}
 //       <div style={{ marginBottom: 18, textAlign: "center" }}>
-//         <h1 style={{ fontSize: 29, fontWeight: 700, color: "#250fecff", margin: "0 0 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+//         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#450cf1ff", margin: "0 0 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
 //           👥 All Users
 //         </h1>
 //         <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
@@ -191,19 +195,19 @@
 //         </div>
 //       ) : (
 //         <>
-//           {/* ── DESKTOP TABLE (>900px) ── */}
+//           {/* ── DESKTOP TABLE (> 1024px) ── */}
 //           <div className="users-table-wrap" style={{ background: "#fff", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
 //             <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
 //               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
 //                 <thead>
 //                   <tr>
-//                     <th style={{ ...thStyle, width: 36, textAlign: "center" }}>S.No</th>
+//                     <th style={{ ...thStyle, width: 36, textAlign: "center" }}>#</th>
 //                     <th style={{ ...thStyle, width: 44, textAlign: "center" }}>Photo</th>
 //                     <th style={thStyle}>Name & Email</th>
 //                     <th style={thStyle}>Phone</th>
 //                     <th style={thStyle}>Gender</th>
 //                     <th style={thStyle}>Address</th>
-//                     <th style={thStyle}>Logged On</th>
+//                     <th style={thStyle}>Joined On</th>
 //                   </tr>
 //                 </thead>
 //                 <tbody>
@@ -249,12 +253,11 @@
 //             </div>
 //           </div>
 
-//           {/* ── MOBILE / TAB CARDS (≤900px) ── */}
+//           {/* ── CARDS (≤ 1024px) ── */}
 //           <div className="users-cards-wrap">
 //             {filtered.map((user, idx) => (
 //               <div key={user._id} style={{ background: "#fff", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
 
-//                 {/* Card header */}
 //                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
 //                   <div style={{ position: "relative", flexShrink: 0 }}>
 //                     <Avatar user={user} />
@@ -270,23 +273,19 @@
 //                       {user.email}
 //                     </div>
 //                   </div>
-//                   {/* Joined — always top-right */}
 //                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-//                     <div style={{ fontSize: 10.75, fontWeight: 600, color: "#475569", whiteSpace: "nowrap" }}>{formatDate(user.createdAt)}</div>
-//                     <div style={{ fontSize: 9.75, color: "#94a3b8", whiteSpace: "nowrap" }}>{formatTime(user.createdAt)}</div>
+//                     <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", whiteSpace: "nowrap" }}>{formatDate(user.createdAt)}</div>
+//                     <div style={{ fontSize: 10, color: "#94a3b8", whiteSpace: "nowrap" }}>{formatTime(user.createdAt)}</div>
 //                   </div>
 //                 </div>
 
-//                 {/* Card body — info rows */}
 //                 <div style={{ padding: "10px 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-//                   {/* Phone + Gender side by side */}
 //                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
 //                     <span style={{ display: "flex", alignItems: "center", gap: 4, background: "#f1f5f9", borderRadius: 8, padding: "4px 10px", fontSize: 12, color: "#475569", whiteSpace: "nowrap" }}>
 //                       📞 {user.phone || "No phone"}
 //                     </span>
 //                     <GenderBadge gender={user.gender} />
 //                   </div>
-//                   {/* Address */}
 //                   <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: 12, color: "#475569" }}>
 //                     <span style={{ flexShrink: 0 }}>📍</span>
 //                     <span>
@@ -342,9 +341,9 @@ const getAvatarColor = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avata
 
 const GenderBadge = ({ gender }) => {
   const map = {
-    Male:         { bg: "#dbeafe", color: "#1d4ed8" },
-    Female:       { bg: "#fce7f3", color: "#9d174d" },
-    Other:        { bg: "#ccfbf1", color: "#0f766e" },
+    Male:           { bg: "#dbeafe", color: "#1d4ed8" },
+    Female:         { bg: "#fce7f3", color: "#9d174d" },
+    Other:          { bg: "#ccfbf1", color: "#0f766e" },
     "Not Selected": { bg: "#f1f5f9", color: "#94a3b8" },
   };
   const s = map[gender] || { bg: "#f1f5f9", color: "#94a3b8" };
@@ -370,10 +369,24 @@ const Avatar = ({ user }) => {
 };
 
 const RESPONSIVE_CSS = `
+  /* Default > 1035px : table */
   .users-table-wrap { display: block; }
   .users-cards-wrap { display: none; }
 
-  @media (max-width: 768px) {
+  /* 1024-1035 : card (sidebar just appeared, cramped) */
+  @media (min-width: 1024px) and (max-width: 1035px) {
+    .users-table-wrap { display: none !important; }
+    .users-cards-wrap { display: flex !important; flex-direction: column; gap: 10px; }
+  }
+
+  /* 813-1023 : table (no sidebar, full width) */
+  @media (min-width: 813px) and (max-width: 1023px) {
+    .users-table-wrap { display: block !important; }
+    .users-cards-wrap { display: none !important; }
+  }
+
+  /* 0-812 : card (mobile) */
+  @media (max-width: 812px) {
     .users-table-wrap { display: none !important; }
     .users-cards-wrap { display: flex !important; flex-direction: column; gap: 10px; }
   }
@@ -381,12 +394,12 @@ const RESPONSIVE_CSS = `
 
 export default function UsersData() {
   const { allUsers, getAllUsers, aToken } = useContext(TourAdminContext);
-  const [search, setSearch]     = useState("");
-  const [gender, setGender]     = useState("all");
-  const [phone, setPhone]       = useState("");
+  const [search, setSearch]         = useState("");
+  const [gender, setGender]         = useState("all");
+  const [phone, setPhone]           = useState("");
   const [genderOpen, setGenderOpen] = useState(false);
-  const [loading, setLoading]   = useState(true);
-  const [showLeave, setShowLeave] = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [showLeave, setShowLeave]   = useState(false);
   const dropRef = useRef(null);
 
   useEffect(() => {
@@ -444,13 +457,13 @@ export default function UsersData() {
   };
 
   return (
-    <div style={{ padding: "20px 16px", background: "#f1f5f9", minHeight: "100vh", fontFamily: "inherit", boxSizing: "border-box" }}>
+    <div style={{ padding: "20px 16px", background: "#f1f5f9", minHeight: "100vh", fontFamily: "inherit", boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden" }}>
       <style>{RESPONSIVE_CSS}</style>
       <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Header */}
       <div style={{ marginBottom: 18, textAlign: "center" }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#1520eaff", margin: "0 0 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#450cf1ff", margin: "0 0 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           👥 All Users
         </h1>
         <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
@@ -516,19 +529,19 @@ export default function UsersData() {
         </div>
       ) : (
         <>
-          {/* ── DESKTOP TABLE (>900px) ── */}
+          {/* ── DESKTOP TABLE (> 1024px) ── */}
           <div className="users-table-wrap" style={{ background: "#fff", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
             <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
                 <thead>
                   <tr>
-                    <th style={{ ...thStyle, width: 32, textAlign: "center" }}>S</th>
+                    <th style={{ ...thStyle, width: 36, textAlign: "center" }}>S</th>
                     <th style={{ ...thStyle, width: 44, textAlign: "center" }}>Photo</th>
-                    <th style={{ ...thStyle, minWidth: 160 }}>Name & Email</th>
-                    <th style={{ ...thStyle, minWidth: 110 }}>Phone</th>
-                    <th style={{ ...thStyle, minWidth: 80 }}>Gender</th>
-                    <th style={{ ...thStyle, minWidth: 100 }}>Address</th>
-                    <th style={{ ...thStyle, minWidth: 110 }}>Logged On</th>
+                    <th style={thStyle}>Name & Email</th>
+                    <th style={thStyle}>Phone</th>
+                    <th style={thStyle}>Gender</th>
+                    <th style={thStyle}>Address</th>
+                    <th style={thStyle}>Joined On</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -557,7 +570,7 @@ export default function UsersData() {
                         <GenderBadge gender={user.gender} />
                       </td>
 
-                      <td style={{ ...tdStyle, maxWidth: 120, wordBreak: "break-word", whiteSpace: "normal" }}>
+                      <td style={{ ...tdStyle, maxWidth: 160 }}>
                         {user.address?.line1 || user.address?.line2
                           ? <span style={{ fontSize: 12, color: "#475569" }}>{[user.address.line1, user.address.line2].filter(Boolean).join(", ")}</span>
                           : <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>}
@@ -574,12 +587,11 @@ export default function UsersData() {
             </div>
           </div>
 
-          {/* ── MOBILE / TAB CARDS (≤900px) ── */}
+          {/* ── CARDS (≤ 1024px) ── */}
           <div className="users-cards-wrap">
             {filtered.map((user, idx) => (
               <div key={user._id} style={{ background: "#fff", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
 
-                {/* Card header */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     <Avatar user={user} />
@@ -595,23 +607,19 @@ export default function UsersData() {
                       {user.email}
                     </div>
                   </div>
-                  {/* Joined — always top-right */}
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", whiteSpace: "nowrap" }}>{formatDate(user.createdAt)}</div>
                     <div style={{ fontSize: 10, color: "#94a3b8", whiteSpace: "nowrap" }}>{formatTime(user.createdAt)}</div>
                   </div>
                 </div>
 
-                {/* Card body — info rows */}
                 <div style={{ padding: "10px 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  {/* Phone + Gender side by side */}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 4, background: "#f1f5f9", borderRadius: 8, padding: "4px 10px", fontSize: 12, color: "#475569", whiteSpace: "nowrap" }}>
                       📞 {user.phone || "No phone"}
                     </span>
                     <GenderBadge gender={user.gender} />
                   </div>
-                  {/* Address */}
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: 12, color: "#475569" }}>
                     <span style={{ flexShrink: 0 }}>📍</span>
                     <span>
@@ -646,4 +654,3 @@ export default function UsersData() {
     </div>
   );
 }
-
