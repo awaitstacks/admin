@@ -1,317 +1,246 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
-import {
-  Users,
-  Mail,
-  Phone,
-  Search as SearchIcon,
-  X,
-  ChevronDown,
-} from "lucide-react";
 import { TourAdminContext } from "../../context/TourAdminContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const UsersData = () => {
+const formatDate = (iso) => {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
+const formatTime = (iso) => {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+};
+const getInitial = (name) => (name?.[0] || "U").toUpperCase();
+const avatarColors = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444","#14b8a6"];
+const getAvatarColor = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
+
+const GenderBadge = ({ gender }) => {
+  const map = {
+    Male:         { bg: "#dbeafe", color: "#1d4ed8" },
+    Female:       { bg: "#fce7f3", color: "#9d174d" },
+    Other:        { bg: "#ccfbf1", color: "#0f766e" },
+    "Not Selected": { bg: "#f1f5f9", color: "#94a3b8" },
+  };
+  const s = map[gender] || { bg: "#f1f5f9", color: "#94a3b8" };
+  const label = gender === "Not Selected" ? "Not set" : (gender || "Not set");
+  return (
+    <span style={{ background: s.bg, color: s.color, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", display: "inline-block" }}>
+      {label}
+    </span>
+  );
+};
+
+const Avatar = ({ user }) => {
+  const [err, setErr] = useState(false);
+  if (user.image && user.image.startsWith("http") && !err) {
+    return <img src={user.image} alt={user.name} onError={() => setErr(true)}
+      style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", border: "2px solid #e0e7ff", flexShrink: 0 }} />;
+  }
+  return (
+    <div style={{ width: 38, height: 38, borderRadius: "50%", background: getAvatarColor(user.name), color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
+      {getInitial(user.name)}
+    </div>
+  );
+};
+
+const RESPONSIVE_CSS = `
+  .users-table-wrap { display: block; }
+  .users-cards-wrap { display: none; }
+
+  @media (max-width: 900px) {
+    .users-table-wrap { display: none !important; }
+    .users-cards-wrap { display: flex !important; flex-direction: column; gap: 10px; }
+  }
+`;
+
+export default function UsersData() {
   const { allUsers, getAllUsers, aToken } = useContext(TourAdminContext);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [genderFilter, setGenderFilter] = useState("all");
-  const [phoneFilter, setPhoneFilter] = useState("");
+  const [search, setSearch]     = useState("");
+  const [gender, setGender]     = useState("all");
+  const [phone, setPhone]       = useState("");
   const [genderOpen, setGenderOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const dropdownRef = useRef(null);
-
-  // LEAVE CONFIRMATION PROTECTION
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [showLeave, setShowLeave] = useState(false);
+  const dropRef = useRef(null);
 
   useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      event.preventDefault();
-      event.returnValue =
-        "You have unsaved changes or active filters. Are you sure you want to leave?";
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    const fn = e => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", fn);
+    return () => window.removeEventListener("beforeunload", fn);
   }, []);
 
   useEffect(() => {
     window.history.pushState(null, null, window.location.href);
-
-    const handlePopState = (event) => {
-      event.preventDefault();
-      setShowLeaveConfirm(true);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => window.removeEventListener("popstate", handlePopState);
+    const fn = e => { e.preventDefault(); setShowLeave(true); };
+    window.addEventListener("popstate", fn);
+    return () => window.removeEventListener("popstate", fn);
   }, []);
 
-  // Fetch users – show toast only on error
   useEffect(() => {
     if (aToken) {
-      setIsLoading(true);
-
-      getAllUsers()
-        .catch((error) => {
-          console.error("Error fetching users:", error);
-          toast.error("Failed to load users");
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+      setLoading(true);
+      getAllUsers().catch(() => toast.error("Failed to load users")).finally(() => setLoading(false));
     }
-  }, [aToken, getAllUsers]);
+  }, [aToken]);
 
-  // Close gender dropdown on outside click
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setGenderOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const fn = e => { if (dropRef.current && !dropRef.current.contains(e.target)) setGenderOpen(false); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  const filteredUsers =
-    allUsers?.filter((user) => {
-      const matchesSearch =
-        !searchTerm ||
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filtered = [...(allUsers || [])]
+    .filter(u => {
+      const q = search.toLowerCase();
+      return (!search || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q))
+        && (gender === "all" || u.gender === gender)
+        && (!phone || u.phone?.includes(phone));
+    })
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
-      const matchesGender =
-        genderFilter === "all" || user.gender === genderFilter;
-      const matchesPhone =
-        !phoneFilter ||
-        user.phone?.toLowerCase().includes(phoneFilter.toLowerCase());
+  const hasFilters = search || gender !== "all" || phone;
 
-      return matchesSearch && matchesGender && matchesPhone;
-    }) || [];
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setGenderFilter("all");
-    setPhoneFilter("");
+  const inp = {
+    padding: "8px 12px", border: "1.5px solid #e2e8f0", borderRadius: 9,
+    fontSize: 13, outline: "none", background: "#f8fafc", color: "#1e293b",
+    width: "100%", boxSizing: "border-box",
   };
 
-  const hasFilters = searchTerm || genderFilter !== "all" || phoneFilter !== "";
+  const thStyle = {
+    padding: "11px 14px", fontSize: 11, fontWeight: 700, color: "#64748b",
+    textTransform: "uppercase", letterSpacing: ".05em", whiteSpace: "nowrap",
+    background: "#f8fafc", borderBottom: "2px solid #e2e8f0", textAlign: "left",
+  };
+
+  const tdStyle = {
+    padding: "12px 14px", fontSize: 13, color: "#334155",
+    verticalAlign: "middle", borderBottom: "1px solid #f1f5f9", textAlign: "left",
+  };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-full mx-auto bg-gray-50 min-h-screen">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+    <div style={{ padding: "20px 16px", background: "#f1f5f9", minHeight: "100vh", fontFamily: "inherit", boxSizing: "border-box" }}>
+      <style>{RESPONSIVE_CSS}</style>
+      <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Header - Mobile: Logo + Title on 1st line, count+date on 2nd line */}
-      <div className="mb-8 sm:mb-10">
-        {/* Mobile view */}
-        <div className="md:hidden flex flex-col items-center text-center">
-          <div className="flex items-center gap-3 mb-2">
-            <Users className="w-12 h-12 text-indigo-600" />
-            <h1 className="text-2xl font-bold text-gray-900">All Users</h1>
-          </div>
-          <p className="text-gray-600 text-sm">
-            {allUsers?.length || 0} registered users •{" "}
-            {new Date().toLocaleDateString()}
-          </p>
-        </div>
-
-        {/* Desktop view - left aligned */}
-        <div className="hidden md:flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Users className="w-12 h-12 text-indigo-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">All Users</h1>
-              <p className="text-gray-600 mt-1">
-                {allUsers?.length || 0} registered users •{" "}
-                {new Date().toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Header */}
+      <div style={{ marginBottom: 18, textAlign: "center" }}>
+        <h1 style={{ fontSize: 29, fontWeight: 700, color: "#250fecff", margin: "0 0 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          👥 All Users
+        </h1>
+        <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
+          {allUsers?.length || 0} registered users · {new Date().toLocaleDateString("en-IN")}
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Search */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Search by Name or Email
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Type to search..."
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <SearchIcon
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                size={18}
-              />
-            </div>
+      {/* Filter bar */}
+      <div style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", marginBottom: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 160px", minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Search</span>
+            <input style={inp} placeholder="Name or email..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
 
-          {/* Gender Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Gender
-            </label>
-            <div
-              onClick={() => setGenderOpen(!genderOpen)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg cursor-pointer flex justify-between items-center bg-white hover:border-indigo-500"
-            >
-              <span>
-                {genderFilter === "all" ? "All Genders" : genderFilter}
-              </span>
-              <ChevronDown
-                className={`text-gray-500 transition-transform ${genderOpen ? "rotate-180" : ""}`}
-                size={18}
-              />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 140px", minWidth: 0, position: "relative" }} ref={dropRef}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Gender</span>
+            <div onClick={() => setGenderOpen(p => !p)}
+              style={{ ...inp, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>{gender === "all" ? "All Genders" : (gender === "Not Selected" ? "Not set" : gender)}</span>
+              <span style={{ fontSize: 10, color: "#94a3b8", transition: ".15s", display: "inline-block", transform: genderOpen ? "rotate(180deg)" : "none" }}>▾</span>
             </div>
-
             {genderOpen && (
-              <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
-                {["all", "Male", "Female", "Other", "Not Selected"].map(
-                  (opt) => (
-                    <div
-                      key={opt}
-                      onClick={() => {
-                        setGenderFilter(opt);
-                        setGenderOpen(false);
-                      }}
-                      className="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer"
-                    >
-                      {opt === "all" ? "All Genders" : opt}
-                    </div>
-                  ),
-                )}
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 9, zIndex: 50, boxShadow: "0 4px 16px rgba(0,0,0,.1)", overflow: "hidden" }}>
+                {["all","Male","Female","Other","Not Selected"].map(opt => (
+                  <div key={opt} onClick={() => { setGender(opt); setGenderOpen(false); }}
+                    style={{ padding: "9px 14px", fontSize: 13, cursor: "pointer", background: gender === opt ? "#eff6ff" : "#fff", color: "#1e293b" }}>
+                    {opt === "all" ? "All Genders" : opt === "Not Selected" ? "Not set" : opt}
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={phoneFilter}
-                onChange={(e) => setPhoneFilter(e.target.value)}
-                placeholder="Search phone number..."
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <Phone
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                size={18}
-              />
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 140px", minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Phone</span>
+            <input style={inp} placeholder="Search phone..." value={phone} onChange={e => setPhone(e.target.value)} />
           </div>
 
-          {/* Clear button */}
           {hasFilters && (
-            <div className="self-end">
-              <button
-                onClick={clearFilters}
-                className="w-full sm:w-auto px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition flex items-center justify-center gap-2"
-              >
-                <X size={16} /> Clear Filters
-              </button>
-            </div>
+            <button onClick={() => { setSearch(""); setGender("all"); setPhone(""); }}
+              style={{ padding: "8px 16px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", alignSelf: "flex-end" }}>
+              ✕ Clear
+            </button>
           )}
         </div>
+
+        {!loading && (
+          <div style={{ marginTop: 10, fontSize: 12, color: "#94a3b8" }}>
+            Showing <strong style={{ color: "#6366f1" }}>{filtered.length}</strong> of {allUsers?.length || 0} users
+          </div>
+        )}
       </div>
 
-      {/* Loading */}
-      {isLoading && (
-        <div className="text-center py-12 text-gray-600 text-lg">
-          Loading users...
+      {/* Loading / Empty */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 48, color: "#94a3b8", fontSize: 15 }}>Loading users...</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 48, background: "#fff", borderRadius: 14, color: "#94a3b8" }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>👤</div>
+          <div style={{ fontWeight: 600, color: "#475569" }}>No users found</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>Try adjusting your filters</div>
         </div>
-      )}
-
-      {/* Content */}
-      {!isLoading && allUsers && (
+      ) : (
         <>
-          {/* DESKTOP TABLE */}
-          <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-blue-50">
+          {/* ── DESKTOP TABLE (>900px) ── */}
+          <div className="users-table-wrap" style={{ background: "#fff", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
+                <thead>
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-24">
-                      Photo
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                      Name & Email
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                      Phone
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                      Gender
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                      Address
-                    </th>
+                    <th style={{ ...thStyle, width: 36, textAlign: "center" }}>S.No</th>
+                    <th style={{ ...thStyle, width: 44, textAlign: "center" }}>Photo</th>
+                    <th style={thStyle}>Name & Email</th>
+                    <th style={thStyle}>Phone</th>
+                    <th style={thStyle}>Gender</th>
+                    <th style={thStyle}>Address</th>
+                    <th style={thStyle}>Logged On</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr
-                      key={user._id}
-                      className="hover:bg-indigo-50/30 transition-colors"
-                    >
-                      <td className="px-6 py-5 whitespace-nowrap">
-                        {user.image && user.image.includes("http") ? (
-                          <img
-                            src={user.image}
-                            alt={user.name || "User"}
-                            className="h-12 w-12 rounded-full object-cover border-2 border-indigo-100"
-                            onError={(e) => {
-                              e.target.src = `https://ui-avatars.com/api/?name=${user.name || "User"}&background=6366f1&color=fff`;
-                            }}
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl">
-                            {(user.name?.[0] || "U").toUpperCase()}
-                          </div>
-                        )}
+                <tbody>
+                  {filtered.map((user, idx) => (
+                    <tr key={user._id}
+                      style={{ background: idx % 2 === 0 ? "#fff" : "#fafbff", cursor: "default" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f0f4ff"}
+                      onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? "#fff" : "#fafbff"}>
+
+                      <td style={{ ...tdStyle, textAlign: "center", color: "#94a3b8", fontSize: 12, fontWeight: 600 }}>{idx + 1}</td>
+
+                      <td style={{ ...tdStyle, textAlign: "center" }}>
+                        <div style={{ display: "flex", justifyContent: "center" }}><Avatar user={user} /></div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="font-medium text-gray-900">
-                          {user.name || "—"}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                          <Mail size={14} /> {user.email}
-                        </div>
+
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{user.name || "—"}</div>
+                        <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{user.email}</div>
                       </td>
-                      <td className="px-6 py-5 text-gray-700">
-                        {user.phone || "Not provided"}
+
+                      <td style={{ ...tdStyle, color: "#475569", whiteSpace: "nowrap" }}>
+                        {user.phone || <span style={{ color: "#cbd5e1" }}>—</span>}
                       </td>
-                      <td className="px-6 py-5 text-gray-700">
-                        {user.gender || "Not selected"}
+
+                      <td style={tdStyle}>
+                        <GenderBadge gender={user.gender} />
                       </td>
-                      <td className="px-6 py-5 text-gray-700">
+
+                      <td style={{ ...tdStyle, maxWidth: 160 }}>
                         {user.address?.line1 || user.address?.line2
-                          ? `${user.address.line1 || ""} ${user.address.line2 || ""}`.trim()
-                          : "No address"}
+                          ? <span style={{ fontSize: 12, color: "#475569" }}>{[user.address.line1, user.address.line2].filter(Boolean).join(", ")}</span>
+                          : <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>}
+                      </td>
+
+                      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>{formatDate(user.createdAt)}</div>
+                        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{formatTime(user.createdAt)}</div>
                       </td>
                     </tr>
                   ))}
@@ -320,121 +249,75 @@ const UsersData = () => {
             </div>
           </div>
 
-          {/* MOBILE VERTICAL CARDS */}
-          <div className="md:hidden space-y-5">
-            {filteredUsers.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-xl shadow-md border border-gray-100">
-                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  No matching users
-                </h3>
-                <p className="text-gray-600">
-                  Try adjusting your search or filters
-                </p>
-              </div>
-            ) : (
-              filteredUsers.map((user) => (
-                <div
-                  key={user._id}
-                  className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden"
-                >
-                  {/* Header with photo + name/email */}
-                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 flex items-center gap-4">
-                    {user.image && user.image.includes("http") ? (
-                      <img
-                        src={user.image}
-                        alt={user.name || "User"}
-                        className="h-14 w-14 rounded-full object-cover border-2 border-white shadow"
-                        onError={(e) => {
-                          e.target.src = `https://ui-avatars.com/api/?name=${user.name || "User"}&background=6366f1&color=fff`;
-                        }}
-                      />
-                    ) : (
-                      <div className="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl shadow">
-                        {(user.name?.[0] || "U").toUpperCase()}
-                      </div>
-                    )}
+          {/* ── MOBILE / TAB CARDS (≤900px) ── */}
+          <div className="users-cards-wrap">
+            {filtered.map((user, idx) => (
+              <div key={user._id} style={{ background: "#fff", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
 
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-lg truncate">
-                        {user.name || "Unknown User"}
-                      </h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5 truncate">
-                        <Mail size={14} /> {user.email}
-                      </p>
+                {/* Card header */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    <Avatar user={user} />
+                    <span style={{ position: "absolute", bottom: -2, right: -2, background: "#6366f1", color: "#fff", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, border: "2px solid #fff" }}>
+                      {idx + 1}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {user.name || "Unknown"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {user.email}
                     </div>
                   </div>
-
-                  {/* Details stacked vertically */}
-                  <div className="p-4 space-y-3.5 text-sm divide-y divide-gray-100">
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600">Phone</span>
-                      <span className="font-medium">
-                        {user.phone || "Not provided"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600">Gender</span>
-                      <span className="font-medium">
-                        {user.gender || "Not selected"}
-                      </span>
-                    </div>
-                    <div className="pt-3">
-                      <span className="text-gray-600 block mb-1">Address</span>
-                      <p className="text-gray-800 break-words">
-                        {user.address?.line1 || user.address?.line2
-                          ? `${user.address.line1 || ""} ${user.address.line2 || ""}`.trim()
-                          : "No address provided"}
-                      </p>
-                    </div>
+                  {/* Joined — always top-right */}
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 10.75, fontWeight: 600, color: "#475569", whiteSpace: "nowrap" }}>{formatDate(user.createdAt)}</div>
+                    <div style={{ fontSize: 9.75, color: "#94a3b8", whiteSpace: "nowrap" }}>{formatTime(user.createdAt)}</div>
                   </div>
                 </div>
-              ))
-            )}
+
+                {/* Card body — info rows */}
+                <div style={{ padding: "10px 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  {/* Phone + Gender side by side */}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, background: "#f1f5f9", borderRadius: 8, padding: "4px 10px", fontSize: 12, color: "#475569", whiteSpace: "nowrap" }}>
+                      📞 {user.phone || "No phone"}
+                    </span>
+                    <GenderBadge gender={user.gender} />
+                  </div>
+                  {/* Address */}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: 12, color: "#475569" }}>
+                    <span style={{ flexShrink: 0 }}>📍</span>
+                    <span>
+                      {user.address?.line1 || user.address?.line2
+                        ? [user.address.line1, user.address.line2].filter(Boolean).join(", ")
+                        : <span style={{ color: "#cbd5e1" }}>No address</span>}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}
 
-      {/* Leave Confirmation Popup */}
-      {showLeaveConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Confirm Navigation
-            </h2>
-            <p className="text-gray-600 mb-6">
-              You are about to leave this page.
-              <br />
-              Any active filters or changes will be lost on reload.
-              <br />
-              <br />
-              Are you sure you want to continue?
-            </p>
-            <div className="flex justify-center gap-6">
-              <button
-                onClick={() => {
-                  setShowLeaveConfirm(false);
-                  window.history.pushState(null, null, window.location.href);
-                }}
-                className="px-8 py-3 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition"
-              >
-                Cancel (Stay)
-              </button>
-              <button
-                onClick={() => {
-                  setShowLeaveConfirm(false);
-                  window.history.back();
-                }}
-                className="px-8 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition"
-              >
-                Yes (Leave)
-              </button>
+      {/* Leave confirm */}
+      {showLeave && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 18, padding: 32, maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,.15)" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: "#1e293b" }}>Leave this page?</h2>
+            <p style={{ fontSize: 14, color: "#64748b", marginBottom: 24 }}>Active filters will be lost.</p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button onClick={() => { setShowLeave(false); window.history.pushState(null, null, window.location.href); }}
+                style={{ padding: "10px 24px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 10, fontWeight: 600, cursor: "pointer" }}>Stay</button>
+              <button onClick={() => { setShowLeave(false); window.history.back(); }}
+                style={{ padding: "10px 24px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, cursor: "pointer" }}>Leave</button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default UsersData;
+}
