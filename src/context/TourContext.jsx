@@ -2959,6 +2959,67 @@ const TourContextProvider = (props) => {
       };
     }
   };
+  const getBookingInvoice = async (tnr) => {
+  try {
+    const response = await axios.get(
+      `${backendUrl}/api/tour/invoice/${tnr}`,
+      { headers: { ttoken } },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("getBookingInvoice error:", error);
+    return {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch invoice",
+    };
+  }
+};
+
+// 2. Save an admin-edited invoice
+const updateBookingInvoice = async (tnr, invoice) => {
+  try {
+    const response = await axios.put(
+      `${backendUrl}/api/tour/invoice/${tnr}`,
+      { invoice },
+      { headers: { ttoken } },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("updateBookingInvoice error:", error);
+    return {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to save invoice",
+    };
+  }
+};
+
+// 3. Remove a saved edit — reverts to the auto-calculated invoice
+const deleteBookingInvoice = async (tnr) => {
+  try {
+    const response = await axios.delete(
+      `${backendUrl}/api/tour/invoice/${tnr}`,
+      { headers: { ttoken } },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("deleteBookingInvoice error:", error);
+    return {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to remove saved invoice",
+    };
+  }
+};
+
+
 
   const cancelBooking = async (bookingId) => {
     try {
@@ -4532,6 +4593,9 @@ const TourContextProvider = (props) => {
     markAdvancePaid,
     markBalancePaid,
     completeBooking,
+    getBookingInvoice,
+    updateBookingInvoice,
+    deleteBookingInvoice,
     cancelBooking,
     markAdvanceReceiptSent,
     markBalanceReceiptSent,
