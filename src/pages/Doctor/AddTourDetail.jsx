@@ -1684,6 +1684,1709 @@
 
 
 /* eslint-disable no-unused-vars */
+// import React, { useContext, useEffect, useState } from "react";
+// import axios from "axios";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+
+// import { useNavigate } from "react-router-dom";
+// import { TourContext } from "../../context/TourContext";
+// import { IndianRupee } from "lucide-react";
+
+// // Error Boundary Component
+// class ErrorBoundary extends React.Component {
+//   state = { hasError: false, error: null };
+
+//   static getDerivedStateFromError(error) {
+//     return { hasError: true, error };
+//   }
+
+//   render() {
+//     if (this.state.hasError) {
+//       return (
+//         <div className="p-4 text-red-600">
+//           <h2>Something went wrong.</h2>
+//           <p>{this.state.error?.message || "Unknown error occurred"}</p>
+//           <p>Please refresh the page or contact support.</p>
+//         </div>
+//       );
+//     }
+//     return this.props.children;
+//   }
+// }
+
+// const AddTourDetail = () => {
+//   const { backendUrl, ttoken } = useContext(TourContext);
+//   const navigate = useNavigate();
+
+//   const defaultTrain = {
+//     trainNo: "",
+//     trainName: "",
+//     fromCode: "",
+//     fromStation: "",
+//     toCode: "",
+//     toStation: "",
+//     class: "",
+//     departureTime: "",
+//     arrivalTime: "",
+//     ticketOpenDate: "",
+//   };
+
+//   const defaultFlight = {
+//     airline: "",
+//     flightNo: "",
+//     fromCode: "",
+//     fromAirport: "",
+//     toCode: "",
+//     toAirport: "",
+//     class: "",
+//     departureTime: "",
+//     arrivalTime: "",
+//   };
+
+//   const defaultStationPoint = { stationCode: "", stationName: "" };
+
+//   const defaultVariantPackage = {
+//     duration: { days: "", nights: "" },
+//     price: {
+//       doubleSharing: "",
+//       tripleSharing: "",
+//       childWithBerth: "",
+//       childWithoutBerth: "",
+//     },
+//     advanceAmount: { adult: "", child: "" },
+//     destination: [""],
+//     sightseeing: [""],
+//     itinerary: [""],
+//     includes: [""],
+//     excludes: [""],
+//     trainDetails: [defaultTrain],
+//     flightDetails: [defaultFlight],
+//     addons: [{ name: "", amount: "" }],
+//     remarks: "",
+//     boardingPoints: [defaultStationPoint],
+//     deboardingPoints: [defaultStationPoint],
+//     lastBookingDate: "",
+//   };
+
+//   const initialForm = {
+//     title: "",
+//     batch: "",
+//     duration: { days: "", nights: "" },
+//     price: {
+//       doubleSharing: "",
+//       tripleSharing: "",
+//       childWithBerth: "",
+//       childWithoutBerth: "",
+//     },
+//     gst: "",
+//     advanceAmount: { adult: "", child: "" },
+//     destination: [""],
+//     sightseeing: [""],
+//     itinerary: [""],
+//     includes: [""],
+//     excludes: [""],
+//     trainDetails: [defaultTrain],
+//     flightDetails: [defaultFlight],
+//     lastBookingDate: "",
+//     completedTripsCount: "",
+//     addons: [{ name: "", amount: "" }],
+//     boardingPoints: [defaultStationPoint],
+//     deboardingPoints: [defaultStationPoint],
+//     remarks: "",
+//     variantPackage: [],
+//   };
+
+//   const [formData, setFormData] = useState(initialForm);
+//   const [images, setImages] = useState({
+//     titleImage: null,
+//     mapImage: null,
+//     galleryImages: [],
+//   });
+//   const [loading, setLoading] = useState(false);
+//   const [addingTransport, setAddingTransport] = useState({});
+
+//   const [showConfirm, setShowConfirm] = useState(false);
+//   const [formIsDirty, setFormIsDirty] = useState(false);
+//   const [showBackConfirm, setShowBackConfirm] = useState(false);
+
+//   const [packageIncludedFare, setPackageIncludedFare] = useState(""); // A - e.g. 820
+//   const [clientUpgradeFare, setClientUpgradeFare] = useState(""); // B - e.g. 2200
+//   const [suggestedGvExtra, setSuggestedGvExtra] = useState("");
+
+//   // Detect unsaved changes
+//   useEffect(() => {
+//     const formChanged =
+//       JSON.stringify(formData) !== JSON.stringify(initialForm);
+//     const imagesChanged =
+//       images.titleImage !== null ||
+//       images.mapImage !== null ||
+//       images.galleryImages.length > 0;
+
+//     setFormIsDirty(formChanged || imagesChanged);
+//   }, [formData, images]);
+
+//   // Browser protection (refresh, back arrow, back swipe, tab close)
+//   useEffect(() => {
+//     if (!formIsDirty) return;
+
+//     const handleBeforeUnload = (event) => {
+//       event.preventDefault();
+//       event.returnValue =
+//         "Unsaved changes இருக்கு. Sure ah leave பண்ணுறீங்களா?";
+//     };
+
+//     window.addEventListener("beforeunload", handleBeforeUnload);
+
+//     return () => {
+//       window.removeEventListener("beforeunload", handleBeforeUnload);
+//     };
+//   }, [formIsDirty]);
+
+//   // Custom back/swipe protection
+//   useEffect(() => {
+//     if (!formIsDirty) return;
+
+//     window.history.pushState(null, null, window.location.href);
+
+//     const handlePopState = (event) => {
+//       event.preventDefault();
+//       setShowBackConfirm(true);
+//     };
+
+//     window.addEventListener("popstate", handlePopState);
+
+//     return () => {
+//       window.removeEventListener("popstate", handlePopState);
+//     };
+//   }, [formIsDirty]);
+//   useEffect(() => {
+//     if (
+//       !packageIncludedFare ||
+//       !clientUpgradeFare ||
+//       isNaN(packageIncludedFare) ||
+//       isNaN(clientUpgradeFare) ||
+//       Number(packageIncludedFare) <= 0 ||
+//       Number(clientUpgradeFare) <= 0
+//     ) {
+//       setSuggestedGvExtra("");
+//       return;
+//     }
+
+//     const A = Number(packageIncludedFare);
+//     const B = Number(clientUpgradeFare);
+
+//     if (B <= A) {
+//       setSuggestedGvExtra("Upgrade fare must be higher than package fare");
+//       return;
+//     }
+
+//     const rawExtra = B - A; // e.g. 1409 - 350 = 1059
+
+//     // ─── Step 1: Try multiples of 50 first ───
+//     const multiplesOf50 = [];
+//     let current = Math.ceil(rawExtra / 50) * 50;
+//     for (let i = 0; i < 6; i++) {
+//       // look at next 6 candidates
+//       if (current > rawExtra) multiplesOf50.push(current);
+//       current += 50;
+//     }
+
+//     // Filter those that give hike ≥ 90
+//     const good50s = multiplesOf50.filter((c) => c - rawExtra >= 90);
+
+//     let best = rawExtra;
+
+//     if (good50s.length > 0) {
+//       // Among good 50s, pick closest to +135 (middle-high bias)
+//       best = good50s.reduce((prev, curr) => {
+//         const distPrev = Math.abs(prev - rawExtra - 135);
+//         const distCurr = Math.abs(curr - rawExtra - 135);
+//         return distCurr < distPrev ? curr : prev;
+//       });
+//     } else {
+//       // ─── Step 2: Fall back to multiples of 100 ───
+//       const floor100 = Math.floor(rawExtra / 100) * 100;
+//       const round100 = Math.round(rawExtra / 100) * 100;
+//       const ceil100 = Math.ceil(rawExtra / 100) * 100;
+//       const next100 = Math.ceil(rawExtra / 100 + 1) * 100;
+
+//       const candidates100 = [floor100, round100, ceil100, next100].filter(
+//         (v) => v > 0,
+//       );
+
+//       const good100s = candidates100.filter((c) => c - rawExtra >= 90);
+
+//       if (good100s.length > 0) {
+//         best = good100s.reduce((prev, curr) => {
+//           const distPrev = Math.abs(prev - rawExtra - 135);
+//           const distCurr = Math.abs(curr - rawExtra - 135);
+//           return distCurr < distPrev ? curr : prev;
+//         });
+//       } else {
+//         // Force the next safe 100
+//         best = Math.ceil(rawExtra / 100 + 1) * 100;
+//       }
+//     }
+
+//     setSuggestedGvExtra(Math.round(best));
+//   }, [packageIncludedFare, clientUpgradeFare]);
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     setShowConfirm(true);
+//   };
+
+//   const confirmSubmit = async () => {
+//     setShowConfirm(false);
+//     setLoading(true);
+
+//     try {
+//       const data = new FormData();
+
+//       Object.entries({
+//         title: formData.title,
+//         batch: formData.batch,
+//         duration: JSON.stringify(formData.duration),
+//         price: JSON.stringify(formData.price),
+//         gst: formData.gst || 0,
+//         advanceAmount: JSON.stringify(formData.advanceAmount),
+//         destination: JSON.stringify(formData.destination),
+//         sightseeing: JSON.stringify(formData.sightseeing),
+//         itinerary: JSON.stringify(formData.itinerary),
+//         includes: JSON.stringify(formData.includes),
+//         excludes: JSON.stringify(formData.excludes),
+//         trainDetails: JSON.stringify(formData.trainDetails),
+//         flightDetails: JSON.stringify(formData.flightDetails),
+//         lastBookingDate: formData.lastBookingDate,
+//         completedTripsCount: formData.completedTripsCount,
+//         addons: JSON.stringify(formData.addons),
+//         boardingPoints: JSON.stringify(formData.boardingPoints),
+//         deboardingPoints: JSON.stringify(formData.deboardingPoints),
+//         remarks: formData.remarks,
+//         variantPackage: JSON.stringify(formData.variantPackage),
+//       }).forEach(([key, value]) => data.append(key, value));
+
+//       if (images.titleImage) data.append("titleImage", images.titleImage);
+//       if (images.mapImage) data.append("mapImage", images.mapImage);
+//       images.galleryImages.forEach((img) => data.append("galleryImages", img));
+
+//       const res = await axios.post(`${backendUrl}/api/tour/add-tour`, data, {
+//         headers: { ttoken: ttoken },
+//       });
+
+//       if (res.data.success) {
+//         toast.success("Tour added successfully!");
+//         setFormData(initialForm);
+//         setImages({ titleImage: null, mapImage: null, galleryImages: [] });
+//         setAddingTransport({});
+//         setFormIsDirty(false);
+//         setTimeout(() => {
+//           window.location.reload();
+//         }, 1500);
+//       } else {
+//         toast.error(res.data.message || "Failed to add tour");
+//       }
+//     } catch (error) {
+//       console.error("Submission Error:", error);
+//       toast.error("Something went wrong while submitting the tour.");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const cancelSubmit = () => {
+//     setShowConfirm(false);
+//   };
+
+//   // ──────────────────────────────────────────────
+//   // Handlers (unchanged from your original code)
+//   // ──────────────────────────────────────────────
+
+//   const handleChange = (
+//     e,
+//     field,
+//     nestedField = null,
+//     index = null,
+//     subField = null,
+//     variantIndex = null,
+//   ) => {
+//     const value = e.target.value;
+
+//     if (variantIndex !== null && nestedField && index !== null) {
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         const updated = [...(updatedVariants[variantIndex][nestedField] || [])];
+//         updated[index] = { ...updated[index], [subField]: value };
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [nestedField]: updated,
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//     } else if (variantIndex !== null && typeof field === "object") {
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [field.main]: {
+//             ...updatedVariants[variantIndex][field.main],
+//             [field.sub]: value,
+//           },
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//     } else if (variantIndex !== null) {
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [field]: value,
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//     } else if (nestedField && index !== null) {
+//       setFormData((prev) => {
+//         const updated = [...(prev[nestedField] || [])];
+//         updated[index] = { ...updated[index], [subField]: value };
+//         return { ...prev, [nestedField]: updated };
+//       });
+//     } else if (typeof field === "object") {
+//       setFormData((prev) => ({
+//         ...prev,
+//         [field.main]: {
+//           ...prev[field.main],
+//           [field.sub]: value,
+//         },
+//       }));
+//     } else {
+//       setFormData((prev) => ({ ...prev, [field]: value }));
+//     }
+//   };
+
+//   const handleArrayChange = (e, index, field, variantIndex = null) => {
+//     const value = e.target.value;
+//     if (variantIndex !== null) {
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         const updated = [...(updatedVariants[variantIndex][field] || [])];
+//         updated[index] = value;
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [field]: updated,
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//     } else {
+//       setFormData((prev) => {
+//         const updated = [...(prev[field] || [])];
+//         updated[index] = value;
+//         return { ...prev, [field]: updated };
+//       });
+//     }
+//   };
+
+//   const addField = (field, template = "", variantIndex = null) => {
+//     if (variantIndex !== null) {
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [field]: [...(updatedVariants[variantIndex][field] || []), template],
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//     } else {
+//       setFormData((prev) => ({
+//         ...prev,
+//         [field]: [...(prev[field] || []), template],
+//       }));
+//     }
+//   };
+
+//   const removeField = (field, index, variantIndex = null) => {
+//     if (variantIndex !== null) {
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [field]: (updatedVariants[variantIndex][field] || []).filter(
+//             (_, i) => i !== index,
+//           ),
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//     } else {
+//       setFormData((prev) => ({
+//         ...prev,
+//         [field]: (prev[field] || []).filter((_, i) => i !== index),
+//       }));
+//     }
+//   };
+
+//   const addTransportDetail = (field, template, variantIndex = null) => {
+//     if (variantIndex !== null) {
+//       setAddingTransport((prev) => ({
+//         ...prev,
+//         [variantIndex]: field,
+//       }));
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [field]: [
+//             ...(updatedVariants[variantIndex][field] || []),
+//             { ...template },
+//           ],
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//       setTimeout(() => {
+//         setAddingTransport((prev) => ({
+//           ...prev,
+//           [variantIndex]: null,
+//         }));
+//       }, 500);
+//     } else {
+//       setFormData((prev) => ({
+//         ...prev,
+//         [field]: [...(prev[field] || []), { ...template }],
+//       }));
+//     }
+//   };
+
+//   const removeTransportDetail = (field, index, variantIndex = null) => {
+//     if (variantIndex !== null) {
+//       setFormData((prev) => {
+//         const updatedVariants = [...(prev.variantPackage || [])];
+//         if (!updatedVariants[variantIndex]) return prev;
+//         updatedVariants[variantIndex] = {
+//           ...updatedVariants[variantIndex],
+//           [field]: (updatedVariants[variantIndex][field] || []).filter(
+//             (_, i) => i !== index,
+//           ),
+//         };
+//         return { ...prev, variantPackage: updatedVariants };
+//       });
+//     } else {
+//       setFormData((prev) => ({
+//         ...prev,
+//         [field]: (prev[field] || []).filter((_, i) => i !== index),
+//       }));
+//     }
+//   };
+
+//   const handleImageChange = (e, field) => {
+//     if (field === "galleryImages") {
+//       setImages((prev) => ({ ...prev, [field]: [...e.target.files] }));
+//     } else {
+//       setImages((prev) => ({ ...prev, [field]: e.target.files[0] }));
+//     }
+//   };
+
+//   const handleBoardingChange = (e, index, subField, variantIndex = null) => {
+//     handleChange(e, null, "boardingPoints", index, subField, variantIndex);
+//   };
+
+//   const addBoardingField = (variantIndex = null) => {
+//     addTransportDetail("boardingPoints", defaultStationPoint, variantIndex);
+//   };
+
+//   const removeBoardingField = (index, variantIndex = null) => {
+//     removeTransportDetail("boardingPoints", index, variantIndex);
+//   };
+
+//   const handleDeboardingChange = (e, index, subField, variantIndex = null) => {
+//     handleChange(e, null, "deboardingPoints", index, subField, variantIndex);
+//   };
+
+//   const addDeboardingField = (variantIndex = null) => {
+//     addTransportDetail("deboardingPoints", defaultStationPoint, variantIndex);
+//   };
+
+//   const removeDeboardingField = (index, variantIndex = null) => {
+//     removeTransportDetail("deboardingPoints", index, variantIndex);
+//   };
+
+//   const addVariantPackage = () => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       variantPackage: [
+//         ...(prev.variantPackage || []),
+//         { ...defaultVariantPackage },
+//       ],
+//     }));
+//   };
+
+//   const removeVariantPackage = (index) => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       variantPackage: (prev.variantPackage || []).filter((_, i) => i !== index),
+//     }));
+//     setAddingTransport((prev) => {
+//       const newState = { ...prev };
+//       delete newState[index];
+//       return newState;
+//     });
+//   };
+
+//   return (
+//     <ErrorBoundary>
+//       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+//         <ToastContainer position="top-right" autoClose={5000} />
+//         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-6 text-center sm:text-left px-10 sm:px-0">
+//           Add New Tour
+//         </h1>
+
+//         <form onSubmit={handleSubmit} className="space-y-6">
+//           {/* Title */}
+//           <div>
+//             <label className="block font-semibold mb-1">Title</label>
+//             <input
+//               type="text"
+//               placeholder="Title"
+//               className="w-full p-3 border rounded"
+//               value={formData.title}
+//               onChange={(e) =>
+//                 setFormData({ ...formData, title: e.target.value })
+//               }
+//               required
+//             />
+//           </div>
+//           {/* Batch / Category */}
+//           <div>
+//             <label className="block font-semibold mb-1">
+//               Tour Category (Batch)
+//             </label>
+//             <select
+//               className="w-full p-3 border rounded"
+//               value={formData.batch}
+//               onChange={(e) =>
+//                 setFormData({ ...formData, batch: e.target.value })
+//               }
+//               required
+//             >
+//               <option value="">Select tour category</option>
+//               <option value="Historical">Historical</option>
+//               <option value="Jolly">Jolly</option>
+//               <option value="Spiritual">Spiritual</option>
+//               <option value="Spiritual+Sightseeing">
+//                 Spiritual + Sightseeing
+//               </option>
+//               <option value="International">International</option>
+//             </select>
+//           </div>
+//           {/* Duration */}
+//           <div>
+//             <label className="block font-semibold mb-1">Duration</label>
+//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//               <input
+//                 type="number"
+//                 placeholder="Days"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.duration.days}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     duration: { ...formData.duration, days: e.target.value },
+//                   })
+//                 }
+//                 required
+//               />
+//               <input
+//                 type="number"
+//                 placeholder="Nights"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.duration.nights}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     duration: { ...formData.duration, nights: e.target.value },
+//                   })
+//                 }
+//                 required
+//               />
+//             </div>
+//           </div>
+//           {/* Advance Amount */}
+//           <div>
+//             <label className="block font-semibold mb-1">Advance Amount</label>
+//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//               <input
+//                 type="number"
+//                 placeholder="Adult Advance Amount"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.advanceAmount.adult}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     advanceAmount: {
+//                       ...formData.advanceAmount,
+//                       adult: e.target.value,
+//                     },
+//                   })
+//                 }
+//                 required
+//               />
+//               <input
+//                 type="number"
+//                 placeholder="Child Advance Amount"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.advanceAmount.child}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     advanceAmount: {
+//                       ...formData.advanceAmount,
+//                       child: e.target.value,
+//                     },
+//                   })
+//                 }
+//               />
+//             </div>
+//           </div>
+//           {/* Prices */}
+//           <div>
+//             <label className="block font-semibold mb-1">Prices</label>
+//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+//               <input
+//                 type="number"
+//                 placeholder="Double Sharing Price"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.price.doubleSharing}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     price: { ...formData.price, doubleSharing: e.target.value },
+//                   })
+//                 }
+//                 required
+//               />
+//               <input
+//                 type="number"
+//                 placeholder="Triple Sharing Price"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.price.tripleSharing}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     price: { ...formData.price, tripleSharing: e.target.value },
+//                   })
+//                 }
+//                 required
+//               />
+//               <input
+//                 type="number"
+//                 placeholder="Child With Berth Price"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.price.childWithBerth}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     price: {
+//                       ...formData.price,
+//                       childWithBerth: e.target.value,
+//                     },
+//                   })
+//                 }
+//               />
+//               <input
+//                 type="number"
+//                 placeholder="Child Without Berth Price"
+//                 className="p-3 border w-full rounded"
+//                 value={formData.price.childWithoutBerth}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     price: {
+//                       ...formData.price,
+//                       childWithoutBerth: e.target.value,
+//                     },
+//                   })
+//                 }
+//               />
+//             </div>
+//           </div>
+
+//           {/* GST */}
+//           <div>
+//             <label className="block font-semibold mb-1">GST (%)</label>
+//             <input
+//               type="number"
+//               placeholder="e.g. 5 (defaults to 0 if left blank)"
+//               className="p-3 border w-full sm:w-1/3 rounded"
+//               value={formData.gst}
+//               onChange={(e) =>
+//                 setFormData({ ...formData, gst: e.target.value })
+//               }
+//               min="0"
+//             />
+//           </div>
+
+//           {/* Dynamic Arrays */}
+//           {[
+//             "destination",
+//             "sightseeing",
+//             "itinerary",
+//             "includes",
+//             "excludes",
+//           ].map((field) => (
+//             <div key={field}>
+//               <label className="block font-semibold capitalize mb-1">
+//                 {field}
+//               </label>
+//               {(formData[field] || []).map((item, index) => (
+//                 <div key={index} className="flex items-center gap-2 mb-2">
+//                   <input
+//                     value={item}
+//                     placeholder={`${field} ${index + 1}`}
+//                     className="w-full p-3 border rounded"
+//                     onChange={(e) => handleArrayChange(e, index, field)}
+//                   />
+//                   <button
+//                     type="button"
+//                     className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                     onClick={() => removeField(field, index)}
+//                   >
+//                     Remove
+//                   </button>
+//                 </div>
+//               ))}
+//               <button
+//                 type="button"
+//                 className="bg-blue-500 text-white px-4 py-2 rounded"
+//                 onClick={() => addField(field)}
+//               >
+//                 + Add {field}
+//               </button>
+//             </div>
+//           ))}
+//           {/* Train & Flight Details */}
+//           {["trainDetails", "flightDetails"].map((type) => (
+//             <div key={type}>
+//               <label className="block font-semibold mb-1 capitalize">
+//                 {type}
+//               </label>
+//               {(formData[type] || []).map((detail, index) => (
+//                 <div key={index} className="mb-4 border p-3 rounded">
+//                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+//                     {Object.entries(detail).map(([key, value]) => (
+//                       <input
+//                         key={key}
+//                         type={
+//                           key.toLowerCase().includes("date") ? "date" : "text"
+//                         }
+//                         value={value}
+//                         placeholder={key
+//                           .replace(/([A-Z])/g, " $1")
+//                           .replace(/^./, (str) => str.toUpperCase())}
+//                         className="p-3 border w-full rounded"
+//                         onChange={(e) =>
+//                           handleChange(e, null, type, index, key)
+//                         }
+//                       />
+//                     ))}
+//                   </div>
+//                   <button
+//                     type="button"
+//                     className="bg-red-500 text-white px-3 py-2 mt-2 rounded text-sm"
+//                     onClick={() => removeTransportDetail(type, index)}
+//                   >
+//                     Remove {type === "trainDetails" ? "Train" : "Flight"}
+//                   </button>
+//                 </div>
+//               ))}
+//               <button
+//                 type="button"
+//                 className="bg-blue-500 text-white px-4 py-2 rounded"
+//                 onClick={() =>
+//                   addTransportDetail(
+//                     type,
+//                     type === "trainDetails" ? defaultTrain : defaultFlight,
+//                   )
+//                 }
+//               >
+//                 + Add {type === "trainDetails" ? "Train" : "Flight"}
+//               </button>
+//             </div>
+//           ))}
+//           {/* Boarding Points */}
+//           <div>
+//             <label className="block font-semibold mb-1">Boarding Points</label>
+//             {(formData.boardingPoints || []).map((bp, index) => (
+//               <div key={index} className="flex items-center gap-2 mb-2">
+//                 <input
+//                   type="text"
+//                   placeholder="Station code (e.g., MAS)"
+//                   value={bp.stationCode}
+//                   className="p-3 border w-1/3 rounded"
+//                   onChange={(e) =>
+//                     handleBoardingChange(e, index, "stationCode")
+//                   }
+//                 />
+//                 <input
+//                   type="text"
+//                   placeholder="Station name (e.g., MGR Chennai Central)"
+//                   value={bp.stationName}
+//                   className="p-3 border flex-1 rounded"
+//                   onChange={(e) =>
+//                     handleBoardingChange(e, index, "stationName")
+//                   }
+//                 />
+//                 <button
+//                   type="button"
+//                   className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                   onClick={() => removeBoardingField(index)}
+//                 >
+//                   Remove
+//                 </button>
+//               </div>
+//             ))}
+//             <button
+//               type="button"
+//               className="bg-blue-500 text-white px-4 py-2 rounded"
+//               onClick={() => addBoardingField()}
+//             >
+//               + Add Boarding Point
+//             </button>
+//           </div>
+//           {/* Deboarding Points */}
+//           <div>
+//             <label className="block font-semibold mb-1">
+//               Deboarding Points
+//             </label>
+//             {(formData.deboardingPoints || []).map((dp, index) => (
+//               <div key={index} className="flex items-center gap-2 mb-2">
+//                 <input
+//                   type="text"
+//                   placeholder="Station code (e.g., MAS)"
+//                   value={dp.stationCode}
+//                   className="p-3 border w-1/3 rounded"
+//                   onChange={(e) =>
+//                     handleDeboardingChange(e, index, "stationCode")
+//                   }
+//                 />
+//                 <input
+//                   type="text"
+//                   placeholder="Station name (e.g., MGR Chennai Central)"
+//                   value={dp.stationName}
+//                   className="p-3 border flex-1 rounded"
+//                   onChange={(e) =>
+//                     handleDeboardingChange(e, index, "stationName")
+//                   }
+//                 />
+//                 <button
+//                   type="button"
+//                   className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                   onClick={() => removeDeboardingField(index)}
+//                 >
+//                   Remove
+//                 </button>
+//               </div>
+//             ))}
+//             <button
+//               type="button"
+//               className="bg-blue-500 text-white px-4 py-2 rounded"
+//               onClick={() => addDeboardingField()}
+//             >
+//               + Add Deboarding Point
+//             </button>
+//           </div>
+//           {/* Remarks */}
+//           <div>
+//             <label className="block font-semibold mb-1">Remarks</label>
+//             <textarea
+//               className="w-full p-3 border rounded"
+//               placeholder="Enter remarks..."
+//               value={formData.remarks}
+//               onChange={(e) =>
+//                 setFormData({ ...formData, remarks: e.target.value })
+//               }
+//             />
+//           </div>
+//           {/* Images */}
+//           <div className="space-y-4">
+//             <div>
+//               <label className="block font-semibold mb-1">Title Image</label>
+//               <input
+//                 type="file"
+//                 accept="image/*"
+//                 onChange={(e) => handleImageChange(e, "titleImage")}
+//                 className="block w-full text-sm text-gray-700 border border-gray-300 rounded p-2"
+//                 required
+//               />
+//             </div>
+//             <div>
+//               <label className="block font-semibold mb-1">Map Image</label>
+//               <input
+//                 type="file"
+//                 accept="image/*"
+//                 onChange={(e) => handleImageChange(e, "mapImage")}
+//                 className="block w-full text-sm text-gray-700 border border-gray-300 rounded p-2"
+//                 required
+//               />
+//             </div>
+//             <div>
+//               <label className="block font-semibold mb-1">
+//                 Gallery Images (Up to 3)
+//               </label>
+//               <input
+//                 type="file"
+//                 multiple
+//                 accept="image/*"
+//                 onChange={(e) => handleImageChange(e, "galleryImages")}
+//                 className="block w-full text-sm text-gray-700 border border-gray-300 rounded p-2"
+//                 required
+//               />
+//             </div>
+//           </div>
+//           {/* Add-ons */}
+//           <div>
+//             <label className="block font-semibold mb-1">Add-ons</label>
+//             {(formData.addons || []).map((addon, index) => (
+//               <div key={index} className="flex items-center gap-2 mb-2">
+//                 <input
+//                   type="text"
+//                   placeholder="Addon Name"
+//                   value={addon.name}
+//                   className="p-3 border flex-1 rounded"
+//                   onChange={(e) =>
+//                     handleChange(e, null, "addons", index, "name")
+//                   }
+//                 />
+//                 <input
+//                   type="number"
+//                   placeholder="Amount"
+//                   value={addon.amount}
+//                   className="p-3 border w-32 rounded"
+//                   onChange={(e) =>
+//                     handleChange(e, null, "addons", index, "amount")
+//                   }
+//                 />
+//                 <button
+//                   type="button"
+//                   className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                   onClick={() => removeTransportDetail("addons", index)}
+//                 >
+//                   Remove
+//                 </button>
+//               </div>
+//             ))}
+//             <button
+//               type="button"
+//               className="bg-blue-500 text-white px-4 py-2 rounded"
+//               onClick={() =>
+//                 addTransportDetail("addons", { name: "", amount: "" })
+//               }
+//             >
+//               + Add Add-on
+//             </button>
+//           </div>
+
+//           {/* Last Booking Date & Completed Trips */}
+//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//             <div>
+//               <label className="block font-semibold mb-1">
+//                 Trip Start Date
+//               </label>
+//               <input
+//                 type="date"
+//                 className="w-full p-3 border rounded"
+//                 value={formData.lastBookingDate}
+//                 onChange={(e) =>
+//                   setFormData({ ...formData, lastBookingDate: e.target.value })
+//                 }
+//                 required
+//               />
+//             </div>
+//             <div>
+//               <label className="block font-semibold mb-1">
+//                 Completed Trips Count
+//               </label>
+//               <input
+//                 type="number"
+//                 className="w-full p-3 border rounded"
+//                 placeholder="Enter number"
+//                 value={formData.completedTripsCount}
+//                 onChange={(e) =>
+//                   setFormData({
+//                     ...formData,
+//                     completedTripsCount: e.target.value,
+//                   })
+//                 }
+//               />
+//             </div>
+//           </div>
+//           <div className="mt-10 p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm">
+//             <h3 className="text-lg font-semibold mb-5 text-gray-800 flex items-center gap-2">
+//               <IndianRupee size={20} className="text-green-600" />
+//               Upgrade Class Fare Calculator (View Only)
+//             </h3>
+
+//             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//               {/* A - Package Included */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Package Included Train Fare (₹)
+//                 </label>
+//                 <input
+//                   type="number"
+//                   placeholder="e.g. 820 (Sleeper class included)"
+//                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+//                   value={packageIncludedFare}
+//                   onChange={(e) =>
+//                     setPackageIncludedFare(
+//                       e.target.value ? Number(e.target.value) : "",
+//                     )
+//                   }
+//                   min="0"
+//                 />
+//               </div>
+
+//               {/* B - Client Paying */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Client Paying Fare (Higher Class) (₹)
+//                 </label>
+//                 <input
+//                   type="number"
+//                   placeholder="e.g. 2200"
+//                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+//                   value={clientUpgradeFare}
+//                   onChange={(e) =>
+//                     setClientUpgradeFare(
+//                       e.target.value ? Number(e.target.value) : "",
+//                     )
+//                   }
+//                   min="0"
+//                 />
+//               </div>
+
+//               {/* Suggested GV Extra */}
+//               <div>
+//                 <label className="block text-sm font-medium text-blue-700 mb-2 font-semibold">
+//                   Suggested GV Extra Amount (₹)
+//                 </label>
+//                 <div className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 font-bold text-xl text-center">
+//                   {suggestedGvExtra
+//                     ? `₹${suggestedGvExtra}`
+//                     : packageIncludedFare && clientUpgradeFare
+//                       ? "Enter valid fares"
+//                       : "—"}
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* Summary */}
+//             {suggestedGvExtra && packageIncludedFare && clientUpgradeFare && (
+//               <div className="mt-5 text-sm text-gray-600 text-center">
+//                 Raw extra paid by client:{" "}
+//                 <span className="font-medium">
+//                   ₹{Number(clientUpgradeFare) - Number(packageIncludedFare)}
+//                 </span>
+//                     → We suggest charging:{" "}
+//                 <span className="font-medium text-green-700">
+//                   ₹{suggestedGvExtra}
+//                 </span>
+//                     (rounded up by +
+//                 {suggestedGvExtra -
+//                   (Number(clientUpgradeFare) -
+//                     Number(packageIncludedFare))}{" "}
+//                 ₹)
+//               </div>
+//             )}
+//           </div>
+//           {/* Variant Packages */}
+//           <div>
+//             <label className="block font-semibold mb-1">Variant Packages</label>
+//             {(formData.variantPackage || []).map((variant, variantIndex) => (
+//               <div key={variantIndex} className="border p-4 rounded mb-4">
+//                 <div className="flex justify-between items-center mb-4">
+//                   <h3 className="text-lg font-semibold">
+//                     Variant Package {variantIndex + 1}
+//                   </h3>
+//                   <button
+//                     type="button"
+//                     className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                     onClick={() => removeVariantPackage(variantIndex)}
+//                   >
+//                     Remove Variant
+//                   </button>
+//                 </div>
+
+//                 {/* Variant Duration */}
+//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+//                   <input
+//                     type="number"
+//                     placeholder="Days"
+//                     value={variant.duration?.days || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "duration", sub: "days" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Nights"
+//                     value={variant.duration?.nights || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "duration", sub: "nights" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                 </div>
+
+//                 {/* Variant Prices */}
+//                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+//                   <input
+//                     type="number"
+//                     placeholder="Double Sharing Price"
+//                     value={variant.price?.doubleSharing || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "price", sub: "doubleSharing" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Triple Sharing Price"
+//                     value={variant.price?.tripleSharing || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "price", sub: "tripleSharing" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Child With Berth Price"
+//                     value={variant.price?.childWithBerth || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "price", sub: "childWithBerth" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Child Without Berth Price"
+//                     value={variant.price?.childWithoutBerth || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "price", sub: "childWithoutBerth" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                 </div>
+
+//                 {/* Variant Advance Amount */}
+//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+//                   <input
+//                     type="number"
+//                     placeholder="Adult Advance Amount"
+//                     value={variant.advanceAmount?.adult || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "advanceAmount", sub: "adult" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Child Advance Amount"
+//                     value={variant.advanceAmount?.child || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         { main: "advanceAmount", sub: "child" },
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                     className="p-3 border rounded"
+//                   />
+//                 </div>
+
+//                 {/* Variant Dynamic Arrays */}
+//                 {[
+//                   "destination",
+//                   "sightseeing",
+//                   "includes",
+//                   "excludes",
+//                   "itinerary",
+//                 ].map((field) => (
+//                   <div key={field}>
+//                     <label className="block font-semibold capitalize mb-1">
+//                       {field}
+//                     </label>
+//                     {(variant[field] || []).map((item, index) => (
+//                       <div key={index} className="flex items-center gap-2 mb-2">
+//                         <input
+//                           value={item}
+//                           placeholder={`${field} ${index + 1}`}
+//                           className="w-full p-3 border rounded"
+//                           onChange={(e) =>
+//                             handleArrayChange(e, index, field, variantIndex)
+//                           }
+//                         />
+//                         <button
+//                           type="button"
+//                           className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                           onClick={() =>
+//                             removeField(field, index, variantIndex)
+//                           }
+//                         >
+//                           Remove
+//                         </button>
+//                       </div>
+//                     ))}
+//                     <button
+//                       type="button"
+//                       className="bg-blue-500 text-white px-4 py-2 rounded"
+//                       onClick={() => addField(field, "", variantIndex)}
+//                     >
+//                       + Add {field}
+//                     </button>
+//                   </div>
+//                 ))}
+
+//                 {/* Variant Train & Flight */}
+//                 {["trainDetails", "flightDetails"].map((type) => (
+//                   <div key={type}>
+//                     <label className="block font-semibold mb-1 capitalize">
+//                       {type}
+//                     </label>
+//                     {(variant[type] || []).map((detail, index) => (
+//                       <div key={index} className="mb-4 border p-3 rounded">
+//                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+//                           {Object.entries(detail).map(([key, value]) => (
+//                             <input
+//                               key={key}
+//                               type={
+//                                 key.toLowerCase().includes("date")
+//                                   ? "date"
+//                                   : "text"
+//                               }
+//                               value={value}
+//                               placeholder={key
+//                                 .replace(/([A-Z])/g, " $1")
+//                                 .replace(/^./, (str) => str.toUpperCase())}
+//                               className="p-3 border w-full rounded"
+//                               onChange={(e) =>
+//                                 handleChange(
+//                                   e,
+//                                   null,
+//                                   type,
+//                                   index,
+//                                   key,
+//                                   variantIndex,
+//                                 )
+//                               }
+//                             />
+//                           ))}
+//                         </div>
+//                         <button
+//                           type="button"
+//                           className="bg-red-500 text-white px-3 py-2 mt-2 rounded text-sm"
+//                           onClick={() =>
+//                             removeTransportDetail(type, index, variantIndex)
+//                           }
+//                         >
+//                           Remove {type === "trainDetails" ? "Train" : "Flight"}
+//                         </button>
+//                       </div>
+//                     ))}
+//                     <button
+//                       type="button"
+//                       className="bg-blue-500 text-white px-4 py-2 rounded"
+//                       onClick={() =>
+//                         addTransportDetail(
+//                           type,
+//                           type === "trainDetails"
+//                             ? defaultTrain
+//                             : defaultFlight,
+//                           variantIndex,
+//                         )
+//                       }
+//                     >
+//                       + Add {type === "trainDetails" ? "Train" : "Flight"}
+//                     </button>
+//                   </div>
+//                 ))}
+
+//                 {/* Variant Boarding Points */}
+//                 <div>
+//                   <label className="block font-semibold mb-1">
+//                     Boarding Points
+//                   </label>
+//                   {(variant.boardingPoints || []).map((bp, index) => (
+//                     <div key={index} className="flex items-center gap-2 mb-2">
+//                       <input
+//                         type="text"
+//                         placeholder="Station code"
+//                         value={bp.stationCode || ""}
+//                         className="p-3 border w-1/3 rounded"
+//                         onChange={(e) =>
+//                           handleBoardingChange(
+//                             e,
+//                             index,
+//                             "stationCode",
+//                             variantIndex,
+//                           )
+//                         }
+//                       />
+//                       <input
+//                         type="text"
+//                         placeholder="Station name"
+//                         value={bp.stationName || ""}
+//                         className="p-3 border flex-1 rounded"
+//                         onChange={(e) =>
+//                           handleBoardingChange(
+//                             e,
+//                             index,
+//                             "stationName",
+//                             variantIndex,
+//                           )
+//                         }
+//                       />
+//                       <button
+//                         type="button"
+//                         className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                         onClick={() => removeBoardingField(index, variantIndex)}
+//                       >
+//                         Remove
+//                       </button>
+//                     </div>
+//                   ))}
+//                   <button
+//                     type="button"
+//                     className="bg-blue-500 text-white px-4 py-2 rounded"
+//                     onClick={() => addBoardingField(variantIndex)}
+//                   >
+//                     + Add Boarding Point
+//                   </button>
+//                 </div>
+
+//                 {/* Variant Deboarding Points */}
+//                 <div>
+//                   <label className="block font-semibold mb-1">
+//                     Deboarding Points
+//                   </label>
+//                   {(variant.deboardingPoints || []).map((dp, index) => (
+//                     <div key={index} className="flex items-center gap-2 mb-2">
+//                       <input
+//                         type="text"
+//                         placeholder="Station code"
+//                         value={dp.stationCode || ""}
+//                         className="p-3 border w-1/3 rounded"
+//                         onChange={(e) =>
+//                           handleDeboardingChange(
+//                             e,
+//                             index,
+//                             "stationCode",
+//                             variantIndex,
+//                           )
+//                         }
+//                       />
+//                       <input
+//                         type="text"
+//                         placeholder="Station name"
+//                         value={dp.stationName || ""}
+//                         className="p-3 border flex-1 rounded"
+//                         onChange={(e) =>
+//                           handleDeboardingChange(
+//                             e,
+//                             index,
+//                             "stationName",
+//                             variantIndex,
+//                           )
+//                         }
+//                       />
+//                       <button
+//                         type="button"
+//                         className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                         onClick={() =>
+//                           removeDeboardingField(index, variantIndex)
+//                         }
+//                       >
+//                         Remove
+//                       </button>
+//                     </div>
+//                   ))}
+//                   <button
+//                     type="button"
+//                     className="bg-blue-500 text-white px-4 py-2 rounded"
+//                     onClick={() => addDeboardingField(variantIndex)}
+//                   >
+//                     + Add Deboarding Point
+//                   </button>
+//                 </div>
+
+//                 {/* Variant Add-ons */}
+//                 <div>
+//                   <label className="block font-semibold mb-1">Add-ons</label>
+//                   {(variant.addons || []).map((addon, index) => (
+//                     <div key={index} className="flex items-center gap-2 mb-2">
+//                       <input
+//                         type="text"
+//                         placeholder="Addon Name"
+//                         value={addon.name || ""}
+//                         className="p-3 border flex-1 rounded"
+//                         onChange={(e) =>
+//                           handleChange(
+//                             e,
+//                             null,
+//                             "addons",
+//                             index,
+//                             "name",
+//                             variantIndex,
+//                           )
+//                         }
+//                       />
+//                       <input
+//                         type="number"
+//                         placeholder="Amount"
+//                         value={addon.amount || ""}
+//                         className="p-3 border w-32 rounded"
+//                         onChange={(e) =>
+//                           handleChange(
+//                             e,
+//                             null,
+//                             "addons",
+//                             index,
+//                             "amount",
+//                             variantIndex,
+//                           )
+//                         }
+//                       />
+//                       <button
+//                         type="button"
+//                         className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+//                         onClick={() =>
+//                           removeTransportDetail("addons", index, variantIndex)
+//                         }
+//                       >
+//                         Remove
+//                       </button>
+//                     </div>
+//                   ))}
+//                   <button
+//                     type="button"
+//                     className="bg-blue-500 text-white px-4 py-2 rounded"
+//                     onClick={() =>
+//                       addTransportDetail(
+//                         "addons",
+//                         { name: "", amount: "" },
+//                         variantIndex,
+//                       )
+//                     }
+//                   >
+//                     + Add Add-on
+//                   </button>
+//                 </div>
+
+//                 {/* Variant Remarks */}
+//                 <div>
+//                   <label className="block font-semibold mb-1">Remarks</label>
+//                   <textarea
+//                     className="w-full p-3 border rounded"
+//                     placeholder="Enter remarks..."
+//                     value={variant.remarks || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         "remarks",
+//                         null,
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                   />
+//                 </div>
+
+//                 {/* Variant Last Booking Date */}
+//                 <div>
+//                   <label className="block font-semibold mb-1">
+//                     Trip Start Date
+//                   </label>
+//                   <input
+//                     type="date"
+//                     className="w-full p-3 border rounded"
+//                     value={variant.lastBookingDate || ""}
+//                     onChange={(e) =>
+//                       handleChange(
+//                         e,
+//                         "lastBookingDate",
+//                         null,
+//                         null,
+//                         null,
+//                         variantIndex,
+//                       )
+//                     }
+//                   />
+//                 </div>
+//               </div>
+//             ))}
+
+//             <button
+//               type="button"
+//               className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+//               onClick={addVariantPackage}
+//             >
+//               + Add Variant Package
+//             </button>
+//           </div>
+//           {/* Submit Button */}
+//           <button
+//             type="submit"
+//             disabled={loading}
+//             className={`w-full py-3 px-6 rounded-lg font-semibold text-white transition-all ${
+//               loading
+//                 ? "bg-gray-400 cursor-not-allowed"
+//                 : "bg-green-600 hover:bg-green-700"
+//             }`}
+//           >
+//             {loading ? "Creating Tour..." : "Save Changes"}
+//           </button>
+//         </form>
+
+//         {showBackConfirm && (
+//           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+//             <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
+//               <h2 className="text-2xl font-bold text-gray-800 mb-4">
+//                 Unsaved Changes
+//               </h2>
+//               <p className="text-gray-600 mb-6">
+//                 You have unsaved changes.
+//                 <br />
+//                 Going back will reload the page and you will lose them.
+//                 <br />
+//                 Are you sure you want to go back?
+//               </p>
+//               <div className="flex justify-center gap-6">
+//                 <button
+//                   onClick={() => {
+//                     setShowBackConfirm(false);
+//                     window.history.pushState(null, null, window.location.href);
+//                   }}
+//                   className="px-8 py-3 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition"
+//                 >
+//                   Cancel (Stay)
+//                 </button>
+//                 <button
+//                   onClick={() => {
+//                     setShowBackConfirm(false);
+//                     history.back();
+//                   }}
+//                   className="px-8 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition"
+//                 >
+//                   OK (Go Back)
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {showConfirm && (
+//           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+//             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-2xl w-full max-w-md text-center">
+//               <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+//                 Confirm Save?
+//               </h2>
+
+//               <p className="text-gray-600 mb-6 sm:mb-8 text-base sm:text-lg">
+//                 This will add a new tour.
+//                 <br />
+//                 Are you sure you want to continue?
+//               </p>
+
+//               <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
+//                 <button
+//                   onClick={cancelSubmit}
+//                   className="px-8 py-3 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 active:bg-gray-400 transition text-lg"
+//                 >
+//                   Cancel
+//                 </button>
+
+//                 <button
+//                   onClick={confirmSubmit}
+//                   disabled={loading}
+//                   className={`px-8 py-3 text-white rounded-xl font-medium text-lg transition-all ${
+//                     loading
+//                       ? "bg-green-400 cursor-not-allowed"
+//                       : "bg-green-600 hover:bg-green-700 active:bg-green-800"
+//                   }`}
+//                 >
+//                   {loading ? "Saving..." : "Yes, Save"}
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </ErrorBoundary>
+//   );
+// };
+
+// export default AddTourDetail;
+
+
 import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
@@ -1730,6 +3433,8 @@ const AddTourDetail = () => {
     departureTime: "",
     arrivalTime: "",
     ticketOpenDate: "",
+    tripType: "", // ← NEW: free-text note, e.g. "Boarding" / "Middle" / "Deboarding"
+    addons: [], // ← NEW: train-wise addons (use negative amount to deduct)
   };
 
   const defaultFlight = {
@@ -1742,6 +3447,7 @@ const AddTourDetail = () => {
     class: "",
     departureTime: "",
     arrivalTime: "",
+    addons: [], // ← NEW: flight-wise addons
   };
 
   const defaultStationPoint = { stationCode: "", stationName: "" };
@@ -2237,6 +3943,170 @@ const AddTourDetail = () => {
     });
   };
 
+  // ──────────────────────────────────────────────
+  // NEW: Train/Flight-wise addon handlers
+  // ──────────────────────────────────────────────
+
+  const addTrainAddon = (trainIndex, type = "trainDetails", variantIndex = null) => {
+    const updateList = (list) => {
+      const updated = [...list];
+      updated[trainIndex] = {
+        ...updated[trainIndex],
+        addons: [...(updated[trainIndex].addons || []), { name: "", amount: "" }],
+      };
+      return updated;
+    };
+
+    if (variantIndex !== null) {
+      setFormData((prev) => {
+        const updatedVariants = [...(prev.variantPackage || [])];
+        if (!updatedVariants[variantIndex]) return prev;
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [type]: updateList(updatedVariants[variantIndex][type] || []),
+        };
+        return { ...prev, variantPackage: updatedVariants };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [type]: updateList(prev[type] || []),
+      }));
+    }
+  };
+
+  const handleTrainAddonChange = (
+    e,
+    trainIndex,
+    addonIndex,
+    field,
+    type = "trainDetails",
+    variantIndex = null,
+  ) => {
+    const value = e.target.value;
+    const updateList = (list) => {
+      const updated = [...list];
+      const addons = [...(updated[trainIndex].addons || [])];
+      addons[addonIndex] = { ...addons[addonIndex], [field]: value };
+      updated[trainIndex] = { ...updated[trainIndex], addons };
+      return updated;
+    };
+
+    if (variantIndex !== null) {
+      setFormData((prev) => {
+        const updatedVariants = [...(prev.variantPackage || [])];
+        if (!updatedVariants[variantIndex]) return prev;
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [type]: updateList(updatedVariants[variantIndex][type] || []),
+        };
+        return { ...prev, variantPackage: updatedVariants };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [type]: updateList(prev[type] || []),
+      }));
+    }
+  };
+
+  const removeTrainAddon = (
+    trainIndex,
+    addonIndex,
+    type = "trainDetails",
+    variantIndex = null,
+  ) => {
+    const updateList = (list) => {
+      const updated = [...list];
+      updated[trainIndex] = {
+        ...updated[trainIndex],
+        addons: (updated[trainIndex].addons || []).filter(
+          (_, i) => i !== addonIndex,
+        ),
+      };
+      return updated;
+    };
+
+    if (variantIndex !== null) {
+      setFormData((prev) => {
+        const updatedVariants = [...(prev.variantPackage || [])];
+        if (!updatedVariants[variantIndex]) return prev;
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [type]: updateList(updatedVariants[variantIndex][type] || []),
+        };
+        return { ...prev, variantPackage: updatedVariants };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [type]: updateList(prev[type] || []),
+      }));
+    }
+  };
+
+  // Reusable block for rendering train/flight-wise addons inside a train/flight card
+  const renderTrainAddons = (detail, trainIndex, type, variantIndex = null) => (
+    <div className="mt-3 border-t pt-3">
+      <label className="block text-sm font-semibold mb-1 text-blue-800">
+        {type === "trainDetails" ? "Train" : "Flight"} Addons (use negative
+        amount to deduct, e.g. -200)
+      </label>
+      {(detail.addons || []).map((addon, aIndex) => (
+        <div key={aIndex} className="flex items-center gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Addon Name (e.g. AC Upgrade)"
+            value={addon.name}
+            className="p-2 border flex-1 rounded text-sm"
+            onChange={(e) =>
+              handleTrainAddonChange(
+                e,
+                trainIndex,
+                aIndex,
+                "name",
+                type,
+                variantIndex,
+              )
+            }
+          />
+          <input
+            type="number"
+            placeholder="+/- Amount"
+            value={addon.amount}
+            className="p-2 border w-32 rounded text-sm"
+            onChange={(e) =>
+              handleTrainAddonChange(
+                e,
+                trainIndex,
+                aIndex,
+                "amount",
+                type,
+                variantIndex,
+              )
+            }
+          />
+          <button
+            type="button"
+            className="bg-red-500 text-white px-2 py-1 rounded text-xs"
+            onClick={() =>
+              removeTrainAddon(trainIndex, aIndex, type, variantIndex)
+            }
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="bg-blue-400 text-white px-3 py-1 rounded text-xs"
+        onClick={() => addTrainAddon(trainIndex, type, variantIndex)}
+      >
+        + Add {type === "trainDetails" ? "Train" : "Flight"} Addon
+      </button>
+    </div>
+  );
+
   return (
     <ErrorBoundary>
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
@@ -2477,26 +4347,51 @@ const AddTourDetail = () => {
               {(formData[type] || []).map((detail, index) => (
                 <div key={index} className="mb-4 border p-3 rounded">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {Object.entries(detail).map(([key, value]) => (
-                      <input
-                        key={key}
-                        type={
-                          key.toLowerCase().includes("date") ? "date" : "text"
-                        }
-                        value={value}
-                        placeholder={key
-                          .replace(/([A-Z])/g, " $1")
-                          .replace(/^./, (str) => str.toUpperCase())}
-                        className="p-3 border w-full rounded"
-                        onChange={(e) =>
-                          handleChange(e, null, type, index, key)
-                        }
-                      />
-                    ))}
+                    {Object.entries(detail)
+                      .filter(([key]) => key !== "addons" && key !== "tripType")
+                      .map(([key, value]) => (
+                        <input
+                          key={key}
+                          type={
+                            key.toLowerCase().includes("date") ? "date" : "text"
+                          }
+                          value={value}
+                          placeholder={key
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (str) => str.toUpperCase())}
+                          className="p-3 border w-full rounded"
+                          onChange={(e) =>
+                            handleChange(e, null, type, index, key)
+                          }
+                        />
+                      ))}
                   </div>
+
+                  {/* ── NEW: Trip Type — free text, only for trains ── */}
+                  {type === "trainDetails" && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-semibold mb-1 text-gray-700">
+                        Trip Type (your own note, e.g. Boarding / Middle /
+                        Deboarding)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Boarding / Middle / Deboarding"
+                        value={detail.tripType || ""}
+                        onChange={(e) =>
+                          handleChange(e, null, type, index, "tripType")
+                        }
+                        className="p-3 border w-full sm:w-1/2 rounded"
+                      />
+                    </div>
+                  )}
+
+                  {/* Train/Flight-wise addons for this entry */}
+                  {renderTrainAddons(detail, index, type)}
+
                   <button
                     type="button"
-                    className="bg-red-500 text-white px-3 py-2 mt-2 rounded text-sm"
+                    className="bg-red-500 text-white px-3 py-2 mt-3 rounded text-sm"
                     onClick={() => removeTransportDetail(type, index)}
                   >
                     Remove {type === "trainDetails" ? "Train" : "Flight"}
@@ -2647,9 +4542,11 @@ const AddTourDetail = () => {
               />
             </div>
           </div>
-          {/* Add-ons */}
+          {/* Add-ons (flat, still supported) */}
           <div>
-            <label className="block font-semibold mb-1">Add-ons</label>
+            <label className="block font-semibold mb-1">
+              Add-ons (Flat / Legacy — Optional)
+            </label>
             {(formData.addons || []).map((addon, index) => (
               <div key={index} className="flex items-center gap-2 mb-2">
                 <input
@@ -3013,35 +4910,69 @@ const AddTourDetail = () => {
                     {(variant[type] || []).map((detail, index) => (
                       <div key={index} className="mb-4 border p-3 rounded">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {Object.entries(detail).map(([key, value]) => (
+                          {Object.entries(detail)
+                            .filter(
+                              ([key]) => key !== "addons" && key !== "tripType",
+                            )
+                            .map(([key, value]) => (
+                              <input
+                                key={key}
+                                type={
+                                  key.toLowerCase().includes("date")
+                                    ? "date"
+                                    : "text"
+                                }
+                                value={value}
+                                placeholder={key
+                                  .replace(/([A-Z])/g, " $1")
+                                  .replace(/^./, (str) => str.toUpperCase())}
+                                className="p-3 border w-full rounded"
+                                onChange={(e) =>
+                                  handleChange(
+                                    e,
+                                    null,
+                                    type,
+                                    index,
+                                    key,
+                                    variantIndex,
+                                  )
+                                }
+                              />
+                            ))}
+                        </div>
+
+                        {/* ── NEW: Trip Type — free text, only for trains ── */}
+                        {type === "trainDetails" && (
+                          <div className="mt-3">
+                            <label className="block text-sm font-semibold mb-1 text-gray-700">
+                              Trip Type (your own note, e.g. Boarding / Middle
+                              / Deboarding)
+                            </label>
                             <input
-                              key={key}
-                              type={
-                                key.toLowerCase().includes("date")
-                                  ? "date"
-                                  : "text"
-                              }
-                              value={value}
-                              placeholder={key
-                                .replace(/([A-Z])/g, " $1")
-                                .replace(/^./, (str) => str.toUpperCase())}
-                              className="p-3 border w-full rounded"
+                              type="text"
+                              placeholder="e.g. Boarding / Middle / Deboarding"
+                              value={detail.tripType || ""}
                               onChange={(e) =>
                                 handleChange(
                                   e,
                                   null,
                                   type,
                                   index,
-                                  key,
+                                  "tripType",
                                   variantIndex,
                                 )
                               }
+                              className="p-3 border w-full sm:w-1/2 rounded"
                             />
-                          ))}
-                        </div>
+                          </div>
+                        )}
+
+                        {/* Variant train/flight-wise addons */}
+                        {renderTrainAddons(detail, index, type, variantIndex)}
+
                         <button
                           type="button"
-                          className="bg-red-500 text-white px-3 py-2 mt-2 rounded text-sm"
+                          className="bg-red-500 text-white px-3 py-2 mt-3 rounded text-sm"
                           onClick={() =>
                             removeTransportDetail(type, index, variantIndex)
                           }
@@ -3176,9 +5107,11 @@ const AddTourDetail = () => {
                   </button>
                 </div>
 
-                {/* Variant Add-ons */}
+                {/* Variant Add-ons (flat) */}
                 <div>
-                  <label className="block font-semibold mb-1">Add-ons</label>
+                  <label className="block font-semibold mb-1">
+                    Add-ons (Flat / Legacy — Optional)
+                  </label>
                   {(variant.addons || []).map((addon, index) => (
                     <div key={index} className="flex items-center gap-2 mb-2">
                       <input

@@ -1087,11 +1087,10 @@ const ReceiptNavButton = ({ booking }) => {
         e.stopPropagation();
         navigate(`/invoice/${booking.tnr}`);
       }}
-      className={`flex items-center gap-1 px-3 py-1.5 text-xs sm:text-sm rounded-lg text-white min-w-[120px] sm:min-w-[140px] ${
-        isFullyPaid
-          ? "bg-emerald-600 hover:bg-emerald-700"
-          : "bg-cyan-600 hover:bg-cyan-700"
-      }`}
+      className={`flex items-center gap-1 px-3 py-1.5 text-xs sm:text-sm rounded-lg text-white min-w-[120px] sm:min-w-[140px] ${isFullyPaid
+        ? "bg-emerald-600 hover:bg-emerald-700"
+        : "bg-cyan-600 hover:bg-cyan-700"
+        }`}
     >
       {isFullyPaid ? <FileText size={16} /> : <ReceiptIcon size={16} />}
       {docLabel}
@@ -1199,8 +1198,8 @@ const TourBookings = () => {
           console.error("getBookings error:", error);
           toast.error(
             error.response?.data?.message ||
-              error.message ||
-              "Failed to fetch bookings",
+            error.message ||
+            "Failed to fetch bookings",
           );
         })
         .finally(() => {
@@ -1458,20 +1457,18 @@ const TourBookings = () => {
 
             <div className="mt-2 flex flex-wrap gap-2 text-xs sm:text-sm">
               <span
-                className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                  booking.payment.advance.paid
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-600"
-                }`}
+                className={`px-2 py-1 rounded-lg text-xs font-medium ${booking.payment.advance.paid
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-600"
+                  }`}
               >
                 Advance: {booking.payment.advance.paid ? "Paid" : "Pending"}
               </span>
               <span
-                className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                  booking.payment.balance.paid
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-600"
-                }`}
+                className={`px-2 py-1 rounded-lg text-xs font-medium ${booking.payment.balance.paid
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-600"
+                  }`}
               >
                 Balance: {booking.payment.balance.paid ? "Paid" : "Pending"}
               </span>
@@ -1687,25 +1684,23 @@ const TourBookings = () => {
                     return (
                       <div
                         key={idx}
-                        className={`p-3 rounded border ${
-                          isNegative
-                            ? "bg-red-50 border-red-200"
-                            : amount > 0
-                              ? "bg-green-50 border-green-200"
-                              : "bg-gray-50 border-gray-200"
-                        }`}
+                        className={`p-3 rounded border ${isNegative
+                          ? "bg-red-50 border-red-200"
+                          : amount > 0
+                            ? "bg-green-50 border-green-200"
+                            : "bg-gray-50 border-gray-200"
+                          }`}
                       >
                         <p className="text-sm">{remark.remark}</p>
 
                         <div className="flex items-center gap-2 mt-1">
                           <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                              isNegative
-                                ? "bg-red-100 text-red-700"
-                                : amount > 0
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-600"
-                            }`}
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${isNegative
+                              ? "bg-red-100 text-red-700"
+                              : amount > 0
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-600"
+                              }`}
                           >
                             {isNegative
                               ? "Refund/Adjustment"
@@ -1715,13 +1710,12 @@ const TourBookings = () => {
                           </span>
 
                           <span
-                            className={`text-sm font-medium ${
-                              isNegative
-                                ? "text-red-600"
-                                : amount > 0
-                                  ? "text-green-600"
-                                  : "text-gray-600"
-                            }`}
+                            className={`text-sm font-medium ${isNegative
+                              ? "text-red-600"
+                              : amount > 0
+                                ? "text-green-600"
+                                : "text-gray-600"
+                              }`}
                           >
                             {amount !== 0 ? (isNegative ? "-" : "+") : ""}
                             {displayAmount}
@@ -1757,25 +1751,23 @@ const TourBookings = () => {
                     return (
                       <div
                         key={idx}
-                        className={`p-3 rounded border ${
-                          isNegative
-                            ? "bg-red-50 border-red-200"
-                            : amount > 0
-                              ? "bg-green-50 border-green-200"
-                              : "bg-gray-50 border-gray-200"
-                        }`}
+                        className={`p-3 rounded border ${isNegative
+                          ? "bg-red-50 border-red-200"
+                          : amount > 0
+                            ? "bg-green-50 border-green-200"
+                            : "bg-gray-50 border-gray-200"
+                          }`}
                       >
                         <p className="text-sm">{remark.remark}</p>
 
                         <div className="flex items-center gap-2 mt-1">
                           <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                              isNegative
-                                ? "bg-red-100 text-red-700"
-                                : amount > 0
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-600"
-                            }`}
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${isNegative
+                              ? "bg-red-100 text-red-700"
+                              : amount > 0
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-600"
+                              }`}
                           >
                             {isNegative
                               ? "Refund/Adjustment"
@@ -1785,13 +1777,12 @@ const TourBookings = () => {
                           </span>
 
                           <span
-                            className={`text-sm font-medium ${
-                              isNegative
-                                ? "text-red-600"
-                                : amount > 0
-                                  ? "text-green-600"
-                                  : "text-gray-600"
-                            }`}
+                            className={`text-sm font-medium ${isNegative
+                              ? "text-red-600"
+                              : amount > 0
+                                ? "text-green-600"
+                                : "text-gray-600"
+                              }`}
                           >
                             {amount !== 0 ? (isNegative ? "-" : "+") : ""}
                             {displayAmount}
@@ -1812,6 +1803,7 @@ const TourBookings = () => {
             </div>
 
             {/* Travellers */}
+            {/* Travellers */}
             {booking.travellers.map((trav, idx) => {
               let status = null;
               if (trav.cancelled?.byTraveller && !trav.cancelled?.byAdmin) {
@@ -1826,6 +1818,75 @@ const TourBookings = () => {
                 trav.cancelled?.byAdmin
               ) {
                 status = "Cancelled";
+              }
+
+              // ── if/else — resolve addon display ──
+              // NEW bookings: trav.selectedAddons is an array (train-wise, with tripType)
+              // OLD bookings: trav.selectedAddon is a flat single object
+              let addonDisplay = null;
+
+              if (Array.isArray(trav.selectedAddons) && trav.selectedAddons.length > 0) {
+                // ── NEW MODE: train-wise addons, color-coded by tripType ──
+                const getTripTypeStyle = (tripType) => {
+                  const t = (tripType || "").toUpperCase();
+                  if (t.startsWith("BOARD")) {
+                    return { badge: "bg-blue-100 text-blue-700", label: "Boarding" };
+                  }
+                  if (t.startsWith("MIDDLE")) {
+                    return { badge: "bg-purple-100 text-purple-700", label: "Middle" };
+                  }
+                  if (t.startsWith("DEBOARD") || t.startsWith("DEBOARF")) {
+                    return { badge: "bg-orange-100 text-orange-700", label: "Deboarding" };
+                  }
+                  return { badge: "bg-gray-100 text-gray-700", label: tripType || "Train" };
+                };
+
+                addonDisplay = (
+                  <div className="mt-3">
+                    <p className="text-sm font-bold text-red-600 mb-1.5">
+                      Add-ons
+                    </p>
+                    <div className="space-y-1.5">
+                      {trav.selectedAddons.map((a, aIdx) => {
+                        const style = getTripTypeStyle(a.tripType);
+                        const isNegative = Number(a.amount) < 0;
+                        return (
+                          <div
+                            key={aIdx}
+                            className="flex flex-wrap items-center gap-2 text-sm"
+                          >
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${style.badge}`}
+                            >
+                              {style.label}
+                            </span>
+                            <span className="text-gray-700">
+                              {a.trainName}
+                              {a.trainNo ? ` (${a.trainNo})` : ""}: {a.name}
+                            </span>
+                            <span
+                              className={`font-semibold ${isNegative ? "text-red-600" : "text-green-700"
+                                }`}
+                            >
+                              {Number(a.amount) >= 0 ? "+" : ""}₹{a.amount}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+
+              } else if (trav.selectedAddon?.name) {
+                // ── OLD MODE: single flat addon ──
+                addonDisplay = (
+                  <p className="mt-2">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 mr-2">
+                      Add-on
+                    </span>
+                    {trav.selectedAddon.name} (₹{trav.selectedAddon.price})
+                  </p>
+                );
               }
 
               return (
@@ -1851,12 +1912,10 @@ const TourBookings = () => {
                       {trav.deboardingPoint.stationCode})
                     </p>
                   )}
-                  {trav.selectedAddon?.name && (
-                    <p>
-                      Add-on: {trav.selectedAddon.name} (₹
-                      {trav.selectedAddon.price})
-                    </p>
-                  )}
+
+                  {/* ── forked addon display (new train-wise array vs old flat) ── */}
+                  {addonDisplay}
+
                   {trav.remarks && (
                     <p className="italic text-gray-500">
                       Remarks: {trav.remarks}
