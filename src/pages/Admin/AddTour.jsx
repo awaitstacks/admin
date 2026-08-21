@@ -93,6 +93,7 @@
 //       childWithBerth: "",
 //       childWithoutBerth: "",
 //     },
+//     gst: "",
 //     advanceAmount: { adult: "", child: "" },
 //     destination: [""],
 //     sightseeing: [""],
@@ -124,11 +125,10 @@
 //   const [showBackConfirm, setShowBackConfirm] = useState(false);
 
 //   // ─── New states for Upgrade Class Fare Calculator ───
-//   const [packageIncludedFare, setPackageIncludedFare] = useState(""); // A - package included
-//   const [clientUpgradeFare, setClientUpgradeFare] = useState(""); // B - client paying
-//   const [suggestedGvExtra, setSuggestedGvExtra] = useState(""); // Suggested extra amount
+//   const [packageIncludedFare, setPackageIncludedFare] = useState("");
+//   const [clientUpgradeFare, setClientUpgradeFare] = useState("");
+//   const [suggestedGvExtra, setSuggestedGvExtra] = useState("");
 
-//   // Detect unsaved changes
 //   useEffect(() => {
 //     const formChanged =
 //       JSON.stringify(formData) !== JSON.stringify(initialForm);
@@ -140,7 +140,6 @@
 //     setFormIsDirty(formChanged || imagesChanged);
 //   }, [formData, images]);
 
-//   // Browser protection (refresh, back arrow, back swipe, tab close)
 //   useEffect(() => {
 //     if (!formIsDirty) return;
 
@@ -157,11 +156,9 @@
 //     };
 //   }, [formIsDirty]);
 
-//   // Custom back/swipe protection (push history to trap back action)
 //   useEffect(() => {
 //     if (!formIsDirty) return;
 
-//     // Create a history entry so back button triggers popstate
 //     window.history.pushState(null, null, window.location.href);
 
 //     const handlePopState = (event) => {
@@ -200,7 +197,6 @@
 
 //     const rawExtra = B - A;
 
-//     // Step 1: Try multiples of 50 first
 //     const multiplesOf50 = [];
 //     let current = Math.ceil(rawExtra / 50) * 50;
 //     for (let i = 0; i < 8; i++) {
@@ -213,14 +209,12 @@
 //     let best = rawExtra;
 
 //     if (good50s.length > 0) {
-//       // Prefer closest to +145 (bias toward decent margin)
 //       best = good50s.reduce((prev, curr) => {
 //         const distPrev = Math.abs(prev - rawExtra - 145);
 //         const distCurr = Math.abs(curr - rawExtra - 145);
 //         return distCurr < distPrev ? curr : prev;
 //       });
 //     } else {
-//       // Step 2: Fall back to multiples of 100
 //       const floor100 = Math.floor(rawExtra / 100) * 100;
 //       const round100 = Math.round(rawExtra / 100) * 100;
 //       const ceil100 = Math.ceil(rawExtra / 100) * 100;
@@ -263,6 +257,7 @@
 //         batch: formData.batch,
 //         duration: JSON.stringify(formData.duration),
 //         price: JSON.stringify(formData.price),
+//         gst: formData.gst || 0,
 //         advanceAmount: JSON.stringify(formData.advanceAmount),
 //         destination: JSON.stringify(formData.destination),
 //         sightseeing: JSON.stringify(formData.sightseeing),
@@ -734,6 +729,21 @@
 //             </div>
 //           </div>
 
+//           {/* GST */}
+//           <div>
+//             <label className="block font-semibold mb-1">GST (%)</label>
+//             <input
+//               type="number"
+//               placeholder="e.g. 5 (defaults to 0 if left blank)"
+//               className="p-3 border w-full sm:w-1/3 rounded"
+//               value={formData.gst}
+//               onChange={(e) =>
+//                 setFormData({ ...formData, gst: e.target.value })
+//               }
+//               min="0"
+//             />
+//           </div>
+
 //           {/* ─── UPGRADE CLASS FARE CALCULATOR (NEW) ─── */}
 //           <div className="mt-10 p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm">
 //             <h3 className="text-lg font-semibold mb-5 text-gray-800 flex items-center gap-2">
@@ -742,7 +752,6 @@
 //             </h3>
 
 //             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-//               {/* Package Included Fare */}
 //               <div>
 //                 <label className="block text-sm font-medium text-gray-700 mb-2">
 //                   Package Included Train Fare (₹)
@@ -761,7 +770,6 @@
 //                 />
 //               </div>
 
-//               {/* Client Paying Fare */}
 //               <div>
 //                 <label className="block text-sm font-medium text-gray-700 mb-2">
 //                   Client Paying Fare (Higher Class) (₹)
@@ -780,7 +788,6 @@
 //                 />
 //               </div>
 
-//               {/* Suggested GV Extra */}
 //               <div>
 //                 <label className="block text-sm font-medium text-blue-700 mb-2 font-semibold">
 //                   Suggested GV Extra Amount (₹)
@@ -795,18 +802,17 @@
 //               </div>
 //             </div>
 
-//             {/* Summary */}
 //             {suggestedGvExtra && packageIncludedFare && clientUpgradeFare && (
 //               <div className="mt-5 text-sm text-gray-600 text-center">
 //                 Raw extra paid by client:{" "}
 //                 <span className="font-medium">
 //                   ₹{Number(clientUpgradeFare) - Number(packageIncludedFare)}
 //                 </span>
-//                     → We suggest charging:{" "}
+//                     → We suggest charging:{" "}
 //                 <span className="font-medium text-green-700">
 //                   ₹{suggestedGvExtra}
 //                 </span>
-//                     (rounded up by +
+//                     (rounded up by +
 //                 {suggestedGvExtra -
 //                   (Number(clientUpgradeFare) -
 //                     Number(packageIncludedFare))}{" "}
@@ -1134,7 +1140,6 @@
 //                   </button>
 //                 </div>
 
-//                 {/* Variant Duration */}
 //                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
 //                   <input
 //                     type="number"
@@ -1170,7 +1175,6 @@
 //                   />
 //                 </div>
 
-//                 {/* Variant Prices */}
 //                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 //                   <input
 //                     type="number"
@@ -1238,7 +1242,6 @@
 //                   />
 //                 </div>
 
-//                 {/* Variant Advance Amount */}
 //                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
 //                   <input
 //                     type="number"
@@ -1274,7 +1277,6 @@
 //                   />
 //                 </div>
 
-//                 {/* Variant Dynamic Arrays */}
 //                 {[
 //                   "destination",
 //                   "sightseeing",
@@ -1317,7 +1319,6 @@
 //                   </div>
 //                 ))}
 
-//                 {/* Variant Train & Flight */}
 //                 {["trainDetails", "flightDetails"].map((type) => (
 //                   <div key={type}>
 //                     <label className="block font-semibold mb-1 capitalize">
@@ -1381,7 +1382,6 @@
 //                   </div>
 //                 ))}
 
-//                 {/* Variant Boarding Points */}
 //                 <div>
 //                   <label className="block font-semibold mb-1">
 //                     Boarding Points
@@ -1434,7 +1434,6 @@
 //                   </button>
 //                 </div>
 
-//                 {/* Variant Deboarding Points */}
 //                 <div>
 //                   <label className="block font-semibold mb-1">
 //                     Deboarding Points
@@ -1489,7 +1488,6 @@
 //                   </button>
 //                 </div>
 
-//                 {/* Variant Add-ons */}
 //                 <div>
 //                   <label className="block font-semibold mb-1">Add-ons</label>
 //                   {(variant.addons || []).map((addon, index) => (
@@ -1552,7 +1550,6 @@
 //                   </button>
 //                 </div>
 
-//                 {/* Variant Remarks */}
 //                 <div>
 //                   <label className="block font-semibold mb-1">Remarks</label>
 //                   <textarea
@@ -1573,7 +1570,6 @@
 //                   />
 //                 </div>
 
-//                 {/* Variant Last Booking Date */}
 //                 <div>
 //                   <label className="block font-semibold mb-1">
 //                     Trip Start Date
@@ -1700,6 +1696,8 @@
 // };
 
 // export default AddTour;
+
+
 /* eslint-disable no-unused-vars */
 import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
@@ -1746,6 +1744,8 @@ const AddTour = () => {
     departureTime: "",
     arrivalTime: "",
     ticketOpenDate: "",
+    tripType: "", // e.g. "Boarding" / "Middle" / "Deboarding"
+    addons: [], // train-wise addons (use negative amount to deduct)
   };
 
   const defaultFlight = {
@@ -1758,6 +1758,8 @@ const AddTour = () => {
     class: "",
     departureTime: "",
     arrivalTime: "",
+    tripType: "",
+    addons: [], // flight-wise addons
   };
 
   const defaultStationPoint = { stationCode: "", stationName: "" };
@@ -2195,6 +2197,171 @@ const AddTour = () => {
     }
   };
 
+  // ── Train/flight-wise addons — matches the Tour Admin (AddTourDetail.jsx)
+  // implementation exactly, so bookings created from either panel produce
+  // the same trainDetails[].addons / flightDetails[].addons shape. ──
+  const addTrainAddon = (trainIndex, type = "trainDetails", variantIndex = null) => {
+    const updateList = (list) => {
+      const updated = [...list];
+      updated[trainIndex] = {
+        ...updated[trainIndex],
+        addons: [...(updated[trainIndex].addons || []), { name: "", amount: "" }],
+      };
+      return updated;
+    };
+
+    if (variantIndex !== null) {
+      setFormData((prev) => {
+        const updatedVariants = [...(prev.variantPackage || [])];
+        if (!updatedVariants[variantIndex]) return prev;
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [type]: updateList(updatedVariants[variantIndex][type] || []),
+        };
+        return { ...prev, variantPackage: updatedVariants };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [type]: updateList(prev[type] || []),
+      }));
+    }
+  };
+
+  const handleTrainAddonChange = (
+    e,
+    trainIndex,
+    addonIndex,
+    field,
+    type = "trainDetails",
+    variantIndex = null,
+  ) => {
+    const value = e.target.value;
+    const updateList = (list) => {
+      const updated = [...list];
+      const addons = [...(updated[trainIndex].addons || [])];
+      addons[addonIndex] = { ...addons[addonIndex], [field]: value };
+      updated[trainIndex] = { ...updated[trainIndex], addons };
+      return updated;
+    };
+
+    if (variantIndex !== null) {
+      setFormData((prev) => {
+        const updatedVariants = [...(prev.variantPackage || [])];
+        if (!updatedVariants[variantIndex]) return prev;
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [type]: updateList(updatedVariants[variantIndex][type] || []),
+        };
+        return { ...prev, variantPackage: updatedVariants };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [type]: updateList(prev[type] || []),
+      }));
+    }
+  };
+
+  const removeTrainAddon = (
+    trainIndex,
+    addonIndex,
+    type = "trainDetails",
+    variantIndex = null,
+  ) => {
+    const updateList = (list) => {
+      const updated = [...list];
+      updated[trainIndex] = {
+        ...updated[trainIndex],
+        addons: (updated[trainIndex].addons || []).filter(
+          (_, i) => i !== addonIndex,
+        ),
+      };
+      return updated;
+    };
+
+    if (variantIndex !== null) {
+      setFormData((prev) => {
+        const updatedVariants = [...(prev.variantPackage || [])];
+        if (!updatedVariants[variantIndex]) return prev;
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [type]: updateList(updatedVariants[variantIndex][type] || []),
+        };
+        return { ...prev, variantPackage: updatedVariants };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [type]: updateList(prev[type] || []),
+      }));
+    }
+  };
+
+  // Reusable block for rendering train/flight-wise addons inside a train/flight card
+  const renderTrainAddons = (detail, trainIndex, type, variantIndex = null) => (
+    <div className="mt-3 border-t pt-3">
+      <label className="block text-sm font-semibold mb-1 text-blue-800">
+        {type === "trainDetails" ? "Train" : "Flight"} Addons (use negative
+        amount to deduct, e.g. -200)
+      </label>
+      {(detail.addons || []).map((addon, aIndex) => (
+        <div key={aIndex} className="flex items-center gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Addon Name (e.g. AC Upgrade)"
+            value={addon.name}
+            className="p-2 border flex-1 rounded text-sm"
+            onChange={(e) =>
+              handleTrainAddonChange(
+                e,
+                trainIndex,
+                aIndex,
+                "name",
+                type,
+                variantIndex,
+              )
+            }
+          />
+          <input
+            type="number"
+            placeholder="+/- Amount"
+            value={addon.amount}
+            className="p-2 border w-32 rounded text-sm"
+            onChange={(e) =>
+              handleTrainAddonChange(
+                e,
+                trainIndex,
+                aIndex,
+                "amount",
+                type,
+                variantIndex,
+              )
+            }
+          />
+          <button
+            type="button"
+            className="bg-red-500 text-white px-2 py-1 rounded text-xs"
+            onClick={() =>
+              removeTrainAddon(trainIndex, aIndex, type, variantIndex)
+            }
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="bg-blue-400 text-white px-3 py-1 rounded text-xs"
+        onClick={() => addTrainAddon(trainIndex, type, variantIndex)}
+      >
+        + Add {type === "trainDetails" ? "Train" : "Flight"} Addon
+      </button>
+    </div>
+  );
+
+
+
   const handleImageChange = (e, field) => {
     if (field === "galleryImages") {
       setImages((prev) => ({ ...prev, [field]: [...e.target.files] }));
@@ -2571,23 +2738,26 @@ const AddTour = () => {
               {(formData[type] || []).map((detail, index) => (
                 <div key={index} className="mb-4 border p-3 rounded">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {Object.entries(detail).map(([key, value]) => (
-                      <input
-                        key={key}
-                        type={
-                          key.toLowerCase().includes("date") ? "date" : "text"
-                        }
-                        value={value}
-                        placeholder={key
-                          .replace(/([A-Z])/g, " $1")
-                          .replace(/^./, (str) => str.toUpperCase())}
-                        className="p-3 border w-full rounded"
-                        onChange={(e) =>
-                          handleChange(e, null, type, index, key)
-                        }
-                      />
-                    ))}
+                    {Object.entries(detail)
+                      .filter(([key]) => key !== "addons")
+                      .map(([key, value]) => (
+                        <input
+                          key={key}
+                          type={
+                            key.toLowerCase().includes("date") ? "date" : "text"
+                          }
+                          value={value}
+                          placeholder={key
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (str) => str.toUpperCase())}
+                          className="p-3 border w-full rounded"
+                          onChange={(e) =>
+                            handleChange(e, null, type, index, key)
+                          }
+                        />
+                      ))}
                   </div>
+                  {renderTrainAddons(detail, index, type)}
                   <button
                     type="button"
                     className="bg-red-500 text-white px-3 py-2 mt-2 rounded text-sm"
@@ -3029,32 +3199,35 @@ const AddTour = () => {
                     {(variant[type] || []).map((detail, index) => (
                       <div key={index} className="mb-4 border p-3 rounded">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {Object.entries(detail).map(([key, value]) => (
-                            <input
-                              key={key}
-                              type={
-                                key.toLowerCase().includes("date")
-                                  ? "date"
-                                  : "text"
-                              }
-                              value={value}
-                              placeholder={key
-                                .replace(/([A-Z])/g, " $1")
-                                .replace(/^./, (str) => str.toUpperCase())}
-                              className="p-3 border w-full rounded"
-                              onChange={(e) =>
-                                handleChange(
-                                  e,
-                                  null,
-                                  type,
-                                  index,
-                                  key,
-                                  variantIndex,
-                                )
-                              }
-                            />
-                          ))}
+                          {Object.entries(detail)
+                            .filter(([key]) => key !== "addons")
+                            .map(([key, value]) => (
+                              <input
+                                key={key}
+                                type={
+                                  key.toLowerCase().includes("date")
+                                    ? "date"
+                                    : "text"
+                                }
+                                value={value}
+                                placeholder={key
+                                  .replace(/([A-Z])/g, " $1")
+                                  .replace(/^./, (str) => str.toUpperCase())}
+                                className="p-3 border w-full rounded"
+                                onChange={(e) =>
+                                  handleChange(
+                                    e,
+                                    null,
+                                    type,
+                                    index,
+                                    key,
+                                    variantIndex,
+                                  )
+                                }
+                              />
+                            ))}
                         </div>
+                        {renderTrainAddons(detail, index, type, variantIndex)}
                         <button
                           type="button"
                           className="bg-red-500 text-white px-3 py-2 mt-2 rounded text-sm"

@@ -1,4 +1,3 @@
-
 // import { useEffect, useContext, useMemo, useState, useCallback } from "react";
 // import { useLocation } from "react-router-dom";
 // import { TourContext } from "../../context/TourContext";
@@ -41,7 +40,6 @@
 //     selectedTourId && !isLoading && bookings && bookings.length > 0,
 //   );
 
-//   // Browser leave protection
 //   useEffect(() => {
 //     if (!shouldProtect) return;
 //     const handleBeforeUnload = (e) => {
@@ -52,7 +50,6 @@
 //     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
 //   }, [shouldProtect]);
 
-//   // Back button protection
 //   useEffect(() => {
 //     if (!shouldProtect) return;
 //     window.history.pushState(null, null, window.location.href);
@@ -127,16 +124,13 @@
 
 //     let totalBookingsCount = 0;
 //     let totalTravellersCount = 0;
-
 //     let completed = 0;
 //     let pending = 0;
 //     let unverified = 0;
 //     let cancelled = 0;
 //     let rejected = 0;
-
 //     let advancePaidAmount = 0;
 //     let balancePaidAmount = 0;
-
 //     let advancePending = [];
 //     let balancePending = [];
 //     let uncompleted = [];
@@ -150,9 +144,7 @@
 //       if (advanceVerified) {
 //         const validTravellers = b.travellers?.filter((trav) => {
 //           if (!trav) return false;
-//           if (trav.cancelled?.byTraveller || trav.cancelled?.byAdmin) {
-//             return false;
-//           }
+//           if (trav.cancelled?.byTraveller || trav.cancelled?.byAdmin) return false;
 //           return true;
 //         }) || [];
 //         totalTravellersCount += validTravellers.length;
@@ -336,37 +328,36 @@
 //               className="bg-white border rounded-xl shadow-sm hover:shadow transition-all overflow-hidden"
 //             >
 //               <div
-//                 className="p-4 flex items-center justify-between cursor-pointer bg-gray-50 hover:bg-gray-100"
+//                 className="p-4 flex items-center justify-between gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100"
 //                 onClick={() => toggleExpand(type, booking.tnr)}
 //               >
-//                 <div className="flex-1">
-//                   <div className="flex items-center gap-3">
-//                     <div className="font-bold text-lg text-gray-900">
-//                       {travellerName}
-//                     </div>
-//                     <div className="flex items-center gap-2 text-sm">
-//                       <span className="font-mono font-bold text-indigo-700 tracking-wider bg-indigo-50 px-2 py-0.5 rounded">
-//                         {booking.tnr}
-//                       </span>
-//                       <button
-//                         onClick={(e) => {
-//                           e.stopPropagation();
-//                           copyTNR(booking.tnr);
-//                         }}
-//                         className="text-blue-600 hover:text-blue-800"
-//                         title="Copy TNR"
-//                       >
-//                         <Copy size={16} />
-//                       </button>
-//                     </div>
+//                 {/* Left: name + TNR + contact */}
+//                 <div className="flex-1 min-w-0">
+//                   <div className="font-bold text-base text-gray-900 truncate">
+//                     {travellerName}
 //                   </div>
-//                   <div className="text-sm text-gray-600 mt-1">
-//                     {booking.contact?.email || "—"} •{" "}
-//                     {booking.contact?.mobile || "—"}
+//                   <div className="flex items-center gap-1 mt-0.5">
+//                     <span className="font-mono font-bold text-indigo-700 text-xs tracking-wider bg-indigo-50 px-2 py-0.5 rounded">
+//                       {booking.tnr}
+//                     </span>
+//                     <button
+//                       onClick={(e) => {
+//                         e.stopPropagation();
+//                         copyTNR(booking.tnr);
+//                       }}
+//                       className="text-blue-600 hover:text-blue-800 flex-shrink-0"
+//                       title="Copy TNR"
+//                     >
+//                       <Copy size={14} />
+//                     </button>
+//                   </div>
+//                   <div className="text-xs text-gray-500 mt-1 truncate">
+//                     {booking.contact?.email || "—"} • {booking.contact?.mobile || "—"}
 //                   </div>
 //                 </div>
 
-//                 <div className="flex items-center gap-4">
+//                 {/* Right: Mark Complete button + chevron */}
+//                 <div className="flex items-center gap-2 flex-shrink-0">
 //                   {type !== "uncompleted" && (
 //                     <button
 //                       onClick={(e) => {
@@ -374,18 +365,18 @@
 //                         handleMarkReceipt(booking, type);
 //                       }}
 //                       disabled={isLoading}
-//                       className={`px-4 py-2 text-sm font-medium rounded-lg transition ${isLoading
+//                       className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition whitespace-nowrap ${isLoading
 //                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
 //                         : "bg-green-600 text-white hover:bg-green-700"
 //                         }`}
 //                     >
-//                       {isLoading ? "Processing..." : "Mark Complete"}
+//                       {isLoading ? "..." : "✓ Mark"}
 //                     </button>
 //                   )}
 //                   {isExpanded ? (
-//                     <ChevronUp size={20} />
+//                     <ChevronUp size={18} className="text-gray-500 flex-shrink-0" />
 //                   ) : (
-//                     <ChevronDown size={20} />
+//                     <ChevronDown size={18} className="text-gray-500 flex-shrink-0" />
 //                   )}
 //                 </div>
 //               </div>
@@ -445,21 +436,16 @@
 //                               Remarks: {t.remarks}
 //                             </p>
 //                           )}
-//                           {(t.cancelled?.byTraveller ||
-//                             t.cancelled?.byAdmin) && (
-//                               <p className="mt-2 text-red-600 font-medium">
-//                                 Cancelled (
-//                                 {t.cancelled.byAdmin
-//                                   ? "by Admin"
-//                                   : "by Traveller"}
-//                                 )
-//                               </p>
-//                             )}
+//                           {(t.cancelled?.byTraveller || t.cancelled?.byAdmin) && (
+//                             <p className="mt-2 text-red-600 font-medium">
+//                               Cancelled (
+//                               {t.cancelled.byAdmin ? "by Admin" : "by Traveller"}
+//                               )
+//                             </p>
+//                           )}
 //                         </div>
 //                       )) || (
-//                           <p className="text-gray-500 col-span-2">
-//                             No travellers
-//                           </p>
+//                           <p className="text-gray-500 col-span-2">No travellers</p>
 //                         )}
 //                     </div>
 //                   </div>
@@ -612,7 +598,8 @@
 //             <div className="space-y-10">
 
 //               {/* ====================== STATISTICS CARDS ====================== */}
-//               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-10 gap-4 md:gap-5">
+//               {/* Mobile: 2 cols | Tablet & Desktop: 5 cols (2 rows of 5) */}
+//               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
 
 //                 <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
 //                   <div className="w-10 h-10 mx-auto bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
@@ -658,8 +645,7 @@
 //                   </p>
 //                 </div>
 
-//                 {/* NEW - TOTAL EARNINGS */}
-//                 <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center col-span-2 lg:col-span-1">
+//                 <div className="bg-white p-5 rounded-2xl shadow-sm border hover:shadow-md transition-all text-center">
 //                   <div className="w-10 h-10 mx-auto bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-3">
 //                     <IndianRupee size={24} />
 //                   </div>
@@ -1215,12 +1201,141 @@ const TourDashboard = () => {
                             {t.variantPackageIndex != null &&
                               ` (Var ${t.variantPackageIndex})`}
                           </p>
-                          {t.selectedAddon?.name && (
-                            <p>
-                              <strong>Add-on:</strong> {t.selectedAddon.name} (₹
-                              {t.selectedAddon.price})
-                            </p>
-                          )}
+                          {(() => {
+                            // ── if/else — resolve addon display ──
+                            // NEW bookings: t.selectedAddons is an array,
+                            // each entry EITHER train-wise (trainNo/
+                            // trainName) OR flight-wise (flightNo/
+                            // airline). OLD bookings: t.selectedAddon is
+                            // a flat single object — kept working exactly
+                            // as before.
+                            if (
+                              Array.isArray(t.selectedAddons) &&
+                              t.selectedAddons.length > 0
+                            ) {
+                              const getTripTypeStyle = (tripType) => {
+                                const tt = (tripType || "").toUpperCase();
+                                if (tt.startsWith("BOARD"))
+                                  return {
+                                    badge: "bg-blue-100 text-blue-700",
+                                    label: "Boarding",
+                                  };
+                                if (tt.startsWith("MIDDLE"))
+                                  return {
+                                    badge: "bg-purple-100 text-purple-700",
+                                    label: "Middle",
+                                  };
+                                if (
+                                  tt.startsWith("DEBOARD") ||
+                                  tt.startsWith("DEBOARF")
+                                )
+                                  return {
+                                    badge: "bg-orange-100 text-orange-700",
+                                    label: "Deboarding",
+                                  };
+                                return {
+                                  badge: "bg-gray-100 text-gray-700",
+                                  label: tripType || "Trip",
+                                };
+                              };
+
+                              // Classify by which identifying fields are
+                              // ACTUALLY present — not by tripKind/
+                              // flightIndex alone, since those can be
+                              // missing on entries saved from admin-edit
+                              // flows (ManageBooking.jsx) or older data.
+                              const isFlightAddon = (a) => {
+                                if (a.flightNo || a.airline) return true;
+                                if (a.trainNo || a.trainName) return false;
+                                return (
+                                  (a.flightIndex !== undefined &&
+                                    a.flightIndex !== null) ||
+                                  a.tripKind === "flight"
+                                );
+                              };
+
+                              const buildLabel = (a, isFlight) => {
+                                const primary = isFlight
+                                  ? a.airline
+                                  : a.trainName;
+                                const secondary = isFlight
+                                  ? a.flightNo
+                                  : a.trainNo;
+                                if (!primary && !secondary) return null;
+                                if (primary && secondary)
+                                  return `${primary} (${secondary})`;
+                                return primary || secondary;
+                              };
+
+                              const trainEntries = t.selectedAddons.filter(
+                                (a) => !isFlightAddon(a),
+                              );
+                              const flightEntries = t.selectedAddons.filter(
+                                (a) => isFlightAddon(a),
+                              );
+
+                              const renderRow = (a, idx) => {
+                                const isFlight = isFlightAddon(a);
+                                const style = getTripTypeStyle(a.tripType);
+                                const label = buildLabel(a, isFlight);
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex flex-wrap items-center gap-1.5 mt-0.5"
+                                  >
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${style.badge}`}
+                                    >
+                                      {style.label}
+                                    </span>
+                                    <span className="text-gray-700">
+                                      {label ? `${label}: ` : ""}
+                                      {a.name}
+                                    </span>
+                                    <span className="font-semibold text-green-700">
+                                      +₹{a.amount || 0}
+                                    </span>
+                                  </div>
+                                );
+                              };
+
+                              return (
+                                <div className="mt-1">
+                                  {trainEntries.length > 0 && (
+                                    <div>
+                                      <p className="font-semibold text-red-600 text-[11px]">
+                                        🚆 Train Addons
+                                      </p>
+                                      {trainEntries.map((a, idx) =>
+                                        renderRow(a, idx),
+                                      )}
+                                    </div>
+                                  )}
+                                  {flightEntries.length > 0 && (
+                                    <div className="mt-1">
+                                      <p className="font-semibold text-orange-900 text-[11px]">
+                                        ✈️ Flight Addons
+                                      </p>
+                                      {flightEntries.map((a, idx) =>
+                                        renderRow(a, idx),
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+
+                            // ── OLD flat addon (unchanged) ──
+                            return (
+                              t.selectedAddon?.name && (
+                                <p>
+                                  <strong>Add-on:</strong>{" "}
+                                  {t.selectedAddon.name} (₹
+                                  {t.selectedAddon.price})
+                                </p>
+                              )
+                            );
+                          })()}
                           {t.boardingPoint?.stationName && (
                             <p>
                               <strong>Boarding:</strong>{" "}
