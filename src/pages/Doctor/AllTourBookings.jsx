@@ -1067,7 +1067,12 @@ const TravellerAddonDisplay = ({ traveller: t, compact = false }) => {
   }
 
   // ── OLD flat addon (unchanged) ──
-  return <span>{t.selectedAddon?.name || "Nil"}</span>;
+  if (!t.selectedAddon?.name) return <span>Nil</span>;
+  return (
+    <span>
+      {t.selectedAddon.name} (₹{t.selectedAddon.price || 0})
+    </span>
+  );
 };
 
 const AllTourBookings = () => {
@@ -1237,9 +1242,8 @@ const AllTourBookings = () => {
           ?.toLowerCase()
           .includes(filters.contact.toLowerCase());
 
-      const paymentStatus = `${b.payment?.advance?.paid ? "advance-paid" : "advance-pending"} ${
-        b.payment?.balance?.paid ? "balance-paid" : "balance-pending"
-      }`;
+      const paymentStatus = `${b.payment?.advance?.paid ? "advance-paid" : "advance-pending"} ${b.payment?.balance?.paid ? "balance-paid" : "balance-pending"
+        }`;
 
       const paymentMatch = paymentStatus.includes(
         filters.payment.toLowerCase(),
@@ -1489,13 +1493,13 @@ const AllTourBookings = () => {
                         <td className="p-3 text-sm text-gray-800">
                           {booking?.bookingDate
                             ? new Date(booking.bookingDate).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )
+                              "en-IN",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )
                             : "N/A"}
                         </td>
                         <td className="p-3 text-sm text-gray-800">
@@ -1651,10 +1655,10 @@ const AllTourBookings = () => {
                                           {t.title} {t.firstName} {t.lastName}
                                           {(t.cancelled?.byTraveller ||
                                             t.cancelled?.byAdmin) && (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                              Cancelled
-                                            </span>
-                                          )}
+                                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                Cancelled
+                                              </span>
+                                            )}
                                         </p>
                                         <p>Age: {t.age}</p>
                                         <p>Gender: {t.gender}</p>
@@ -1746,13 +1750,13 @@ const AllTourBookings = () => {
                         <p className="text-xs text-gray-600 mt-0.5">
                           {booking?.bookingDate
                             ? new Date(booking.bookingDate).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )
+                              "en-IN",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )
                             : "N/A"}
                         </p>
                       </div>
@@ -1900,10 +1904,10 @@ const AllTourBookings = () => {
                                   {t.title} {t.firstName} {t.lastName}
                                   {(t.cancelled?.byTraveller ||
                                     t.cancelled?.byAdmin) && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                      Cancelled
-                                    </span>
-                                  )}
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Cancelled
+                                      </span>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
