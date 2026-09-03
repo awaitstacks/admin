@@ -3302,6 +3302,24 @@ const TourAdminContextProvider = (props) => {
     }
   };
 
+  const reopenEntireTrip = async (tourId) => {
+  try {
+    const { data } = await axios.post(
+      `${backendUrl}/api/touradmin/tour/${tourId}/reopen-trip`,
+      {},
+      { headers: { aToken } },
+    );
+    const validated = validateApiResponse(data, "Failed to reopen trip");
+    await Promise.all([getAllTours(), getAllBookings?.()]);
+    return validated;
+  } catch (error) {
+    console.error("reopenEntireTrip error:", error);
+    throw new Error(
+      error.response?.data?.message || "Failed to reopen trip",
+    );
+  }
+};
+
   const getAdminDashData = async () => {
     try {
       const { data } = await axios.get(
@@ -4329,6 +4347,7 @@ const TourAdminContextProvider = (props) => {
     closeTourBookings,
     reopenTourBookings,
     cancelEntireTrip,
+    reopenEntireTrip,
     bookings,
     bookingsStats,
     isLoadingBookings,
