@@ -279,7 +279,11 @@ import {
   ChartAreaIcon,
   ChartBarIncreasing,
   ChartPieIcon,
+  StarOffIcon,
+  PersonStandingIcon,
+  PersonStanding,
 } from "lucide-react";
+import { Profiler } from "react";
 
 /*
   ── LAYOUT STRATEGY ──────────────────────────────────────────────
@@ -437,6 +441,13 @@ const tourMenuItems = [
     icon: LucideThermometerSnowflake,
     label: "Task Dashboard",
   },
+
+  {
+    to: "/staff-profile",
+    icon: PersonStandingIcon,
+    label: "Admin-Profile",
+  },
+
   {
     to: "/tour-enquiries",
     icon: MapPinHouse,

@@ -2323,6 +2323,168 @@ const TourContextProvider = (props) => {
   const [seatAllocationError, setSeatAllocationError] = useState(null);
   const [enquiries, setEnquiries] = useState([]);
   const [enquiryLoading, setEnquiryLoading] = useState(false);
+
+  // ==================== STAFF PROFILES (admin only) ====================
+  const [staffList, setStaffList] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffError, setStaffError] = useState(null);
+
+  const getAllStaff = useCallback(async () => {
+    setStaffLoading(true);
+    setStaffError(null);
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/tour/staff/all`, {
+        headers: { ttoken },
+      });
+
+      if (data.success) {
+        setStaffList(data.data || []);
+        return { success: true, data: data.data };
+      } else {
+        setStaffList([]);
+        setStaffError(data.message);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("getAllStaff error:", error);
+      const msg =
+        error.response?.data?.message || error.message || "Network error";
+      setStaffList([]);
+      setStaffError(msg);
+      return { success: false, message: msg };
+    } finally {
+      setStaffLoading(false);
+    }
+  }, [backendUrl, ttoken]);
+
+  // GET /api/tour/staff/:id
+  const getStaffById = useCallback(
+    async (id) => {
+      if (!id) return { success: false, message: "Staff ID is required" };
+
+      try {
+        const { data } = await axios.get(
+          `${backendUrl}/api/tour/staff/${id}`,
+          { headers: { ttoken } },
+        );
+
+        if (data.success) {
+          return { success: true, data: data.data };
+        } else {
+          toast.error(data.message);
+          return { success: false, message: data.message };
+        }
+      } catch (error) {
+        console.error("getStaffById error:", error);
+        const msg =
+          error.response?.data?.message || error.message || "Network error";
+        toast.error(msg);
+        return { success: false, message: msg };
+      }
+    },
+    [backendUrl, ttoken],
+  );
+
+  // POST /api/tour/staff/create  (formData — include a "photo" file field to upload one)
+  const createStaff = async (formData) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/staff/create`,
+        formData,
+        {
+          headers: {
+            ttoken,
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 20000,
+        },
+      );
+
+      if (data.success) {
+        toast.success(data.message || "Staff added");
+        setStaffList((prev) => [...prev, data.data]);
+        return { success: true, data: data.data };
+      } else {
+        toast.error(data.message || "Failed to add staff");
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("createStaff error:", error);
+      const msg =
+        error.response?.data?.message || error.message || "Failed to add staff";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  // PUT /api/tour/staff/:id/update  (formData — new "photo" file replaces the old one,
+  // removePhoto=true clears it)
+  const updateStaff = async (id, formData) => {
+    if (!id) return { success: false, message: "Staff ID is required" };
+
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/staff/${id}/update`,
+        formData,
+        {
+          headers: {
+            ttoken,
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 20000,
+        },
+      );
+
+      if (data.success) {
+        toast.success(data.message || "Changes saved");
+        setStaffList((prev) =>
+          prev.map((s) => (s._id === id ? data.data : s)),
+        );
+        return { success: true, data: data.data };
+      } else {
+        toast.error(data.message || "Failed to update staff");
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("updateStaff error:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update staff";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  // DELETE /api/tour/staff/:id/delete
+  const deleteStaff = async (id) => {
+    if (!id) return { success: false, message: "Staff ID is required" };
+
+    try {
+      const { data } = await axios.delete(
+        `${backendUrl}/api/tour/staff/${id}/delete`,
+        { headers: { ttoken } },
+      );
+
+      if (data.success) {
+        toast.success(data.message || "Profile removed");
+        setStaffList((prev) => prev.filter((s) => s._id !== id));
+        return { success: true };
+      } else {
+        toast.error(data.message || "Failed to remove staff");
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("deleteStaff error:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to remove staff";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
   // ==================== GET ALL BOOKINGS ====================
   const getAllBookings = useCallback(async () => {
     try {
@@ -2960,64 +3122,64 @@ const TourContextProvider = (props) => {
     }
   };
   const getBookingInvoice = async (tnr) => {
-  try {
-    const response = await axios.get(
-      `${backendUrl}/api/tour/invoice/${tnr}`,
-      { headers: { ttoken } },
-    );
-    return response.data;
-  } catch (error) {
-    console.error("getBookingInvoice error:", error);
-    return {
-      success: false,
-      message:
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch invoice",
-    };
-  }
-};
+    try {
+      const response = await axios.get(
+        `${backendUrl}/api/tour/invoice/${tnr}`,
+        { headers: { ttoken } },
+      );
+      return response.data;
+    } catch (error) {
+      console.error("getBookingInvoice error:", error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch invoice",
+      };
+    }
+  };
 
-// 2. Save an admin-edited invoice
-const updateBookingInvoice = async (tnr, invoice) => {
-  try {
-    const response = await axios.put(
-      `${backendUrl}/api/tour/invoice/${tnr}`,
-      { invoice },
-      { headers: { ttoken } },
-    );
-    return response.data;
-  } catch (error) {
-    console.error("updateBookingInvoice error:", error);
-    return {
-      success: false,
-      message:
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to save invoice",
-    };
-  }
-};
+  // 2. Save an admin-edited invoice
+  const updateBookingInvoice = async (tnr, invoice) => {
+    try {
+      const response = await axios.put(
+        `${backendUrl}/api/tour/invoice/${tnr}`,
+        { invoice },
+        { headers: { ttoken } },
+      );
+      return response.data;
+    } catch (error) {
+      console.error("updateBookingInvoice error:", error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to save invoice",
+      };
+    }
+  };
 
-// 3. Remove a saved edit — reverts to the auto-calculated invoice
-const deleteBookingInvoice = async (tnr) => {
-  try {
-    const response = await axios.delete(
-      `${backendUrl}/api/tour/invoice/${tnr}`,
-      { headers: { ttoken } },
-    );
-    return response.data;
-  } catch (error) {
-    console.error("deleteBookingInvoice error:", error);
-    return {
-      success: false,
-      message:
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to remove saved invoice",
-    };
-  }
-};
+  // 3. Remove a saved edit — reverts to the auto-calculated invoice
+  const deleteBookingInvoice = async (tnr) => {
+    try {
+      const response = await axios.delete(
+        `${backendUrl}/api/tour/invoice/${tnr}`,
+        { headers: { ttoken } },
+      );
+      return response.data;
+    } catch (error) {
+      console.error("deleteBookingInvoice error:", error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to remove saved invoice",
+      };
+    }
+  };
 
 
 
@@ -4646,6 +4808,17 @@ const deleteBookingInvoice = async (tnr) => {
     toggleRatePassed,
     acceptEnquiry,
     rejectEnquiry,
+
+    // ── STAFF PROFILES (new) ──
+    staffList,
+    staffLoading,
+    staffError,
+    getAllStaff,
+    getStaffById,
+    createStaff,
+    updateStaff,
+    deleteStaff,
+
   };
 
   return (

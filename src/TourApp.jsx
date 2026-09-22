@@ -163,6 +163,8 @@ import AdminVehicleSeatAllocation from "./pages/Doctor/AdminVehicleSeatAllocatio
 import BalanceUpdate from "./pages/Doctor/BalanceUpdate.jsx";
 import TripEnquiries from "./pages/Doctor/TripEnquiries.jsx";
 import Invoice from "./pages/Doctor/Invoice.jsx";  // ← ADD THIS
+import AdminProfile from "./pages/Doctor/AdminProfile.jsx";  // ← ADD THIS
+
 
 
 const TourApp = () => {
@@ -215,6 +217,7 @@ const TourApp = () => {
             />
             {/* Tour Routes */}
             <Route path="/task-dashboard" element={<TaskDashboard />} />
+            <Route path="/staff-profile" element={<AdminProfile />} />
             <Route path="/tour-enquiries" element={<TripEnquiries />} />
             <Route path="/tour-dashboard" element={<TourDashboard />} />
             <Route path="/tour-bookings" element={<TourBookings />} />
