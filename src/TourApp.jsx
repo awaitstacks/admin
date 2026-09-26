@@ -164,6 +164,9 @@ import BalanceUpdate from "./pages/Doctor/BalanceUpdate.jsx";
 import TripEnquiries from "./pages/Doctor/TripEnquiries.jsx";
 import Invoice from "./pages/Doctor/Invoice.jsx";  // ← ADD THIS
 import AdminProfile from "./pages/Doctor/AdminProfile.jsx";  // ← ADD THIS
+import TicketLanding from "./pages/Doctor/TicketLanding.jsx";  // ← ADD THIS
+import RaiseTicket from "./pages/Admin/RaiseTicket.jsx";  // ← ADD THIS
+import { Ticket } from "lucide-react";
 
 
 
@@ -195,6 +198,7 @@ const TourApp = () => {
             <Route path="/admin-dashboard" element={<TourAdminDashboard />} />
             <Route path="/tour-analytics" element={<Analytics />} />
             <Route path="/all-bookings" element={<AllBookings />} />
+            <Route path="/ticket-launching" element={<RaiseTicket />} />
             <Route path="/get-bookings" element={<GetBookings />} />
             <Route path="/add-tour" element={<AddTour />} />
             <Route path="/tour-list" element={<ToursList />} />
@@ -218,6 +222,7 @@ const TourApp = () => {
             {/* Tour Routes */}
             <Route path="/task-dashboard" element={<TaskDashboard />} />
             <Route path="/staff-profile" element={<AdminProfile />} />
+            <Route path="/ticket-landing" element={<TicketLanding />} />
             <Route path="/tour-enquiries" element={<TripEnquiries />} />
             <Route path="/tour-dashboard" element={<TourDashboard />} />
             <Route path="/tour-bookings" element={<TourBookings />} />

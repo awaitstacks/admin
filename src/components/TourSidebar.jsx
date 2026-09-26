@@ -190,7 +190,7 @@
 //     label: "FIT Enquiries",
 //   },
 
-  
+
 //   {
 //     to: "/tour-allbookings",
 //     icon: Calendar,
@@ -282,6 +282,9 @@ import {
   StarOffIcon,
   PersonStandingIcon,
   PersonStanding,
+  TicketCheckIcon,
+  DownloadCloud,
+  UploadCloudIcon,
 } from "lucide-react";
 import { Profiler } from "react";
 
@@ -387,10 +390,9 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
         transition-colors duration-200
         w-full
         justify-start
-        ${
-          match
-            ? "bg-green-600 text-white shadow-lg"
-            : "text-gray-700 hover:bg-green-100 hover:text-green-800"
+        ${match
+          ? "bg-green-600 text-white shadow-lg"
+          : "text-gray-700 hover:bg-green-100 hover:text-green-800"
         }
       `}
     >
@@ -410,6 +412,7 @@ const adminMenuItems = [
     label: "Sales DashBoard",
   },
   { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
+  { to: "/ticket-launching", icon: UploadCloudIcon, label: "Ticket Launching" },
   { to: "/all-users", icon: User2Icon, label: "All users" },
   { to: "/add-tour", icon: Plus, label: "Add Tour" },
   { to: "/admin-namelist", icon: ListIcon, label: "Admin Name List" },
@@ -446,6 +449,12 @@ const tourMenuItems = [
     to: "/staff-profile",
     icon: PersonStandingIcon,
     label: "Admin-Profile",
+  },
+
+  {
+    to: "/ticket-landing",
+    icon: DownloadCloud,
+    label: "Ticket Landing",
   },
 
   {

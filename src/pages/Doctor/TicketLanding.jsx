@@ -1,0 +1,1605 @@
+// // ════════════════════════════════════════════════════════════════
+// //  TicketLanding.jsx — TOUR ADMIN side  (tourController → /api/tour/...)
+// //  Queries list + filters, Pickup / Processing / Close / Reject,
+// //  replies (add / edit / delete)
+// //
+// //  API calls ellam context/TourContext.jsx la "ticketApi" kulla irukku
+// // ════════════════════════════════════════════════════════════════
+// import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
+// import { toast } from "react-toastify";
+// import { TourContext } from "../../context/TourContext"; // ⚙️ path check pannunga
+
+// const ME = "admin"; // replies la "from" — indha side (tourController)
+// const SYNC_EVERY_MS = 10000;
+
+// // ════════════════════════════════════════════════════════════════
+// //  Helpers
+// // ════════════════════════════════════════════════════════════════
+// const STATUS = {
+//   open: { label: "Open", pill: "bg-blue-50 text-blue-700", dot: "bg-blue-600" },
+//   pickup: { label: "Picked up", pill: "bg-violet-50 text-violet-700", dot: "bg-violet-600" },
+//   processing: { label: "Processing", pill: "bg-amber-50 text-amber-800", dot: "bg-amber-600" },
+//   close: { label: "Closed", pill: "bg-green-50 text-green-700", dot: "bg-green-600" },
+//   reject: { label: "Rejected", pill: "bg-red-50 text-red-700", dot: "bg-red-600" },
+// };
+
+// const CARDS = [
+//   { key: "", label: "Total", bg: "bg-blue-50", num: "text-blue-900" },
+//   { key: "open", label: "Open", bg: "bg-sky-50", num: "text-sky-900" },
+//   { key: "pickup", label: "Picked up", bg: "bg-violet-50", num: "text-violet-900" },
+//   { key: "processing", label: "Processing", bg: "bg-amber-50", num: "text-amber-900" },
+//   { key: "close", label: "Closed", bg: "bg-green-50", num: "text-green-900" },
+//   { key: "reject", label: "Rejected", bg: "bg-red-50", num: "text-red-900" },
+// ];
+
+// const EMPTY_FILTERS = { search: "", queryType: "", status: "", fromDate: "", toDate: "" };
+
+// // Ovvoru status la endha buttons varanum (backend rules same)
+// const ACTIONS = [
+//   { key: "pickup", label: "Pickup", from: ["open"], cls: "bg-violet-600 text-white hover:bg-violet-700" },
+//   { key: "processing", label: "Processing", from: ["open", "pickup"], cls: "bg-amber-600 text-white hover:bg-amber-700" },
+//   { key: "close", label: "Close", from: ["open", "pickup", "processing"], cls: "bg-green-600 text-white hover:bg-green-700" },
+//   { key: "reject", label: "Reject", from: ["open", "pickup", "processing"], cls: "border border-red-300 bg-white text-red-700 hover:bg-red-50" },
+// ];
+// const DONE_TEXT = { pickup: "Query picked up", processing: "Query moved to processing", close: "Query closed", reject: "Query rejected" };
+
+// const staffName = (s) => s?.name || s?.fullName || s?.staffName || "—";
+// const staffRole = (s) => s?.role || s?.designation || "";
+// const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN") : "—");
+// const fmtTime = (d) =>
+//   d ? new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "";
+// const fmtSize = (b) => (!b ? "" : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+
+// // ════════════════════════════════════════════════════════════════
+// //  Small pieces
+// // ════════════════════════════════════════════════════════════════
+// const StatusPill = ({ status }) => {
+//   const s = STATUS[status] || STATUS.open;
+//   return (
+//     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${s.pill}`}>
+//       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+//       {s.label}
+//     </span>
+//   );
+// };
+
+// const FileChip = ({ file, onRemove, removed }) => {
+//   const isPdf = file.fileType === "pdf" || file.type === "application/pdf";
+//   const saved = Boolean(file.url); // DB la irukura file (Cloudinary url irukku)
+//   return (
+//     <div className={`flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border px-2.5 py-2 ${removed ? "border-red-200 bg-red-50 opacity-60" : "border-gray-200 bg-white"}`}>
+//       {saved && !isPdf ? (
+//         // Image na chinna preview — click pannuna full size pudhu tab la
+//         <a href={file.url} target="_blank" rel="noreferrer" className="flex-shrink-0" aria-label={`Open ${file.fileName || "image"}`}>
+//           <img src={file.url} alt="" className="h-12 w-12 rounded-md border border-gray-200 object-cover" loading="lazy" />
+//         </a>
+//       ) : (
+//         <span
+//           className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md text-xs font-bold ${
+//             isPdf ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+//           }`}
+//         >
+//           {isPdf ? "PDF" : "IMG"}
+//         </span>
+//       )}
+//       <div className="min-w-0 flex-1">
+//         <p className="truncate text-sm font-medium text-gray-900">{file.fileName || file.name || "Attachment"}</p>
+//         <p className="text-xs text-gray-500">{fmtSize(file.size)}</p>
+//       </div>
+//       {saved && !onRemove && (
+//         <a
+//           href={file.url}
+//           target="_blank"
+//           rel="noreferrer"
+//           className="flex-shrink-0 whitespace-nowrap rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+//         >
+//           {isPdf ? "Open PDF" : "View"}
+//         </a>
+//       )}
+//       {onRemove && (
+//         <button
+//           type="button"
+//           onClick={onRemove}
+//           className="flex-shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+//         >
+//           {removed ? "Undo" : "Remove"}
+//         </button>
+//       )}
+//     </div>
+//   );
+// };
+
+// // ─── Reply thread (chat) ─────────────────────────────────────────
+// const ReplyThread = ({ queryId, api, onChanged }) => {
+//   const [data, setData] = useState(null);
+//   const [text, setText] = useState("");
+//   const [sending, setSending] = useState(false);
+//   const [editingId, setEditingId] = useState(null);
+//   const [editText, setEditText] = useState("");
+//   const versionRef = useRef(null);
+//   const endRef = useRef(null);
+
+//   const load = useCallback(
+//     async (silent = false) => {
+//       try {
+//         const res = await api.getReplies(queryId);
+//         if (res.version !== versionRef.current) {
+//           versionRef.current = res.version;
+//           setData(res);
+//         }
+//       } catch (err) {
+//         if (!silent) toast.error(err.message);
+//       }
+//     },
+//     [api, queryId],
+//   );
+
+//   useEffect(() => {
+//     load();
+//     const t = setInterval(() => load(true), 5000);
+//     return () => clearInterval(t);
+//   }, [load]);
+
+//   useEffect(() => {
+//     endRef.current?.scrollIntoView({ block: "nearest" });
+//   }, [data?.replies?.length]);
+
+//   const send = async () => {
+//     const message = text.trim();
+//     if (!message) return;
+//     setSending(true);
+//     try {
+//       await api.addReply(queryId, message);
+//       setText("");
+//       await load();
+//       onChanged?.();
+//     } catch (err) {
+//       toast.error(err.message);
+//     } finally {
+//       setSending(false);
+//     }
+//   };
+
+//   const saveEdit = async (replyId) => {
+//     const message = editText.trim();
+//     if (!message) return;
+//     try {
+//       await api.editReply(queryId, replyId, message);
+//       setEditingId(null);
+//       toast.success("Reply updated");
+//       load();
+//     } catch (err) {
+//       toast.error(err.message);
+//     }
+//   };
+
+//   const remove = async (replyId) => {
+//     if (!window.confirm("Delete this reply?")) return;
+//     try {
+//       await api.deleteReply(queryId, replyId);
+//       toast.success("Reply deleted");
+//       await load();
+//       onChanged?.();
+//     } catch (err) {
+//       toast.error(err.message);
+//     }
+//   };
+
+//   if (!data) return <p className="text-sm text-gray-500">Loading replies…</p>;
+
+//   return (
+//     <div className="flex flex-col gap-3">
+//       <div className="flex max-h-80 flex-col gap-2 overflow-y-auto rounded-xl bg-gray-50 p-3">
+//         {data.replies.length === 0 && <p className="py-4 text-center text-sm text-gray-500">No replies yet. Start the conversation below.</p>}
+//         {data.replies.map((r) => {
+//           const mine = r.from === ME;
+//           return (
+//             <div key={r._id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+//               <div className={`max-w-[90%] break-words rounded-2xl sm:max-w-[80%] px-3.5 py-2.5 ${mine ? "rounded-br-sm bg-green-600 text-white" : "rounded-bl-sm border border-gray-200 bg-white"}`}>
+//                 <p className={`mb-0.5 text-xs font-semibold ${mine ? "text-green-100" : "text-gray-500"}`}>
+//                   {mine ? "You" : "Admin"}
+//                   {r.staff ? ` · ${staffName(r.staff)}` : ""}
+//                 </p>
+//                 {editingId === r._id ? (
+//                   <div className="flex flex-col gap-2">
+//                     <textarea
+//                       value={editText}
+//                       onChange={(e) => setEditText(e.target.value)}
+//                       rows={2}
+//                       maxLength={2000}
+//                       className="w-full min-w-[12rem] rounded-lg p-2 text-sm text-gray-900"
+//                       aria-label="Edit reply"
+//                     />
+//                     <div className="flex gap-2">
+//                       <button onClick={() => saveEdit(r._id)} className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-green-700">
+//                         Save
+//                       </button>
+//                       <button onClick={() => setEditingId(null)} className="rounded-md px-2.5 py-1 text-xs font-semibold text-green-50">
+//                         Cancel
+//                       </button>
+//                     </div>
+//                   </div>
+//                 ) : (
+//                   <p className="whitespace-pre-line text-sm">{r.message}</p>
+//                 )}
+//                 <div className={`mt-1 flex items-center gap-3 text-[11px] ${mine ? "text-green-100" : "text-gray-400"}`}>
+//                   <span>
+//                     {fmtDate(r.createdAt)} {fmtTime(r.createdAt)}
+//                     {r.editedAt ? " (edited)" : ""}
+//                   </span>
+//                   {mine && data.canReply && editingId !== r._id && (
+//                     <>
+//                       <button
+//                         onClick={() => {
+//                           setEditingId(r._id);
+//                           setEditText(r.message);
+//                         }}
+//                         className="font-semibold underline-offset-2 hover:underline"
+//                       >
+//                         Edit
+//                       </button>
+//                       <button onClick={() => remove(r._id)} className="font-semibold underline-offset-2 hover:underline">
+//                         Delete
+//                       </button>
+//                     </>
+//                   )}
+//                 </div>
+//               </div>
+//             </div>
+//           );
+//         })}
+//         <div ref={endRef} />
+//       </div>
+
+//       {data.canReply ? (
+//         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+//           <textarea
+//             value={text}
+//             onChange={(e) => setText(e.target.value)}
+//             onKeyDown={(e) => {
+//               if (e.key === "Enter" && !e.shiftKey) {
+//                 e.preventDefault();
+//                 send();
+//               }
+//             }}
+//             rows={2}
+//             maxLength={2000}
+//             placeholder="Write a reply… (Enter to send, Shift+Enter for new line)"
+//             aria-label="Reply message"
+//             className="w-full flex-1 rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+//           />
+//           <button
+//             onClick={send}
+//             disabled={sending || !text.trim()}
+//             className="h-11 rounded-xl bg-green-600 px-5 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
+//           >
+//             {sending ? "Sending…" : "Send"}
+//           </button>
+//         </div>
+//       ) : (
+//         <p className="text-sm text-gray-500">This query is {data.status === "close" ? "closed" : "rejected"}, so replies are turned off.</p>
+//       )}
+//     </div>
+//   );
+// };
+
+// // ════════════════════════════════════════════════════════════════
+// //  Reject modal
+// // ════════════════════════════════════════════════════════════════
+// const RejectModal = ({ query, onCancel, onConfirm, busy }) => {
+//   const [reason, setReason] = useState("");
+//   return (
+//     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="reject-title">
+//       <div className="w-full max-w-md rounded-2xl bg-white p-6">
+//         <h2 id="reject-title" className="text-lg font-bold">Reject this query?</h2>
+//         <p className="mt-1 text-sm text-gray-600">{query.subject}</p>
+//         <label htmlFor="reject-reason" className="mb-1.5 mt-4 block text-sm font-semibold text-gray-600">
+//           Reason (optional)
+//         </label>
+//         <textarea
+//           id="reject-reason"
+//           rows={3}
+//           value={reason}
+//           onChange={(e) => setReason(e.target.value)}
+//           placeholder="Tell the admin why"
+//           className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm focus:border-red-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-100"
+//         />
+//         <p className="mt-2 text-xs text-gray-500">Rejected queries can't be edited or replied to.</p>
+//         <div className="mt-5 flex justify-end gap-3">
+//           <button onClick={onCancel} className="h-10 rounded-lg border border-gray-300 px-4 text-sm font-semibold text-gray-700">
+//             Cancel
+//           </button>
+//           <button
+//             onClick={() => onConfirm(reason.trim())}
+//             disabled={busy}
+//             className="h-10 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+//           >
+//             {busy ? "Rejecting…" : "Reject query"}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ════════════════════════════════════════════════════════════════
+// //  Page
+// // ════════════════════════════════════════════════════════════════
+// const TicketLanding = () => {
+//   const { ticketApi: api } = useContext(TourContext);
+
+//   const [queries, setQueries] = useState([]);
+//   const [counts, setCounts] = useState({ open: 0, pickup: 0, processing: 0, close: 0, reject: 0 });
+//   const [total, setTotal] = useState(0);
+//   const [page, setPage] = useState(1);
+//   const [totalPages, setTotalPages] = useState(1);
+//   const [loading, setLoading] = useState(false);
+//   const [filters, setFilters] = useState(EMPTY_FILTERS);
+//   const [types, setTypes] = useState([]);
+//   const [expandedId, setExpandedId] = useState(null);
+//   const [busyId, setBusyId] = useState(null); // button click pannura query
+//   const [rejecting, setRejecting] = useState(null); // reject modal query
+//   const syncRef = useRef(null);
+
+//   // ─── Loaders ───
+//   const fetchQueries = useCallback(
+//     async (silent = false) => {
+//       if (!silent) setLoading(true);
+//       try {
+//         const data = await api.getQueries({ ...filters, page, limit: 20 });
+//         setQueries(data.queries);
+//         setCounts(data.statusCounts);
+//         setTotal(data.total);
+//         setTotalPages(data.totalPages);
+//         // Type filter dropdown ku — list la irundhe types edukurom
+//         setTypes((prev) => {
+//           const names = new Set(prev.map((t) => t.name));
+//           data.queries.forEach((q) => q.queryType && names.add(q.queryType));
+//           return [...names].sort().map((name) => ({ name }));
+//         });
+//       } catch (err) {
+//         if (!silent) toast.error(err.message);
+//       } finally {
+//         if (!silent) setLoading(false);
+//       }
+//     },
+//     [api, filters, page],
+//   );
+
+//   useEffect(() => {
+//     const t = setTimeout(() => fetchQueries(), filters.search ? 400 : 0);
+//     return () => clearTimeout(t);
+//   }, [fetchQueries]); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   // ─── Auto-sync: admin raise / edit / delete / reply pannalum inga update aagum ───
+//   useEffect(() => {
+//     const check = async () => {
+//       try {
+//         const data = await api.sync();
+//         if (syncRef.current && syncRef.current !== data.version) fetchQueries(true);
+//         syncRef.current = data.version;
+//       } catch {
+//         /* next round la try pannum */
+//       }
+//     };
+//     check();
+//     const t = setInterval(check, SYNC_EVERY_MS);
+//     return () => clearInterval(t);
+//   }, [api, fetchQueries]);
+
+//   const setFilter = (key, value) => {
+//     setPage(1);
+//     setFilters((f) => ({ ...f, [key]: value }));
+//   };
+//   const clearFilters = () => {
+//     setPage(1);
+//     setFilters(EMPTY_FILTERS);
+//   };
+
+//   // ─── Status buttons ───
+//   const changeStatus = async (q, action, reason) => {
+//     setBusyId(q._id);
+//     try {
+//       if (action === "reject") await api.reject(q._id, reason);
+//       else await api[action](q._id); // pickup / processing / close
+//       toast.success(DONE_TEXT[action]);
+//       setRejecting(null);
+//       fetchQueries(true);
+//     } catch (err) {
+//       toast.error(err.message);
+//       fetchQueries(true); // vera yaaravadhu maathirundha latest kaatum
+//     } finally {
+//       setBusyId(null);
+//     }
+//   };
+
+//   const onAction = (q, action) => (action === "reject" ? setRejecting(q) : changeStatus(q, action));
+
+
+//   // ─── Row pieces (table + mobile cards rendu kum same) ───
+//   const toggleOpen = (q) => setExpandedId((id) => (id === q._id ? null : q._id));
+
+//   const renderTitle = (q, open, wrap = false) => (
+//     <button
+//       onClick={() => toggleOpen(q)}
+//       aria-expanded={open}
+//       className={`block max-w-full text-left font-semibold text-gray-900 hover:text-blue-700 ${wrap ? "break-words" : "truncate"}`}
+//     >
+//       {q.subject}
+//     </button>
+//   );
+
+//   const renderMeta = (q) => {
+//     const fromThem = q.lastReplyFrom && q.lastReplyFrom !== ME;
+//     return (
+//       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+//         <span className="rounded bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-700">{q.queryType}</span>
+//         {q.attachments?.length > 0 && <span>📎 {q.attachments.length}</span>}
+//         {q.replyCount > 0 && (
+//           <span className={fromThem ? "font-semibold text-green-700" : ""}>
+//             💬 {q.replyCount}
+//             {fromThem ? " · new reply" : ""}
+//           </span>
+//         )}
+//       </div>
+//     );
+//   };
+
+//   const renderDetail = (q) => (
+//     <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+//       <div className="min-w-0 xl:col-span-2">
+//         <p className="mb-1 text-sm font-semibold text-gray-600">Description</p>
+//         <p className="mb-4 whitespace-pre-line break-words text-sm text-gray-800">{q.description || "No description"}</p>
+//         {q.status === "reject" && q.rejectReason && (
+//           <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+//             <span className="font-semibold">Reject reason: </span>
+//             {q.rejectReason}
+//           </div>
+//         )}
+//         <p className="mb-2 text-sm font-semibold text-gray-600">Attachments</p>
+//         {q.attachments?.length ? (
+//           <div className="grid grid-cols-1 gap-2">
+//             {q.attachments.map((a) => (
+//               <FileChip key={a._id} file={a} />
+//             ))}
+//           </div>
+//         ) : (
+//           <p className="text-sm text-gray-500">No files attached</p>
+//         )}
+//       </div>
+//       <div className="min-w-0 xl:col-span-3">
+//         <p className="mb-2 text-sm font-semibold text-gray-600">Replies</p>
+//         <ReplyThread queryId={q._id} api={api} onChanged={() => fetchQueries(true)} />
+//       </div>
+//     </div>
+//   );
+
+//   const renderActions = (q, open) => {
+//     const busy = busyId === q._id;
+//     return (
+//       <div className="flex flex-wrap gap-1.5">
+//         <button onClick={() => toggleOpen(q)} aria-expanded={open} className={`border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 rounded-lg px-3 py-2 text-sm font-semibold xl:px-2.5 xl:py-1.5 xl:text-xs`}>
+//           {open ? "Hide" : "View"}
+//         </button>
+//         {/* Close / Reject aana apram View / Hide mattum dhaan */}
+//         {ACTIONS.filter((a) => a.from.includes(q.status)).map((a) => (
+//           <button key={a.key} onClick={() => onAction(q, a.key)} disabled={busy} className={`disabled:opacity-50 ${a.cls} rounded-lg px-3 py-2 text-sm font-semibold xl:px-2.5 xl:py-1.5 xl:text-xs`}>
+//             {a.label}
+//           </button>
+//         ))}
+//       </div>
+//     );
+//   };
+
+//   const cardCount = (key) => (key ? counts[key] || 0 : Object.values(counts).reduce((a, b) => a + b, 0));
+//   const inputCls =
+//     "w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100";
+//   const labelCls = "mb-1.5 block text-sm font-semibold text-gray-600";
+
+//   // ════════════════════════════════════════════════════════════════
+//   return (
+//     <div className="w-full min-w-0 max-w-7xl flex-1 p-3 sm:p-5">
+//       <h1 className="mb-5 text-center text-2xl font-bold text-gray-900 sm:mb-6 sm:text-3xl">Ticket Landing</h1>
+
+//       {/* Cards */}
+//       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-6">
+//         {CARDS.map((c) => {
+//           const active = filters.status === c.key;
+//           return (
+//             <button
+//               key={c.label}
+//               onClick={() => setFilter("status", c.key)}
+//               aria-pressed={active}
+//               className={`rounded-2xl p-3 text-left sm:p-4 ${c.bg} ${active ? "ring-2 ring-blue-500" : ""}`}
+//             >
+//               <p className={`text-2xl font-bold sm:text-3xl ${c.num}`}>{cardCount(c.key)}</p>
+//               <p className="mt-1 text-sm font-medium text-gray-700">{c.label}</p>
+//             </button>
+//           );
+//         })}
+//       </div>
+
+//       {/* Filters */}
+//       <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+//         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+//           <div className="sm:col-span-2 xl:col-span-2">
+//             <label htmlFor="bd-f-search" className={labelCls}>Search</label>
+//             <input
+//               id="bd-f-search"
+//               type="search"
+//               value={filters.search}
+//               onChange={(e) => setFilter("search", e.target.value)}
+//               placeholder="Subject or description"
+//               className={inputCls}
+//             />
+//           </div>
+//           <div>
+//             <label htmlFor="bd-f-type" className={labelCls}>Query type</label>
+//             <select id="bd-f-type" value={filters.queryType} onChange={(e) => setFilter("queryType", e.target.value)} className={inputCls}>
+//               <option value="">All types</option>
+//               {types.map((t) => (
+//                 <option key={t.name} value={t.name}>
+//                   {t.name}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+//           <div>
+//             <label htmlFor="bd-f-from" className={labelCls}>From</label>
+//             <input id="bd-f-from" type="date" value={filters.fromDate} onChange={(e) => setFilter("fromDate", e.target.value)} className={inputCls} />
+//           </div>
+//           <div>
+//             <label htmlFor="bd-f-to" className={labelCls}>To</label>
+//             <input id="bd-f-to" type="date" value={filters.toDate} onChange={(e) => setFilter("toDate", e.target.value)} className={inputCls} />
+//           </div>
+//         </div>
+//         <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
+//           <button onClick={clearFilters} className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700">
+//             Clear Filters
+//           </button>
+//           <button onClick={() => fetchQueries()} className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700">
+//             Refresh
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Table (big screens) + cards (mobile / tablet) */}
+//       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+//         {loading && <p className="px-4 py-10 text-center text-sm text-gray-500">Loading queries…</p>}
+//         {!loading && queries.length === 0 && (
+//           <div className="px-4 py-12 text-center">
+//             <p className="font-semibold text-gray-800">No queries here</p>
+//             <p className="mt-1 text-sm text-gray-500">New queries from admin will show up here automatically.</p>
+//           </div>
+//         )}
+
+//         {!loading && queries.length > 0 && (
+//           <>
+//             {/* ── Big screens: table ── */}
+//             <div className="hidden overflow-x-auto xl:block">
+//               <table className="w-full min-w-[960px] text-left">
+//                 <thead className="bg-blue-50 text-sm text-gray-600">
+//                   <tr>
+//                     <th className="px-4 py-3 font-semibold">#</th>
+//                     <th className="px-4 py-3 font-semibold">Query</th>
+//                     <th className="px-4 py-3 font-semibold">Raised by</th>
+//                     <th className="px-4 py-3 font-semibold">Raised to</th>
+//                     <th className="px-4 py-3 font-semibold">Raised on</th>
+//                     <th className="px-4 py-3 font-semibold">Status</th>
+//                     <th className="px-4 py-3 font-semibold">Actions</th>
+//                   </tr>
+//                 </thead>
+//                 <tbody>
+//                   {queries.map((q, i) => {
+//                     const open = expandedId === q._id;
+//                     return (
+//                       <React.Fragment key={q._id}>
+//                         <tr className={`border-t border-gray-100 ${open ? "bg-blue-50/40" : "hover:bg-gray-50"}`}>
+//                           <td className="px-4 py-3 text-sm text-gray-500">{(page - 1) * 20 + i + 1}</td>
+//                           <td className="max-w-xs px-4 py-3">
+//                             {renderTitle(q, open)}
+//                             {renderMeta(q)}
+//                           </td>
+//                           <td className="px-4 py-3 text-sm">
+//                             <p className="font-medium">{staffName(q.raisedBy)}</p>
+//                             <p className="text-xs text-gray-500">{staffRole(q.raisedBy)}</p>
+//                           </td>
+//                           <td className="px-4 py-3 text-sm">
+//                             <p className="font-medium">{staffName(q.raisedTo)}</p>
+//                             <p className="text-xs text-gray-500">{staffRole(q.raisedTo)}</p>
+//                           </td>
+//                           <td className="whitespace-nowrap px-4 py-3 text-sm">
+//                             <p>{fmtDate(q.createdAt)}</p>
+//                             <p className="text-xs text-gray-500">{fmtTime(q.createdAt)}</p>
+//                           </td>
+//                           <td className="px-4 py-3">
+//                             <StatusPill status={q.status} />
+//                           </td>
+//                           <td className="px-4 py-3">{renderActions(q, open)}</td>
+//                         </tr>
+//                         {open && (
+//                           <tr className="border-t border-gray-100 bg-blue-50/40">
+//                             <td colSpan={7} className="px-4 pb-5 pt-2">
+//                               {renderDetail(q)}
+//                             </td>
+//                           </tr>
+//                         )}
+//                       </React.Fragment>
+//                     );
+//                   })}
+//                 </tbody>
+//               </table>
+//             </div>
+
+//             {/* ── Mobile / tablet / small laptop: cards ── */}
+//             <ul className="divide-y divide-gray-100 xl:hidden">
+//               {queries.map((q, i) => {
+//                 const open = expandedId === q._id;
+//                 return (
+//                   <li key={q._id} className={`p-4 ${open ? "bg-blue-50/40" : ""}`}>
+//                     <div className="flex items-start justify-between gap-3">
+//                       <div className="min-w-0 flex-1">
+//                         <p className="text-xs text-gray-400">{(page - 1) * 20 + i + 1}</p>
+//                         {renderTitle(q, open, true)}
+//                         {renderMeta(q)}
+//                       </div>
+//                       <div className="flex-shrink-0">
+//                         <StatusPill status={q.status} />
+//                       </div>
+//                     </div>
+//                     <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+//                       <div className="min-w-0">
+//                         <dt className="text-xs text-gray-500">Raised by</dt>
+//                         <dd className="truncate font-medium">{staffName(q.raisedBy)}</dd>
+//                         <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedBy)}</dd>
+//                       </div>
+//                       <div className="min-w-0">
+//                         <dt className="text-xs text-gray-500">Raised to</dt>
+//                         <dd className="truncate font-medium">{staffName(q.raisedTo)}</dd>
+//                         <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedTo)}</dd>
+//                       </div>
+//                       <div className="col-span-2 sm:col-span-1">
+//                         <dt className="text-xs text-gray-500">Raised on</dt>
+//                         <dd>
+//                           {fmtDate(q.createdAt)} <span className="text-xs text-gray-500">{fmtTime(q.createdAt)}</span>
+//                         </dd>
+//                       </div>
+//                     </dl>
+//                     <div className="mt-3">{renderActions(q, open)}</div>
+//                     {open && <div className="mt-4 border-t border-gray-200 pt-4">{renderDetail(q)}</div>}
+//                   </li>
+//                 );
+//               })}
+//             </ul>
+//           </>
+//         )}
+
+//         <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+//           <span>
+//             Showing <b>{queries.length}</b> of <b>{total}</b> queries
+//           </span>
+//           <div className="flex items-center justify-between gap-2 sm:justify-end">
+//             <button
+//               onClick={() => setPage((p) => Math.max(1, p - 1))}
+//               disabled={page <= 1}
+//               className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
+//             >
+//               Previous
+//             </button>
+//             <span className="whitespace-nowrap">
+//               Page {page} of {totalPages}
+//             </span>
+//             <button
+//               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+//               disabled={page >= totalPages}
+//               className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
+//             >
+//               Next
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {rejecting && (
+//         <RejectModal
+//           query={rejecting}
+//           busy={busyId === rejecting._id}
+//           onCancel={() => setRejecting(null)}
+//           onConfirm={(reason) => changeStatus(rejecting, "reject", reason)}
+//         />
+//       )}
+//     </div>
+//   );
+// };
+
+// export default TicketLanding;
+
+
+// ════════════════════════════════════════════════════════════════
+//  TicketLanding.jsx — TOUR ADMIN side  (tourController → /api/tour/...)
+//  Queries list + filters, Pickup / Processing / Close / Reject,
+//  replies (add / edit / delete)
+//
+//  API calls ellam context/TourContext.jsx la "ticketApi" kulla irukku
+// ════════════════════════════════════════════════════════════════
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
+import { TourContext } from "../../context/TourContext"; // ⚙️ path check pannunga
+
+const ME = "admin"; // replies la "from" — indha side (tourController)
+const OTHER_NAME = "Admin";
+const SYNC_EVERY_MS = 10000;
+
+// ════════════════════════════════════════════════════════════════
+//  Helpers
+// ════════════════════════════════════════════════════════════════
+const STATUS = {
+  open: { label: "Open", pill: "bg-blue-50 text-blue-700", dot: "bg-blue-600" },
+  pickup: { label: "Picked up", pill: "bg-violet-50 text-violet-700", dot: "bg-violet-600" },
+  processing: { label: "Processing", pill: "bg-amber-50 text-amber-800", dot: "bg-amber-600" },
+  close: { label: "Closed", pill: "bg-green-50 text-green-700", dot: "bg-green-600" },
+  reject: { label: "Rejected", pill: "bg-red-50 text-red-700", dot: "bg-red-600" },
+};
+
+const CARDS = [
+  { key: "", label: "Total", bar: "bg-slate-700", tint: "bg-slate-50", ring: "ring-slate-400", num: "text-slate-900", icon: "M4 6h16M4 12h16M4 18h10" },
+  { key: "open", label: "Open", bar: "bg-sky-500", tint: "bg-sky-50", ring: "ring-sky-400", num: "text-sky-900", icon: "M12 5v14M5 12h14" },
+  { key: "pickup", label: "Picked up", bar: "bg-violet-500", tint: "bg-violet-50", ring: "ring-violet-400", num: "text-violet-900", icon: "M7 11V7a5 5 0 0 1 10 0v4M5 11h14v9H5z" },
+  { key: "processing", label: "Processing", bar: "bg-amber-500", tint: "bg-amber-50", ring: "ring-amber-400", num: "text-amber-900", icon: "M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" },
+  { key: "close", label: "Closed", bar: "bg-green-600", tint: "bg-green-50", ring: "ring-green-500", num: "text-green-900", icon: "m5 13 4 4L19 7" },
+  { key: "reject", label: "Rejected", bar: "bg-red-500", tint: "bg-red-50", ring: "ring-red-400", num: "text-red-900", icon: "M6 6l12 12M18 6 6 18" },
+];
+
+// Status ku row / card la left side color line
+const STATUS_BAR = {
+  open: "border-l-sky-500",
+  pickup: "border-l-violet-500",
+  processing: "border-l-amber-500",
+  close: "border-l-green-600",
+  reject: "border-l-red-500",
+};
+
+// Spinner konja neram theriyanum — romba fast ah mudinjaalum kammiyaa 1.2 sec
+const minDelay = (promise, ms = 1200) =>
+  Promise.all([promise, new Promise((r) => setTimeout(r, ms))]).then(([v]) => v);
+
+// Initials for chat avatar
+const initials = (name = "") =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || "?";
+
+// Page open aagum bodhum, "Clear Filters" pannum bodhum Open dhaan default
+const EMPTY_FILTERS = { search: "", queryType: "", status: "open", fromDate: "", toDate: "" };
+
+// Ovvoru status la endha buttons varanum (backend rules same)
+const ACTIONS = [
+  { key: "pickup", label: "Pickup", from: ["open"], cls: "bg-violet-600 text-white hover:bg-violet-700" },
+  { key: "processing", label: "Processing", from: ["open", "pickup"], cls: "bg-amber-600 text-white hover:bg-amber-700" },
+  { key: "close", label: "Close", from: ["open", "pickup", "processing"], cls: "bg-green-600 text-white hover:bg-green-700" },
+  { key: "reject", label: "Reject", from: ["open", "pickup", "processing"], cls: "border border-red-300 bg-white text-red-700 hover:bg-red-50" },
+];
+const DONE_TEXT = {
+  pickup: "Query picked up",
+  processing: "Query moved to processing",
+  close: "Query closed",
+  reject: "Query rejected",
+};
+const BUSY_TEXT = { pickup: "Picking up…", processing: "Updating…", close: "Closing…", reject: "Rejecting…" };
+
+const staffName = (s) => s?.name || s?.fullName || s?.staffName || "—";
+const staffRole = (s) => s?.role || s?.designation || "";
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN") : "—");
+const fmtTime = (d) =>
+  d ? new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "";
+const fmtSize = (b) => (!b ? "" : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+
+// ════════════════════════════════════════════════════════════════
+//  Small pieces
+// ════════════════════════════════════════════════════════════════
+const StatusPill = ({ status }) => {
+  const s = STATUS[status] || STATUS.open;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${s.pill}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+      {s.label}
+    </span>
+  );
+};
+
+const FileChip = ({ file, onRemove, removed }) => {
+  const isPdf = file.fileType === "pdf" || file.type === "application/pdf";
+  const saved = Boolean(file.url); // DB la irukura file (Cloudinary url irukku)
+  return (
+    <div className={`flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border px-2.5 py-2 ${removed ? "border-red-200 bg-red-50 opacity-60" : "border-gray-200 bg-white"}`}>
+      {saved && !isPdf ? (
+        // Image na chinna preview — click pannuna full size pudhu tab la
+        <a href={file.url} target="_blank" rel="noreferrer" className="flex-shrink-0" aria-label={`Open ${file.fileName || "image"}`}>
+          <img src={file.url} alt="" className="h-12 w-12 rounded-md border border-gray-200 object-cover" loading="lazy" />
+        </a>
+      ) : (
+        <span
+          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md text-xs font-bold ${
+            isPdf ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+          }`}
+        >
+          {isPdf ? "PDF" : "IMG"}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-gray-900">{file.fileName || file.name || "Attachment"}</p>
+        <p className="text-xs text-gray-500">{fmtSize(file.size)}</p>
+      </div>
+      {saved && !onRemove && (
+        <a
+          href={file.url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex-shrink-0 whitespace-nowrap rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+        >
+          {isPdf ? "Open PDF" : "View"}
+        </a>
+      )}
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex-shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+        >
+          {removed ? "Undo" : "Remove"}
+        </button>
+      )}
+    </div>
+  );
+};
+
+// ─── Reply thread (chat) ─────────────────────────────────────────
+// ─── Spinner (button la loading) ───
+const Spinner = ({ className = "h-4 w-4" }) => (
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={`animate-spin ${className}`}>
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+    <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);
+
+// Attachments ah set set ah: [[1, [...]], [2, [...]]]
+const groupBySet = (list = []) => {
+  const map = new Map();
+  list.forEach((a) => {
+    const k = a.set || 1;
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(a);
+  });
+  return [...map.entries()].sort((x, y) => x[0] - y[0]);
+};
+
+// "Attachment 1", "Attachment 2" nu set set ah
+const AttachmentSets = ({ files, renderFile }) => (
+  <div className="grid grid-cols-1 gap-3">
+    {groupBySet(files).map(([set, list]) => (
+      <div key={set} className="min-w-0">
+        <p className="mb-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+          <span className="rounded-md bg-blue-600 px-1.5 py-0.5 font-semibold text-white">Attachment {set}</span>
+          {set === 1 ? "Added with the query" : "Added on edit"}
+        </p>
+        <div className="grid grid-cols-1 gap-2">{list.map(renderFile)}</div>
+      </div>
+    ))}
+  </div>
+);
+
+// ─── Action icons (FIT Enquiries page madhiri chinna icon buttons) ───
+const ACT_ICON = {
+  view: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  hide: "m3 3 18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.2A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.4 4.5-1",
+  edit: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
+  delete: "M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6",
+  reopen: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5",
+  pickup: "M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z",
+  processing: "M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+  close: "M20 6 9 17l-5-5",
+  reject: "M18 6 6 18M6 6l12 12",
+};
+
+const ACT_TONE = {
+  view: "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100",
+  edit: "bg-indigo-50 text-indigo-700 ring-indigo-200 hover:bg-indigo-100",
+  delete: "bg-red-50 text-red-600 ring-red-200 hover:bg-red-100",
+  reopen: "bg-blue-50 text-blue-700 ring-blue-200 hover:bg-blue-100",
+  pickup: "bg-violet-50 text-violet-700 ring-violet-200 hover:bg-violet-100",
+  processing: "bg-amber-50 text-amber-700 ring-amber-300 hover:bg-amber-100",
+  close: "bg-green-50 text-green-700 ring-green-300 hover:bg-green-100",
+  reject: "bg-red-50 text-red-600 ring-red-200 hover:bg-red-100",
+};
+
+// Periya screen (table) la icon mattum + hover tooltip.
+// Mobile / tablet la icon keela chinna label — touch la enna button nu theriyanum.
+const IconAction = ({ kind, icon, label, short, onClick, busy, disabled, busyText, expanded }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled || busy}
+    aria-label={label}
+    aria-busy={busy || undefined}
+    aria-expanded={expanded}
+    className={`group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-0.5 py-2 ring-1 ring-inset transition disabled:cursor-not-allowed disabled:opacity-60 xl:h-9 xl:w-9 xl:flex-none xl:p-0 ${ACT_TONE[kind]}`}
+  >
+    {busy ? (
+      <Spinner className="h-[18px] w-[18px]" />
+    ) : (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden="true">
+        <path d={ACT_ICON[icon || kind]} />
+      </svg>
+    )}
+    <span className="max-w-full truncate text-[10px] font-semibold leading-none min-[400px]:text-[11px] xl:hidden">{busy ? "…" : short || label}</span>
+    {/* tooltip — periya screen la mattum */}
+    <span className="pointer-events-none absolute -top-8 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow transition group-hover:opacity-100 group-focus-visible:opacity-100 xl:block">
+      {busy ? busyText : label}
+    </span>
+  </button>
+);
+
+const ReplyThread = ({ queryId, api, onChanged }) => {
+  const [data, setData] = useState(null);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState("");
+  const versionRef = useRef(null);
+  const endRef = useRef(null);
+
+  const load = useCallback(
+    async (silent = false) => {
+      try {
+        const res = await api.getReplies(queryId);
+        if (res.version !== versionRef.current) {
+          versionRef.current = res.version;
+          setData(res);
+        }
+      } catch (err) {
+        if (!silent) toast.error(err.message);
+      }
+    },
+    [api, queryId],
+  );
+
+  useEffect(() => {
+    load();
+    const t = setInterval(() => load(true), 5000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "nearest" });
+  }, [data?.replies?.length]);
+
+  const send = async () => {
+    const message = text.trim();
+    if (!message) return;
+    setSending(true);
+    try {
+      await api.addReply(queryId, message);
+      setText("");
+      await load();
+      onChanged?.();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const saveEdit = async (replyId) => {
+    const message = editText.trim();
+    if (!message) return;
+    try {
+      await api.editReply(queryId, replyId, message);
+      setEditingId(null);
+      toast.success("Reply updated");
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const remove = async (replyId) => {
+    if (!window.confirm("Delete this reply?")) return;
+    try {
+      await api.deleteReply(queryId, replyId);
+      toast.success("Reply deleted");
+      await load();
+      onChanged?.();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  if (!data) return <p className="text-sm text-gray-500">Loading replies…</p>;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex max-h-96 flex-col gap-3 overflow-y-auto rounded-2xl border border-gray-100 bg-gradient-to-b from-gray-50 to-white p-3">
+        {data.replies.length === 0 && <p className="py-4 text-center text-sm text-gray-500">No replies yet. Start the conversation below.</p>}
+        {data.replies.map((r) => {
+          const mine = r.from === ME;
+          return (
+            <div key={r._id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
+              <span
+                className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                  mine ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
+                }`}
+                aria-hidden="true"
+              >
+                {mine ? "You".slice(0, 1) : initials(r.staff ? staffName(r.staff) : OTHER_NAME)}
+              </span>
+              <div className={`max-w-[85%] break-words rounded-2xl sm:max-w-[75%] px-3.5 py-2.5 ${mine ? "rounded-br-sm bg-green-600 text-white" : "rounded-bl-sm border border-gray-200 bg-white"}`}>
+                <p className={`mb-0.5 text-xs font-semibold ${mine ? "text-green-100" : "text-gray-500"}`}>
+                  {mine ? "You" : "Admin"}
+                  {r.staff ? ` · ${staffName(r.staff)}` : ""}
+                </p>
+                {editingId === r._id ? (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={2}
+                      maxLength={2000}
+                      className="w-full min-w-[12rem] rounded-lg p-2 text-sm text-gray-900"
+                      aria-label="Edit reply"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={() => saveEdit(r._id)} className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-green-700">
+                        Save
+                      </button>
+                      <button onClick={() => setEditingId(null)} className="rounded-md px-2.5 py-1 text-xs font-semibold text-green-50">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-line text-sm">{r.message}</p>
+                )}
+                <div className={`mt-1 flex items-center gap-3 text-[11px] ${mine ? "text-green-100" : "text-gray-400"}`}>
+                  <span>
+                    {fmtDate(r.createdAt)} {fmtTime(r.createdAt)}
+                    {r.editedAt ? " (edited)" : ""}
+                  </span>
+                  {mine && data.canReply && editingId !== r._id && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingId(r._id);
+                          setEditText(r.message);
+                        }}
+                        className="font-semibold underline-offset-2 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button onClick={() => remove(r._id)} className="font-semibold underline-offset-2 hover:underline">
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={endRef} />
+      </div>
+
+      {data.canReply ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
+            rows={2}
+            maxLength={2000}
+            placeholder="Write a reply… (Enter to send, Shift+Enter for new line)"
+            aria-label="Reply message"
+            className="w-full flex-1 rounded-xl border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          />
+          <button
+            onClick={send}
+            disabled={sending || !text.trim()}
+            className="h-11 rounded-xl bg-green-600 px-5 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {sending ? "Sending…" : "Send"}
+          </button>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">This query is {data.status === "close" ? "closed" : "rejected"}, so replies are turned off.</p>
+      )}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════════
+//  Reject modal
+// ════════════════════════════════════════════════════════════════
+const RejectModal = ({ query, onCancel, onConfirm, busy }) => {
+  const [reason, setReason] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="reject-title">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6">
+        <h2 id="reject-title" className="text-lg font-bold">Reject this query?</h2>
+        <p className="mt-1 text-sm text-gray-600">{query.subject}</p>
+        <label htmlFor="reject-reason" className="mb-1.5 mt-4 block text-sm font-semibold text-gray-600">
+          Reason (optional)
+        </label>
+        <textarea
+          id="reject-reason"
+          rows={3}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Tell the admin why"
+          className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm focus:border-red-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-100"
+        />
+        <p className="mt-2 text-xs text-gray-500">Rejected queries can't be edited or replied to.</p>
+        <div className="mt-5 flex justify-end gap-3">
+          <button onClick={onCancel} className="h-10 rounded-lg border border-gray-300 px-4 text-sm font-semibold text-gray-700">
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(reason.trim())}
+            disabled={busy}
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {busy && <Spinner />}
+            {busy ? "Rejecting…" : "Reject query"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════════
+//  Page
+// ════════════════════════════════════════════════════════════════
+const TicketLanding = () => {
+  const { ticketApi: api } = useContext(TourContext);
+
+  const [queries, setQueries] = useState([]);
+  const [counts, setCounts] = useState({ open: 0, pickup: 0, processing: 0, close: 0, reject: 0 });
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [types, setTypes] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
+  const [busyId, setBusyId] = useState(null); // button click pannura query
+  const [busyAction, setBusyAction] = useState(null); // endha button (spinner ku)
+  const [rejecting, setRejecting] = useState(null); // reject modal query
+  const syncRef = useRef(null);
+
+  // ─── Loaders ───
+  const fetchQueries = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const data = await api.getQueries({ ...filters, page, limit: 20 });
+        setQueries(data.queries);
+        setCounts(data.statusCounts);
+        setTotal(data.total);
+        setTotalPages(data.totalPages);
+        // Type filter dropdown ku — list la irundhe types edukurom
+        setTypes((prev) => {
+          const names = new Set(prev.map((t) => t.name));
+          data.queries.forEach((q) => q.queryType && names.add(q.queryType));
+          return [...names].sort().map((name) => ({ name }));
+        });
+      } catch (err) {
+        if (!silent) toast.error(err.message);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [api, filters, page],
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => fetchQueries(), filters.search ? 400 : 0);
+    return () => clearTimeout(t);
+  }, [fetchQueries]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Auto-sync: admin raise / edit / delete / reply pannalum inga update aagum ───
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const data = await api.sync();
+        if (syncRef.current && syncRef.current !== data.version) fetchQueries(true);
+        syncRef.current = data.version;
+      } catch {
+        /* next round la try pannum */
+      }
+    };
+    check();
+    const t = setInterval(check, SYNC_EVERY_MS);
+    return () => clearInterval(t);
+  }, [api, fetchQueries]);
+
+  const setFilter = (key, value) => {
+    setPage(1);
+    setFilters((f) => ({ ...f, [key]: value }));
+  };
+  const clearFilters = () => {
+    setPage(1);
+    setFilters(EMPTY_FILTERS);
+  };
+
+  // ─── Status buttons ───
+  const changeStatus = async (q, action, reason) => {
+    setBusyId(q._id);
+    setBusyAction(action);
+    try {
+      // minDelay: spinner kammiyaa 900ms theriyum, takkunu maraiyadhu
+      if (action === "reject") await minDelay(api.reject(q._id, reason));
+      else await minDelay(api[action](q._id)); // pickup / processing / close
+      toast.success(DONE_TEXT[action]);
+      setRejecting(null);
+      fetchQueries(true);
+    } catch (err) {
+      toast.error(err.message);
+      fetchQueries(true); // vera yaaravadhu maathirundha latest kaatum
+    } finally {
+      setBusyId(null);
+      setBusyAction(null);
+    }
+  };
+
+  const onAction = (q, action) => {
+    if (action === "reject") return setRejecting(q);
+    return changeStatus(q, action);
+  };
+
+
+  // ─── Row pieces (table + mobile cards rendu kum same) ───
+  const toggleOpen = (q) => setExpandedId((id) => (id === q._id ? null : q._id));
+
+  const renderTitle = (q, open, wrap = false) => (
+    <button
+      onClick={() => toggleOpen(q)}
+      aria-expanded={open}
+      className={`block max-w-full text-left font-semibold text-gray-900 hover:text-blue-700 ${wrap ? "break-words" : "truncate"}`}
+    >
+      {q.subject}
+    </button>
+  );
+
+  const renderMeta = (q) => {
+    const fromThem = q.lastReplyFrom && q.lastReplyFrom !== ME;
+    return (
+      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+        <span className="rounded bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-700">{q.queryType}</span>
+        {q.attachments?.length > 0 && <span>📎 {q.attachments.length}</span>}
+        {q.replyCount > 0 && (
+          <span className={fromThem ? "font-semibold text-green-700" : ""}>
+            💬 {q.replyCount}
+            {fromThem ? " · new reply" : ""}
+          </span>
+        )}
+        {q.editCount > 0 && (
+          <span className="rounded bg-blue-50 px-1.5 py-0.5 font-semibold text-blue-700">Edited{q.editCount > 1 ? ` ${q.editCount}x` : ""}</span>
+        )}
+        {q.reopenCount > 0 && (
+          <span className="rounded bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-800">Reopened{q.reopenCount > 1 ? ` ${q.reopenCount}x` : ""}</span>
+        )}
+      </div>
+    );
+  };
+
+  const renderDetail = (q) => (
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+      <div className="min-w-0 xl:col-span-2">
+        <p className="mb-1 text-sm font-semibold text-gray-600">Description</p>
+        <p className="mb-4 whitespace-pre-line break-words text-sm text-gray-800">{q.description || "No description"}</p>
+        {q.status === "reject" && q.rejectReason && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+            <span className="font-semibold">Reject reason: </span>
+            {q.rejectReason}
+          </div>
+        )}
+        <p className="mb-2 text-sm font-semibold text-gray-600">Attachments</p>
+        {q.attachments?.length ? (
+          <AttachmentSets files={q.attachments} renderFile={(a) => <FileChip key={a._id} file={a} />} />
+        ) : (
+          <p className="text-sm text-gray-500">No files attached</p>
+        )}
+      </div>
+      <div className="min-w-0 xl:col-span-3">
+        <p className="mb-2 text-sm font-semibold text-gray-600">Replies</p>
+        <ReplyThread queryId={q._id} api={api} onChanged={() => fetchQueries(true)} />
+      </div>
+    </div>
+  );
+
+  // Row / card la enga touch pannalum View / Hide — buttons, links, chat thavira
+  const onRowClick = (e, q) => {
+    if (e.target.closest("button, a, input, textarea, select, label, [data-no-toggle]")) return;
+    toggleOpen(q);
+  };
+
+  const renderActions = (q, open) => {
+    const busy = busyId === q._id;
+    return (
+      <div className="flex w-full items-stretch gap-1.5 xl:w-auto xl:items-center">
+        {/* Close / Reject aana apram View mattum */}
+        {ACTIONS.filter((a) => a.from.includes(q.status)).map((a) => (
+          <IconAction
+            key={a.key}
+            kind={a.key}
+            label={a.label}
+            short={a.key === "processing" ? "Process" : undefined}
+            busyText={BUSY_TEXT[a.key]}
+            busy={busy && busyAction === a.key}
+            disabled={busy && busyAction !== a.key}
+            onClick={() => onAction(q, a.key)}
+          />
+        ))}
+        {/* Touch pannuna open / close nu kaatura arrow */}
+        <span className="ml-auto flex h-9 w-7 flex-shrink-0 items-center justify-center self-center text-gray-400 xl:ml-1" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`h-5 w-5 transition ${open ? "rotate-180 text-green-600" : ""}`}>
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </div>
+    );
+  };
+
+  const cardCount = (key) => (key ? counts[key] || 0 : Object.values(counts).reduce((a, b) => a + b, 0));
+  const inputCls =
+    "w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100";
+  const labelCls = "mb-1.5 block text-sm font-semibold text-gray-600";
+
+  // ════════════════════════════════════════════════════════════════
+  return (
+    <div className="w-full min-w-0 max-w-7xl flex-1 p-3 sm:p-5">
+      <div className="mb-5 text-center sm:mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Ticket Landing</h1>
+        <p className="mt-1 text-sm text-gray-500">Tickets from admin land here. Pick them up, reply, and close them.</p>
+        <span className="mx-auto mt-3 block h-1 w-14 rounded-full bg-green-500" aria-hidden="true" />
+      </div>
+
+      {/* Cards */}
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        {CARDS.map((c) => {
+          const active = filters.status === c.key;
+          return (
+            <button
+              key={c.label}
+              onClick={() => setFilter("status", c.key)}
+              aria-pressed={active}
+              className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition sm:p-4 ${
+                active ? `${c.tint} border-transparent ring-2 ${c.ring} shadow-sm` : "border-gray-200 bg-white hover:-translate-y-0.5 hover:shadow-md"
+              }`}
+            >
+              <span className={`absolute inset-y-0 left-0 w-1 ${c.bar}`} aria-hidden="true" />
+              <div className="flex items-start justify-between gap-2">
+                <p className={`text-2xl font-bold tabular-nums sm:text-3xl ${c.num}`}>{cardCount(c.key)}</p>
+                <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-white ${c.bar}`} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <path d={c.icon} />
+                  </svg>
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-medium text-gray-600">{c.label}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filters */}
+      <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
+          <div className="col-span-2 md:col-span-3 xl:col-span-2">
+            <label htmlFor="bd-f-search" className={labelCls}>Search</label>
+            <input
+              id="bd-f-search"
+              type="search"
+              value={filters.search}
+              onChange={(e) => setFilter("search", e.target.value)}
+              placeholder="Ticket no (GVTKT001), subject or description"
+              className={inputCls}
+            />
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <label htmlFor="bd-f-type" className={labelCls}>Query type</label>
+            <select id="bd-f-type" value={filters.queryType} onChange={(e) => setFilter("queryType", e.target.value)} className={inputCls}>
+              <option value="">All types</option>
+              {types.map((t) => (
+                <option key={t.name} value={t.name}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="bd-f-from" className={labelCls}>From</label>
+            <input id="bd-f-from" type="date" value={filters.fromDate} onChange={(e) => setFilter("fromDate", e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="bd-f-to" className={labelCls}>To</label>
+            <input id="bd-f-to" type="date" value={filters.toDate} onChange={(e) => setFilter("toDate", e.target.value)} className={inputCls} />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
+          <button onClick={clearFilters} className="h-11 rounded-xl border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+            Clear Filters
+          </button>
+          <button onClick={() => fetchQueries()} className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700">
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Table (big screens) + cards (mobile / tablet) */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        {loading && <p className="px-4 py-10 text-center text-sm text-gray-500">Loading queries…</p>}
+        {!loading && queries.length === 0 && (
+          <div className="px-4 py-12 text-center">
+            <p className="font-semibold text-gray-800">No queries here</p>
+            <p className="mt-1 text-sm text-gray-500">New queries from admin will show up here automatically.</p>
+          </div>
+        )}
+
+        {!loading && queries.length > 0 && (
+          <>
+            {/* ── Big screens: table ── */}
+            <div className="hidden overflow-x-auto xl:block">
+              <table className="w-full min-w-[960px] text-left">
+                <thead className="bg-blue-50 text-sm text-gray-600">
+                  <tr>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Ticket no</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Query</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised by</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised to</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised on</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {queries.map((q, i) => {
+                    const open = expandedId === q._id;
+                    return (
+                      <React.Fragment key={q._id}>
+                        <tr onClick={(e) => onRowClick(e, q)} className={`cursor-pointer border-t border-gray-100 transition ${open ? "bg-blue-50/40" : "hover:bg-gray-50"}`}>
+                          <td className={`whitespace-nowrap border-l-4 px-4 py-3 ${STATUS_BAR[q.status] || "border-l-transparent"}`}>
+                            <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold tracking-wide text-blue-800">{q.ticketNo || "—"}</span>
+                          </td>
+                          <td className="max-w-xs px-4 py-3">
+                            {renderTitle(q, open)}
+                            {renderMeta(q)}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <p className="font-medium">{staffName(q.raisedBy)}</p>
+                            <p className="text-xs text-gray-500">{staffRole(q.raisedBy)}</p>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <p className="font-medium">{staffName(q.raisedTo)}</p>
+                            <p className="text-xs text-gray-500">{staffRole(q.raisedTo)}</p>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm">
+                            <p>{fmtDate(q.createdAt)}</p>
+                            <p className="text-xs text-gray-500">{fmtTime(q.createdAt)}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusPill status={q.status} />
+                          </td>
+                          <td className="px-4 py-3">{renderActions(q, open)}</td>
+                        </tr>
+                        {open && (
+                          <tr className="border-t border-gray-100 bg-blue-50/40">
+                            <td colSpan={7} className="px-4 pb-5 pt-2">
+                              {renderDetail(q)}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ── Mobile / tablet / small laptop: cards ── */}
+            <ul className="divide-y divide-gray-100 xl:hidden">
+              {queries.map((q, i) => {
+                const open = expandedId === q._id;
+                return (
+                  <li
+                    key={q._id}
+                    onClick={(e) => onRowClick(e, q)}
+                    className={`cursor-pointer border-l-4 p-4 transition ${STATUS_BAR[q.status] || "border-l-transparent"} ${open ? "bg-blue-50/40" : "active:bg-gray-50"}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1 inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold tracking-wide text-blue-800">{q.ticketNo || "—"}</p>
+                        {renderTitle(q, open, true)}
+                        {renderMeta(q)}
+                      </div>
+                      <div className="flex-shrink-0">
+                        <StatusPill status={q.status} />
+                      </div>
+                    </div>
+                    <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                      <div className="min-w-0">
+                        <dt className="text-xs text-gray-500">Raised by</dt>
+                        <dd className="truncate font-medium">{staffName(q.raisedBy)}</dd>
+                        <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedBy)}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-xs text-gray-500">Raised to</dt>
+                        <dd className="truncate font-medium">{staffName(q.raisedTo)}</dd>
+                        <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedTo)}</dd>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <dt className="text-xs text-gray-500">Raised on</dt>
+                        <dd>
+                          {fmtDate(q.createdAt)} <span className="text-xs text-gray-500">{fmtTime(q.createdAt)}</span>
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="mt-3">{renderActions(q, open)}</div>
+                    {open && (
+                      <div data-no-toggle className="mt-4 cursor-auto border-t border-gray-200 pt-4">
+                        {renderDetail(q)}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+
+        <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Showing <b>{queries.length}</b> of <b>{total}</b> queries
+          </span>
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span className="whitespace-nowrap">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {rejecting && (
+        <RejectModal
+          query={rejecting}
+          busy={busyId === rejecting._id}
+          onCancel={() => setRejecting(null)}
+          onConfirm={(reason) => changeStatus(rejecting, "reject", reason)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default TicketLanding;

@@ -41,6 +41,168 @@
 //   const [seatAllocationError, setSeatAllocationError] = useState(null);
 //   const [enquiries, setEnquiries] = useState([]);
 //   const [enquiryLoading, setEnquiryLoading] = useState(false);
+
+//   // ==================== STAFF PROFILES (admin only) ====================
+//   const [staffList, setStaffList] = useState([]);
+//   const [staffLoading, setStaffLoading] = useState(false);
+//   const [staffError, setStaffError] = useState(null);
+
+//   const getAllStaff = useCallback(async () => {
+//     setStaffLoading(true);
+//     setStaffError(null);
+//     try {
+//       const { data } = await axios.get(`${backendUrl}/api/tour/staff/all`, {
+//         headers: { ttoken },
+//       });
+
+//       if (data.success) {
+//         setStaffList(data.data || []);
+//         return { success: true, data: data.data };
+//       } else {
+//         setStaffList([]);
+//         setStaffError(data.message);
+//         return { success: false, message: data.message };
+//       }
+//     } catch (error) {
+//       console.error("getAllStaff error:", error);
+//       const msg =
+//         error.response?.data?.message || error.message || "Network error";
+//       setStaffList([]);
+//       setStaffError(msg);
+//       return { success: false, message: msg };
+//     } finally {
+//       setStaffLoading(false);
+//     }
+//   }, [backendUrl, ttoken]);
+
+//   // GET /api/tour/staff/:id
+//   const getStaffById = useCallback(
+//     async (id) => {
+//       if (!id) return { success: false, message: "Staff ID is required" };
+
+//       try {
+//         const { data } = await axios.get(
+//           `${backendUrl}/api/tour/staff/${id}`,
+//           { headers: { ttoken } },
+//         );
+
+//         if (data.success) {
+//           return { success: true, data: data.data };
+//         } else {
+//           toast.error(data.message);
+//           return { success: false, message: data.message };
+//         }
+//       } catch (error) {
+//         console.error("getStaffById error:", error);
+//         const msg =
+//           error.response?.data?.message || error.message || "Network error";
+//         toast.error(msg);
+//         return { success: false, message: msg };
+//       }
+//     },
+//     [backendUrl, ttoken],
+//   );
+
+//   // POST /api/tour/staff/create  (formData — include a "photo" file field to upload one)
+//   const createStaff = async (formData) => {
+//     try {
+//       const { data } = await axios.post(
+//         `${backendUrl}/api/tour/staff/create`,
+//         formData,
+//         {
+//           headers: {
+//             ttoken,
+//             "Content-Type": "multipart/form-data",
+//           },
+//           timeout: 20000,
+//         },
+//       );
+
+//       if (data.success) {
+//         toast.success(data.message || "Staff added");
+//         setStaffList((prev) => [...prev, data.data]);
+//         return { success: true, data: data.data };
+//       } else {
+//         toast.error(data.message || "Failed to add staff");
+//         return { success: false, message: data.message };
+//       }
+//     } catch (error) {
+//       console.error("createStaff error:", error);
+//       const msg =
+//         error.response?.data?.message || error.message || "Failed to add staff";
+//       toast.error(msg);
+//       return { success: false, message: msg };
+//     }
+//   };
+
+//   // PUT /api/tour/staff/:id/update  (formData — new "photo" file replaces the old one,
+//   // removePhoto=true clears it)
+//   const updateStaff = async (id, formData) => {
+//     if (!id) return { success: false, message: "Staff ID is required" };
+
+//     try {
+//       const { data } = await axios.put(
+//         `${backendUrl}/api/tour/staff/${id}/update`,
+//         formData,
+//         {
+//           headers: {
+//             ttoken,
+//             "Content-Type": "multipart/form-data",
+//           },
+//           timeout: 20000,
+//         },
+//       );
+
+//       if (data.success) {
+//         toast.success(data.message || "Changes saved");
+//         setStaffList((prev) =>
+//           prev.map((s) => (s._id === id ? data.data : s)),
+//         );
+//         return { success: true, data: data.data };
+//       } else {
+//         toast.error(data.message || "Failed to update staff");
+//         return { success: false, message: data.message };
+//       }
+//     } catch (error) {
+//       console.error("updateStaff error:", error);
+//       const msg =
+//         error.response?.data?.message ||
+//         error.message ||
+//         "Failed to update staff";
+//       toast.error(msg);
+//       return { success: false, message: msg };
+//     }
+//   };
+
+//   // DELETE /api/tour/staff/:id/delete
+//   const deleteStaff = async (id) => {
+//     if (!id) return { success: false, message: "Staff ID is required" };
+
+//     try {
+//       const { data } = await axios.delete(
+//         `${backendUrl}/api/tour/staff/${id}/delete`,
+//         { headers: { ttoken } },
+//       );
+
+//       if (data.success) {
+//         toast.success(data.message || "Profile removed");
+//         setStaffList((prev) => prev.filter((s) => s._id !== id));
+//         return { success: true };
+//       } else {
+//         toast.error(data.message || "Failed to remove staff");
+//         return { success: false, message: data.message };
+//       }
+//     } catch (error) {
+//       console.error("deleteStaff error:", error);
+//       const msg =
+//         error.response?.data?.message ||
+//         error.message ||
+//         "Failed to remove staff";
+//       toast.error(msg);
+//       return { success: false, message: msg };
+//     }
+//   };
+
 //   // ==================== GET ALL BOOKINGS ====================
 //   const getAllBookings = useCallback(async () => {
 //     try {
@@ -677,6 +839,67 @@
 //       };
 //     }
 //   };
+//   const getBookingInvoice = async (tnr) => {
+//     try {
+//       const response = await axios.get(
+//         `${backendUrl}/api/tour/invoice/${tnr}`,
+//         { headers: { ttoken } },
+//       );
+//       return response.data;
+//     } catch (error) {
+//       console.error("getBookingInvoice error:", error);
+//       return {
+//         success: false,
+//         message:
+//           error.response?.data?.message ||
+//           error.message ||
+//           "Failed to fetch invoice",
+//       };
+//     }
+//   };
+
+//   // 2. Save an admin-edited invoice
+//   const updateBookingInvoice = async (tnr, invoice) => {
+//     try {
+//       const response = await axios.put(
+//         `${backendUrl}/api/tour/invoice/${tnr}`,
+//         { invoice },
+//         { headers: { ttoken } },
+//       );
+//       return response.data;
+//     } catch (error) {
+//       console.error("updateBookingInvoice error:", error);
+//       return {
+//         success: false,
+//         message:
+//           error.response?.data?.message ||
+//           error.message ||
+//           "Failed to save invoice",
+//       };
+//     }
+//   };
+
+//   // 3. Remove a saved edit — reverts to the auto-calculated invoice
+//   const deleteBookingInvoice = async (tnr) => {
+//     try {
+//       const response = await axios.delete(
+//         `${backendUrl}/api/tour/invoice/${tnr}`,
+//         { headers: { ttoken } },
+//       );
+//       return response.data;
+//     } catch (error) {
+//       console.error("deleteBookingInvoice error:", error);
+//       return {
+//         success: false,
+//         message:
+//           error.response?.data?.message ||
+//           error.message ||
+//           "Failed to remove saved invoice",
+//       };
+//     }
+//   };
+
+
 
 //   const cancelBooking = async (bookingId) => {
 //     try {
@@ -2110,6 +2333,34 @@
 //     }
 //   };
 
+//   // ── TOGGLE "RATE PASSED AND HOLD" ──────────────────────────────────
+//   // Independent flag from `status` — only works server-side while the
+//   // enquiry's status is still "pending". Calling this just flips
+//   // isRatePassed (true <-> false) on the backend.
+//   const toggleRatePassed = async (id) => {
+//     try {
+//       const { data } = await axios.put(
+//         `${backendUrl}/api/tour/enquiry/${id}/rate-passed`,
+//         {},
+//         { headers: { ttoken } }
+//       );
+//       if (data.success) {
+//         toast.success(data.message || "Rate Passed and Hold updated");
+//         setEnquiries((prev) =>
+//           prev.map((e) => e._id === id ? { ...e, ...data.data } : e)
+//         );
+//         return { success: true, data: data.data };
+//       } else {
+//         toast.error(data.message);
+//         return { success: false, message: data.message };
+//       }
+//     } catch (error) {
+//       const msg = error.response?.data?.message || error.message || "Network error";
+//       toast.error(msg);
+//       return { success: false, message: msg };
+//     }
+//   };
+
 //   // ── UPDATED: assignedTo + salesValue + fitStates pass பண்றோம் ──
 //   const acceptEnquiry = async (id, extraData = {}) => {
 //     try {
@@ -2222,6 +2473,9 @@
 //     markAdvancePaid,
 //     markBalancePaid,
 //     completeBooking,
+//     getBookingInvoice,
+//     updateBookingInvoice,
+//     deleteBookingInvoice,
 //     cancelBooking,
 //     markAdvanceReceiptSent,
 //     markBalanceReceiptSent,
@@ -2269,8 +2523,20 @@
 //     getEnquiryById,
 //     updateEnquiry,
 //     deleteEnquiry,
+//     toggleRatePassed,
 //     acceptEnquiry,
 //     rejectEnquiry,
+
+//     // ── STAFF PROFILES (new) ──
+//     staffList,
+//     staffLoading,
+//     staffError,
+//     getAllStaff,
+//     getStaffById,
+//     createStaff,
+//     updateStaff,
+//     deleteStaff,
+
 //   };
 
 //   return (
@@ -2280,7 +2546,7 @@
 
 // export default TourContextProvider;
 
-import { useState, useCallback, createContext } from "react";
+import { useState, useCallback, useMemo, createContext } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -4694,6 +4960,55 @@ const TourContextProvider = (props) => {
 
 
   // ==================== Context Value ====================
+
+  // ════════════════════════════════════════════════════════════════
+  //  TICKETS — Queries (TicketLanding — tour admin)
+  //  Ellaa functions um data return pannum; error na throw pannum,
+  //  page la try/catch la toast.error(err.message) podhum.
+  // ════════════════════════════════════════════════════════════════
+  const ticketApi = useMemo(() => {
+    const call = async (method, url, { params, data } = {}) => {
+      try {
+        const res = await axios({
+          method,
+          url: `${backendUrl}${url}`,
+          params,
+          data,
+          headers: { ttoken },
+        });
+        if (res.data?.success === false) throw new Error(res.data.message || "Request failed");
+        return res.data;
+      } catch (err) {
+        throw new Error(err?.response?.data?.message || err.message || "Request failed");
+      }
+    };
+    // Empty filters ah URL la anuppa vendaam
+    const clean = (p = {}) =>
+      Object.fromEntries(Object.entries(p).filter(([, v]) => v !== "" && v !== null && v !== undefined));
+    const B = "/api/tour";
+
+    return {
+      // List + filters + counts
+      getQueries: (params) => call("get", `${B}/queries`, { params: clean(params) }),
+
+      // Status buttons
+      pickup: (id) => call("patch", `${B}/queries/${id}/pickup`),
+      processing: (id) => call("patch", `${B}/queries/${id}/processing`),
+      close: (id) => call("patch", `${B}/queries/${id}/close`),
+      reject: (id, reason = "") => call("patch", `${B}/queries/${id}/reject`, { data: { reason } }),
+
+      // Replies
+      getReplies: (id) => call("get", `${B}/queries/${id}/replies`),
+      addReply: (id, message) => call("post", `${B}/queries/${id}/replies`, { data: { message } }),
+      editReply: (id, replyId, message) =>
+        call("patch", `${B}/queries/${id}/replies/${replyId}`, { data: { message } }),
+      deleteReply: (id, replyId) => call("delete", `${B}/queries/${id}/replies/${replyId}`),
+
+      // Auto-refresh check
+      sync: () => call("get", `${B}/queries/sync`),
+    };
+  }, [backendUrl, ttoken]);
+
   const value = {
     ttoken,
     setttoken,
@@ -4819,6 +5134,8 @@ const TourContextProvider = (props) => {
     updateStaff,
     deleteStaff,
 
+    // ─── Tickets (queries) ───
+    ticketApi,
   };
 
   return (
