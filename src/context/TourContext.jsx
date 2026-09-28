@@ -4967,7 +4967,7 @@ const TourContextProvider = (props) => {
   //  page la try/catch la toast.error(err.message) podhum.
   // ════════════════════════════════════════════════════════════════
   const ticketApi = useMemo(() => {
-    const call = async (method, url, { params, data } = {}) => {
+    const call = async (method, url, { params, data, onUploadProgress } = {}) => {
       try {
         const res = await axios({
           method,
@@ -4975,6 +4975,7 @@ const TourContextProvider = (props) => {
           params,
           data,
           headers: { ttoken },
+          onUploadProgress, // file upload evlo % nu page ku sollum
         });
         if (res.data?.success === false) throw new Error(res.data.message || "Request failed");
         return res.data;
@@ -4990,6 +4991,12 @@ const TourContextProvider = (props) => {
     return {
       // List + filters + counts
       getQueries: (params) => call("get", `${B}/queries`, { params: clean(params) }),
+
+      // Tour admin um raise pannalam (FormData — files kooda)
+      raiseQuery: (formData, onUploadProgress) => call("post", `${B}/queries`, { data: formData, onUploadProgress }),
+      // Raised by / to dropdown — already irukura /api/tour/staff/all (Inactive thavira)
+      getStaff: async () =>
+        ((await call("get", `${B}/staff/all`)).data || []).filter((s) => s.status !== "Inactive"),
 
       // Status buttons
       pickup: (id) => call("patch", `${B}/queries/${id}/pickup`),
