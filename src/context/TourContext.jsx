@@ -4966,6 +4966,56 @@ const TourContextProvider = (props) => {
   //  Ellaa functions um data return pannum; error na throw pannum,
   //  page la try/catch la toast.error(err.message) podhum.
   // ════════════════════════════════════════════════════════════════
+  // const ticketApi = useMemo(() => {
+  //   const call = async (method, url, { params, data, onUploadProgress } = {}) => {
+  //     try {
+  //       const res = await axios({
+  //         method,
+  //         url: `${backendUrl}${url}`,
+  //         params,
+  //         data,
+  //         headers: { ttoken },
+  //         onUploadProgress, // file upload evlo % nu page ku sollum
+  //       });
+  //       if (res.data?.success === false) throw new Error(res.data.message || "Request failed");
+  //       return res.data;
+  //     } catch (err) {
+  //       throw new Error(err?.response?.data?.message || err.message || "Request failed");
+  //     }
+  //   };
+  //   // Empty filters ah URL la anuppa vendaam
+  //   const clean = (p = {}) =>
+  //     Object.fromEntries(Object.entries(p).filter(([, v]) => v !== "" && v !== null && v !== undefined));
+  //   const B = "/api/tour";
+
+  //   return {
+  //     // List + filters + counts
+  //     getQueries: (params) => call("get", `${B}/queries`, { params: clean(params) }),
+
+  //     // Tour admin um raise pannalam (FormData — files kooda)
+  //     raiseQuery: (formData, onUploadProgress) => call("post", `${B}/queries`, { data: formData, onUploadProgress }),
+  //     // Raised by / to dropdown — already irukura /api/tour/staff/all (Inactive thavira)
+  //     getStaff: async () =>
+  //       ((await call("get", `${B}/staff/all`)).data || []).filter((s) => s.status !== "Inactive"),
+
+  //     // Status buttons
+  //     pickup: (id) => call("patch", `${B}/queries/${id}/pickup`),
+  //     processing: (id) => call("patch", `${B}/queries/${id}/processing`),
+  //     close: (id) => call("patch", `${B}/queries/${id}/close`),
+  //     reject: (id, reason = "") => call("patch", `${B}/queries/${id}/reject`, { data: { reason } }),
+
+  //     // Replies
+  //     getReplies: (id) => call("get", `${B}/queries/${id}/replies`),
+  //     addReply: (id, message) => call("post", `${B}/queries/${id}/replies`, { data: { message } }),
+  //     editReply: (id, replyId, message) =>
+  //       call("patch", `${B}/queries/${id}/replies/${replyId}`, { data: { message } }),
+  //     deleteReply: (id, replyId) => call("delete", `${B}/queries/${id}/replies/${replyId}`),
+
+  //     // Auto-refresh check
+  //     sync: () => call("get", `${B}/queries/sync`),
+  //   };
+  // }, [backendUrl, ttoken]);
+
   const ticketApi = useMemo(() => {
     const call = async (method, url, { params, data, onUploadProgress } = {}) => {
       try {
@@ -4975,7 +5025,7 @@ const TourContextProvider = (props) => {
           params,
           data,
           headers: { ttoken },
-          onUploadProgress, // file upload evlo % nu page ku sollum
+          onUploadProgress,
         });
         if (res.data?.success === false) throw new Error(res.data.message || "Request failed");
         return res.data;
@@ -4983,7 +5033,7 @@ const TourContextProvider = (props) => {
         throw new Error(err?.response?.data?.message || err.message || "Request failed");
       }
     };
-    // Empty filters ah URL la anuppa vendaam
+
     const clean = (p = {}) =>
       Object.fromEntries(Object.entries(p).filter(([, v]) => v !== "" && v !== null && v !== undefined));
     const B = "/api/tour";
@@ -4993,7 +5043,9 @@ const TourContextProvider = (props) => {
       getQueries: (params) => call("get", `${B}/queries`, { params: clean(params) }),
 
       // Tour admin um raise pannalam (FormData — files kooda)
-      raiseQuery: (formData, onUploadProgress) => call("post", `${B}/queries`, { data: formData, onUploadProgress }),
+      raiseQuery: (formData, onUploadProgress) =>
+        call("post", `${B}/queries`, { data: formData, onUploadProgress }),
+
       // Raised by / to dropdown — already irukura /api/tour/staff/all (Inactive thavira)
       getStaff: async () =>
         ((await call("get", `${B}/staff/all`)).data || []).filter((s) => s.status !== "Inactive"),
@@ -5002,14 +5054,22 @@ const TourContextProvider = (props) => {
       pickup: (id) => call("patch", `${B}/queries/${id}/pickup`),
       processing: (id) => call("patch", `${B}/queries/${id}/processing`),
       close: (id) => call("patch", `${B}/queries/${id}/close`),
-      reject: (id, reason = "") => call("patch", `${B}/queries/${id}/reject`, { data: { reason } }),
+      reject: (id, reason = "") =>
+        call("patch", `${B}/queries/${id}/reject`, { data: { reason } }),
+
+      // ── NEW: Edit & Delete query ──
+      updateQuery: (queryId, formData, onUploadProgress) =>
+        call("patch", `${B}/queries/${queryId}`, { data: formData, onUploadProgress }),
+      deleteQuery: (queryId) => call("delete", `${B}/queries/${queryId}`),
 
       // Replies
       getReplies: (id) => call("get", `${B}/queries/${id}/replies`),
-      addReply: (id, message) => call("post", `${B}/queries/${id}/replies`, { data: { message } }),
+      addReply: (id, message) =>
+        call("post", `${B}/queries/${id}/replies`, { data: { message } }),
       editReply: (id, replyId, message) =>
         call("patch", `${B}/queries/${id}/replies/${replyId}`, { data: { message } }),
-      deleteReply: (id, replyId) => call("delete", `${B}/queries/${id}/replies/${replyId}`),
+      deleteReply: (id, replyId) =>
+        call("delete", `${B}/queries/${id}/replies/${replyId}`),
 
       // Auto-refresh check
       sync: () => call("get", `${B}/queries/sync`),
