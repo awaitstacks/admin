@@ -2078,8 +2078,8 @@ const TicketLanding = () => {
         {loading && <p className="px-4 py-10 text-center text-sm text-gray-500">Loading queries…</p>}
         {!loading && queries.length === 0 && (
           <div className="px-4 py-12 text-center">
-            <p className="font-semibold text-gray-800">No queries here</p>
-            <p className="mt-1 text-sm text-gray-500">New queries from admin will show up here automatically.</p>
+            <p className="font-semibold text-gray-800">No tickets here</p>
+            <p className="mt-1 text-sm text-gray-500">New tickets from admin will show up here automatically.</p>
           </div>
         )}
 
