@@ -1872,7 +1872,7 @@ const ReplyThread = ({ queryId, api, onChanged }) => {
           </button>
         </div>
       ) : (
-        <p className="text-sm text-gray-500">This query is {data.status === "close" ? "closed" : "rejected"}, so replies are turned off.</p>
+        <p className="text-sm text-gray-500">This Ticket is {data.status === "close" ? "closed" : "rejected"}, so replies are turned off.</p>
       )}
     </div>
   );
@@ -2437,7 +2437,7 @@ const TicketLaunching = () => {
   return (
     <div className="w-full min-w-0 max-w-7xl flex-1 p-3 sm:p-5">
       <div className="mb-5 text-center sm:mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Ticket Launching</h1>
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Raise Tickets</h1>
         <p className="mt-1 text-sm text-gray-500">Raise a ticket, follow the replies, and see it through to closed.</p>
         <span className="mx-auto mt-3 block h-1 w-14 rounded-full bg-green-500" aria-hidden="true" />
       </div>
@@ -2455,7 +2455,7 @@ const TicketLaunching = () => {
             }}
             className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition sm:flex-none sm:px-5 sm:text-sm ${tab === "list" ? "bg-white text-green-700 shadow" : "text-gray-600 hover:text-gray-900"}`}
           >
-            All Queries
+            All Tickets
           </button>
           <button
             role="tab"
@@ -2463,7 +2463,7 @@ const TicketLaunching = () => {
             onClick={openRaise}
             className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition sm:flex-none sm:px-5 sm:text-sm ${tab === "form" && !editing ? "bg-white text-green-700 shadow" : "text-gray-600 hover:text-gray-900"}`}
           >
-            + Raise Query
+            + Raise Ticket
           </button>
           <button
             role="tab"
@@ -2484,10 +2484,10 @@ const TicketLaunching = () => {
       {/* ═══════════ FORM (raise / edit) ═══════════ */}
       {tab === "form" && (
         <form onSubmit={submitForm} className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
-          <h2 className="mb-5 text-xl font-bold">{editing ? `Edit query` : "Raise a query"}</h2>
+          <h2 className="mb-5 text-xl font-bold">{editing ? `Edit Ticket` : "Raise a Ticket"}</h2>
 
           <div className="mb-4">
-            <label htmlFor="bb-type" className={labelCls}>Query type</label>
+            <label htmlFor="bb-type" className={labelCls}>Ticket type</label>
             <input
               id="bb-type"
               value={form.queryType}
@@ -2749,7 +2749,7 @@ const TicketLaunching = () => {
                 />
               </div>
               <div className="col-span-2 md:col-span-1">
-                <label htmlFor="bb-f-type" className={labelCls}>Query type</label>
+                <label htmlFor="bb-f-type" className={labelCls}>Ticket type</label>
                 <select id="bb-f-type" value={filters.queryType} onChange={(e) => setFilter("queryType", e.target.value)} className={inputCls}>
                   <option value="">All types</option>
                   {types.map((t) => (
@@ -2796,7 +2796,7 @@ const TicketLaunching = () => {
                 <thead className="bg-blue-50 text-sm text-gray-600">
                   <tr>
                     <th className="whitespace-nowrap px-4 py-3 font-semibold">Ticket no</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Query</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Ticket</th>
                     <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised by</th>
                     <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised to</th>
                     <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised on</th>

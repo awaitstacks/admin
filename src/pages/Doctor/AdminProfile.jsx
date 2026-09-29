@@ -5,7 +5,7 @@ const GENDERS = ["Male", "Female", "Other"];
 const MARITAL_STATUSES = ["Single", "Married", "Divorced", "Widowed"];
 const STATUSES = ["Active", "Inactive"];
 const STAFF_TYPES = ["Admin Staff", "Field Staff"];
-const RELIEVING_REASONS = ["Resigned", "Terminated", "Contract ended", "Long leave", "Other"];
+const ACCOUNT_TYPES = ["Savings", "Current", "Salary", "BSBDA / Zero Balance", "NRI Account"];
 
 const EMPTY_FORM = {
   fullName: "", designation: "", department: "", reportingManager: "",
@@ -14,8 +14,9 @@ const EMPTY_FORM = {
   emergencyName: "", emergencyRelation: "", emergencyNumber: "",
   qualification: "", specialization: "", collegeOrUniversity: "", yearOfPassing: "",
   experience: "", skills: "",
-  // Relieve pannum bodhu
-  relievedOn: "", relievingReason: "",
+  aadharNumber: "", panNumber: "",
+  bankAccountNumber: "", confirmAccountNumber: "", bankIfscCode: "", bankAccountName: "",
+  bankBranchName: "", bankBranchCode: "", bankSwiftCode: "", bankAccountType: "",
 };
 
 const AVATAR_COLORS = [
@@ -43,38 +44,16 @@ function fmtDate(iso) {
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function todayISO() {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 10);
-}
-
-// "2 yrs 3 mos" madhiri — evlo naal work pannanga
-function durationBetween(from, to) {
-  const a = new Date(from);
-  const b = to ? new Date(to) : new Date();
-  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime()) || b < a) return "";
-  let months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-  if (b.getDate() < a.getDate()) months -= 1;
-  if (months < 1) return "Less than a month";
-  const y = Math.floor(months / 12);
-  const m = months % 12;
-  return [y ? `${y} yr${y > 1 ? "s" : ""}` : "", m ? `${m} mo${m > 1 ? "s" : ""}` : ""].filter(Boolean).join(" ");
-}
-
-// Pazhaya staff ku history illana ippo irukura joining date vechu oru stint kaatum
-function getHistory(staff) {
-  if (Array.isArray(staff.employmentHistory) && staff.employmentHistory.length) return staff.employmentHistory;
-  if (!staff.dateOfJoining) return [];
-  return [{
-    joinedOn: staff.dateOfJoining,
-    relievedOn: staff.status === "Inactive" ? staff.relievedOn || null : null,
-    relievingReason: staff.relievingReason || "",
-  }];
-}
-
 function telHref(phone) {
   return `tel:${String(phone).replace(/[^\d+]/g, "")}`;
+}
+
+// Shows only the last 4 digits — Aadhar and account numbers stay masked on screen
+function maskDigits(value) {
+  if (!value) return null;
+  const digits = String(value);
+  if (digits.length <= 4) return digits;
+  return "•".repeat(digits.length - 4) + digits.slice(-4);
 }
 
 // Age is derived from date of birth — never entered by hand
@@ -94,37 +73,50 @@ function calcAge(dob) {
 const PHONE_RE = /^[+()\d][\d\s()+\-]{5,}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateForm(form, origStatus) {
+const AADHAR_RE = /^\d{12}$/;
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/i;
+const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/i;
+
+function validateForm(form) {
   const errors = {};
-  if (!form.fullName.trim()) errors.fullName = "Enter the full name.";
-  if (!form.designation.trim()) errors.designation = "Enter the designation.";
-  if (!form.mobileNumber.trim()) errors.mobileNumber = "Enter a mobile number.";
-  else if (!PHONE_RE.test(form.mobileNumber.trim())) errors.mobileNumber = "Enter a valid mobile number.";
+  // No field is mandatory — only format is checked, and only when something
+  // was actually typed in.
+  if (form.mobileNumber.trim() && !PHONE_RE.test(form.mobileNumber.trim())) {
+    errors.mobileNumber = "Enter a valid mobile number.";
+  }
   if (form.email.trim() && !EMAIL_RE.test(form.email.trim())) errors.email = "Enter a valid email address.";
   if (form.emergencyNumber.trim() && !PHONE_RE.test(form.emergencyNumber.trim())) {
     errors.emergencyNumber = "Enter a valid phone number.";
   }
-  // Relieve: date venum, joining date ku munnadi irukka koodadhu
-  if (form.status === "Inactive" && origStatus !== "Inactive") {
-    if (!form.relievedOn) errors.relievedOn = "Enter the relieving date.";
-    else if (form.dateOfJoining && form.relievedOn < form.dateOfJoining) {
-      errors.relievedOn = "Relieving date can't be before the joining date.";
-    }
+  if (form.aadharNumber.trim() && !AADHAR_RE.test(form.aadharNumber.trim())) {
+    errors.aadharNumber = "Aadhar number must be exactly 12 digits.";
   }
-  // Rejoin: puthu joining date venum
-  if (origStatus === "Inactive" && form.status === "Active" && !form.dateOfJoining) {
-    errors.dateOfJoining = "Enter the new joining date.";
+  if (form.panNumber.trim() && !PAN_RE.test(form.panNumber.trim())) {
+    errors.panNumber = "Enter a valid PAN (e.g. ABCDE1234F).";
+  }
+  if (form.bankIfscCode.trim() && !IFSC_RE.test(form.bankIfscCode.trim())) {
+    errors.bankIfscCode = "Enter a valid IFSC code (e.g. HDFC0001234).";
+  }
+  if (form.bankAccountNumber.trim() || form.confirmAccountNumber.trim()) {
+    if (!form.bankAccountNumber.trim()) errors.bankAccountNumber = "Enter the account number.";
+    if (!form.confirmAccountNumber.trim()) errors.confirmAccountNumber = "Re-enter the account number.";
+    else if (form.bankAccountNumber.trim() !== form.confirmAccountNumber.trim()) {
+      errors.confirmAccountNumber = "Account numbers do not match.";
+    }
   }
   return errors;
 }
 
-function buildFormData(form, photoFile, removePhoto) {
+function buildFormData(form, photoFile, removePhoto, resumeFile, removeResume) {
   const fd = new FormData();
   const textFields = [
     "fullName", "designation", "department", "reportingManager", "status", "staffType", "gender", "maritalStatus",
     "mobileNumber", "alternateNumber", "whatsappNumber", "email", "currentAddress", "permanentAddress",
     "emergencyName", "emergencyRelation", "emergencyNumber",
     "qualification", "specialization", "collegeOrUniversity", "yearOfPassing", "experience",
+    "aadharNumber", "panNumber",
+    "bankAccountNumber", "bankIfscCode", "bankAccountName", "bankBranchName",
+    "bankBranchCode", "bankSwiftCode", "bankAccountType",
   ];
   textFields.forEach((key) => fd.append(key, form[key] ?? ""));
   fd.append("age", calcAge(form.dateOfBirth) ?? "");
@@ -132,13 +124,10 @@ function buildFormData(form, photoFile, removePhoto) {
   fd.append("dateOfBirth", form.dateOfBirth || "");
   fd.append("sameAsCurrent", form.sameAsCurrent ? "true" : "false");
   fd.append("skills", form.skills);
-  // Inactive na mattum relieving details anuppuvom
-  if (form.status === "Inactive") {
-    fd.append("relievedOn", form.relievedOn || "");
-    fd.append("relievingReason", form.relievingReason || "");
-  }
   if (photoFile) fd.append("photo", photoFile);
   else if (removePhoto) fd.append("removePhoto", "true");
+  if (resumeFile) fd.append("resume", resumeFile);
+  else if (removeResume) fd.append("removeResume", "true");
   return fd;
 }
 
@@ -210,14 +199,6 @@ function StaffTypeBadge({ type }) {
   );
 }
 
-function RejoinedBadge() {
-  return (
-    <span className="inline-flex items-center whitespace-nowrap rounded-full bg-violet-50 px-2 py-0.5 text-[11.5px] font-semibold text-violet-700">
-      Rejoined
-    </span>
-  );
-}
-
 function Row({ label, value }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-0.5 border-b border-slate-100 py-2.5 text-[14px] last:border-b-0">
@@ -274,14 +255,16 @@ export default function StaffProfiles() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [origStatus, setOrigStatus] = useState("Active"); // edit open pannum bodhu irundha status
-  const [origJoining, setOrigJoining] = useState(""); // edit open pannum bodhu irundha joining date
   const [formErrors, setFormErrors] = useState({});
   const [formServerError, setFormServerError] = useState("");
   const [saving, setSaving] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeName, setResumeName] = useState(""); // existing URL or newly picked file name
+  const [removeResume, setRemoveResume] = useState(false);
+  const resumeInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const [confirmTarget, setConfirmTarget] = useState(null);
@@ -310,20 +293,19 @@ export default function StaffProfiles() {
   function openCreateForm() {
     setEditingId(null);
     setForm(EMPTY_FORM);
-    setOrigStatus("Active");
-    setOrigJoining("");
     setFormErrors({});
     setFormServerError("");
     setPhotoFile(null);
     setPhotoPreview("");
     setRemovePhoto(false);
+    setResumeFile(null);
+    setResumeName("");
+    setRemoveResume(false);
     setFormOpen(true);
   }
 
   function openEditForm(s) {
     setEditingId(s._id);
-    setOrigStatus(s.status || "Active");
-    setOrigJoining(s.dateOfJoining ? s.dateOfJoining.slice(0, 10) : "");
     setForm({
       fullName: s.fullName || "",
       designation: s.designation || "",
@@ -351,14 +333,25 @@ export default function StaffProfiles() {
       yearOfPassing: s.yearOfPassing || "",
       experience: s.experience || "",
       skills: (s.skills || []).join(", "),
-      relievedOn: s.relievedOn ? s.relievedOn.slice(0, 10) : "",
-      relievingReason: s.relievingReason || "",
+      aadharNumber: s.aadharNumber || "",
+      panNumber: s.panNumber || "",
+      bankAccountNumber: s.bankAccountNumber || "",
+      confirmAccountNumber: s.bankAccountNumber || "",
+      bankIfscCode: s.bankIfscCode || "",
+      bankAccountName: s.bankAccountName || "",
+      bankBranchName: s.bankBranchName || "",
+      bankBranchCode: s.bankBranchCode || "",
+      bankSwiftCode: s.bankSwiftCode || "",
+      bankAccountType: s.bankAccountType || "",
     });
     setFormErrors({});
     setFormServerError("");
     setPhotoFile(null);
     setPhotoPreview(s.photo || "");
     setRemovePhoto(false);
+    setResumeFile(null);
+    setResumeName(s.resume || "");
+    setRemoveResume(false);
     setFormOpen(true);
   }
 
@@ -368,21 +361,7 @@ export default function StaffProfiles() {
   }
 
   function updateField(key, value) {
-    setForm((f) => {
-      const next = { ...f, [key]: value };
-      if (key === "status") {
-        // Active → Inactive: relieving date default ah indha naal
-        if (value === "Inactive" && origStatus !== "Inactive" && !f.relievedOn) next.relievedOn = todayISO();
-        // Inactive → Active (rejoin): puthu joining date default ah indha naal
-        if (value === "Active" && origStatus === "Inactive") next.dateOfJoining = todayISO();
-        // Maathi thirumba pazhaya status ku vandha pazhaya date
-        if (value === origStatus) {
-          next.dateOfJoining = origJoining;
-          if (value === "Active") next.relievedOn = "";
-        }
-      }
-      return next;
-    });
+    setForm((f) => ({ ...f, [key]: value }));
   }
 
   function handleSameAddr(checked) {
@@ -406,6 +385,35 @@ export default function StaffProfiles() {
     setPhotoPreview(URL.createObjectURL(file));
   }
 
+  function handleResumeChange(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const okType = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ].includes(file.type);
+    if (!okType) {
+      setFormServerError("Choose a PDF or Word document for the resume.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setFormServerError("Resume file is too large (max 8 MB).");
+      return;
+    }
+    setFormServerError("");
+    setRemoveResume(false);
+    setResumeFile(file);
+    setResumeName(file.name);
+  }
+
+  function handleRemoveResume() {
+    setResumeFile(null);
+    setResumeName("");
+    setRemoveResume(true);
+    if (resumeInputRef.current) resumeInputRef.current.value = "";
+  }
+
   function handleRemovePhoto() {
     setPhotoFile(null);
     setPhotoPreview("");
@@ -415,18 +423,21 @@ export default function StaffProfiles() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const errors = validateForm(form, editingId ? origStatus : "Active");
+    const errors = validateForm(form);
     setFormErrors(errors);
     if (Object.keys(errors).length) return;
 
     setSaving(true);
     setFormServerError("");
-    const fd = buildFormData(form, photoFile, removePhoto);
+    const fd = buildFormData(form, photoFile, removePhoto, resumeFile, removeResume);
     const result = editingId ? await updateStaffApi(editingId, fd) : await createStaffApi(fd);
     setSaving(false);
 
     if (!result.success) {
       setFormServerError(result.message || "Could not save. Try again.");
+      // Backend tells us exactly which field(s) failed — show the message
+      // right under that input instead of only a generic banner.
+      if (result.errors) setFormErrors((prev) => ({ ...prev, ...result.errors }));
       return;
     }
     setFormOpen(false);
@@ -448,7 +459,7 @@ export default function StaffProfiles() {
       {/* banner */}
       <div className="flex items-center gap-3 bg-gradient-to-r from-blue-800 to-blue-700 px-4 py-4 sm:px-6 sm:py-5">
         <Crown />
-        <h1 className="text-[20px] font-bold text-white">Admin & Field Panel</h1>
+        <h1 className="text-[20px] font-bold text-white">Admin / Field Panel</h1>
       </div>
       <div className="border-b border-slate-200 px-4 sm:px-6">
         <span className="inline-flex items-center gap-2 border-b-2 border-blue-700 py-3 text-[14px] font-semibold text-blue-800">
@@ -544,20 +555,19 @@ export default function StaffProfiles() {
                 key={s._id}
                 type="button"
                 onClick={() => setDetailStaff(s)}
-                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className="h-16 bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500" />
-                <div className="absolute right-2.5 top-2.5 flex flex-col items-end gap-1">
+                <div className="absolute right-2.5 top-2.5">
                   <StatusPill status={s.status} />
-                  {getHistory(s).length > 1 && <RejoinedBadge />}
                 </div>
-                <div className="flex flex-1 flex-col px-3.5 pb-3.5">
+                <div className="px-3.5 pb-3.5">
                   <div className="-mt-11 mb-2">
                     <Avatar staff={s} size={84} ring />
                   </div>
                   <p className="truncate text-[14.5px] font-bold text-slate-800">{s.fullName || "Unnamed"}</p>
                   <p className="truncate text-[12.5px] text-slate-500">{s.designation || "No designation"}</p>
-                  <div className="mb-2.5 mt-1.5 flex flex-col items-start gap-1">
+                  <div className="mt-1.5 flex flex-col items-start gap-1">
                     <StaffTypeBadge type={s.staffType} />
                     {s.department && (
                       <span className="inline-block max-w-full truncate rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
@@ -565,8 +575,8 @@ export default function StaffProfiles() {
                       </span>
                     )}
                   </div>
-                  <div className="mt-auto flex items-center justify-between border-t border-dashed border-slate-200 pt-2 text-[11px]">
-                    <span className="text-slate-400">Staff ID</span>
+                  <div className="mt-2.5 flex items-center justify-between border-t border-dashed border-slate-200 pt-2 text-[11px]">
+                    <span className="text-slate-400">Employee ID</span>
                     <span className="font-mono font-semibold text-slate-600">{s.employeeId}</span>
                   </div>
                 </div>
@@ -589,17 +599,20 @@ export default function StaffProfiles() {
         <FormModal
           editingId={editingId}
           form={form}
-          origStatus={editingId ? origStatus : "Active"}
           errors={formErrors}
           serverError={formServerError}
           saving={saving}
           photoPreview={photoPreview}
           fileInputRef={fileInputRef}
+          resumeName={resumeName}
+          resumeInputRef={resumeInputRef}
           onField={updateField}
           onSameAddr={handleSameAddr}
           onCurrentAddr={handleCurrentAddr}
           onPhotoChange={handlePhotoChange}
           onRemovePhoto={handleRemovePhoto}
+          onResumeChange={handleResumeChange}
+          onRemoveResume={handleRemoveResume}
           onSubmit={handleSubmit}
           onClose={closeForm}
         />
@@ -637,69 +650,9 @@ export default function StaffProfiles() {
   );
 }
 
-/* ---------- employment history ---------- */
-
-function EmploymentHistory({ staff }) {
-  // Puthusu mudhal la
-  const history = [...getHistory(staff)].reverse();
-  if (!history.length) return null;
-  return (
-    <SectionCard icon="🗓️" title="Employment History">
-      <ol className="mt-1">
-        {history.map((h, idx) => {
-          const current = idx === 0 && !h.relievedOn;
-          const last = idx === history.length - 1;
-          const stintNo = history.length - idx;
-          return (
-            <li key={h._id || idx} className="relative flex gap-3">
-              <div className="flex flex-col items-center" aria-hidden="true">
-                <span className={`mt-1.5 h-3 w-3 shrink-0 rounded-full ring-4 ring-white ${current ? "bg-green-500" : "bg-slate-400"}`} />
-                {!last && <span className="w-px flex-1 bg-slate-200" />}
-              </div>
-              <div className={`min-w-0 flex-1 ${last ? "" : "pb-4"}`}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[14px] font-semibold text-slate-800">
-                    {stintNo === 1 ? "First joining" : `Rejoining ${stintNo - 1}`}
-                  </span>
-                  {current ? (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11.5px] font-semibold text-green-700">Current</span>
-                  ) : (
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11.5px] font-semibold text-slate-500">Previous</span>
-                  )}
-                </div>
-                <p className="mt-0.5 text-[13.5px] text-slate-700">
-                  Joined <b>{fmtDate(h.joinedOn) || "—"}</b>
-                  <span className="mx-1.5 text-slate-300" aria-hidden="true">→</span>
-                  {h.relievedOn ? (
-                    <>
-                      Relieved <b>{fmtDate(h.relievedOn)}</b>
-                    </>
-                  ) : (
-                    <b className="text-green-700">Present</b>
-                  )}
-                </p>
-                <p className="text-[12.5px] text-slate-500">
-                  {durationBetween(h.joinedOn, h.relievedOn)}
-                  {h.relievingReason ? ` · ${h.relievingReason}` : ""}
-                </p>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    </SectionCard>
-  );
-}
-
 /* ---------- detail modal ---------- */
 
 function DetailModal({ staff, onClose, onEdit, onRemove }) {
-  const history = getHistory(staff);
-  const rejoined = history.length > 1;
-  const previous = history.slice(0, -1);
-  const lastPrevious = previous[previous.length - 1];
-  const inactive = staff.status === "Inactive";
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/55 p-3" onClick={onClose}>
       <div
@@ -732,12 +685,7 @@ function DetailModal({ staff, onClose, onEdit, onRemove }) {
             <div className="flex flex-wrap items-center gap-4 text-[13px] text-blue-100">
               <span className="inline-flex items-center gap-1.5">🪪 {staff.employeeId}</span>
               {staff.dateOfJoining && (
-                <span className="inline-flex items-center gap-1.5">
-                  📅 {rejoined ? "Rejoined" : "Joined"} on {fmtDate(staff.dateOfJoining)}
-                </span>
-              )}
-              {inactive && staff.relievedOn && (
-                <span className="inline-flex items-center gap-1.5">🚪 Relieved on {fmtDate(staff.relievedOn)}</span>
+                <span className="inline-flex items-center gap-1.5">📅 Joined on {fmtDate(staff.dateOfJoining)}</span>
               )}
             </div>
             <button
@@ -752,7 +700,7 @@ function DetailModal({ staff, onClose, onEdit, onRemove }) {
 
         <div className="space-y-4 p-4 sm:p-6">
           <SectionCard icon="👤" title="Basic Details">
-            <Row label="Staff ID" value={staff.employeeId} />
+            <Row label="Employee ID" value={staff.employeeId} />
             <Row label="Name" value={staff.fullName} />
             <Row label="Date of birth" value={fmtDate(staff.dateOfBirth)} />
             <Row label="Gender" value={staff.gender} />
@@ -780,33 +728,9 @@ function DetailModal({ staff, onClose, onEdit, onRemove }) {
             <Row label="Staff type" value={<StaffTypeBadge type={staff.staffType} />} />
             <Row label="Department" value={staff.department} />
             <Row label="Reporting manager" value={staff.reportingManager} />
-            <Row
-              label={rejoined ? "Current joining date" : "Joining date"}
-              value={
-                staff.dateOfJoining ? (
-                  <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
-                    {fmtDate(staff.dateOfJoining)}
-                    {rejoined && <RejoinedBadge />}
-                  </span>
-                ) : null
-              }
-            />
-            {rejoined && (
-              <Row
-                label="Previous joining date"
-                value={
-                  lastPrevious
-                    ? `${fmtDate(lastPrevious.joinedOn)} – ${fmtDate(lastPrevious.relievedOn) || "?"}`
-                    : null
-                }
-              />
-            )}
+            <Row label="Joining date" value={fmtDate(staff.dateOfJoining)} />
             <Row label="Status" value={<StatusPill status={staff.status} />} />
-            {inactive && <Row label="Relieved on" value={fmtDate(staff.relievedOn)} />}
-            {inactive && <Row label="Relieving reason" value={staff.relievingReason} />}
           </SectionCard>
-
-          <EmploymentHistory staff={staff} />
 
           <SectionCard icon="🎓" title="Study Details">
             <Row label="Qualification" value={staff.qualification} />
@@ -823,6 +747,38 @@ function DetailModal({ staff, onClose, onEdit, onRemove }) {
               }
             />
           </SectionCard>
+
+          <SectionCard icon="📄" title="Documents">
+            <Row
+              label="Resume"
+              value={
+                staff.resume ? (
+                  <a className="text-blue-700 underline underline-offset-2" href={staff.resume} target="_blank" rel="noreferrer">
+                    View / download
+                  </a>
+                ) : null
+              }
+            />
+          </SectionCard>
+
+          {(staff.aadharNumber || staff.panNumber) && (
+            <SectionCard icon="🪪" title="Identity Documents">
+              <Row label="Aadhar number" value={maskDigits(staff.aadharNumber)} />
+              <Row label="PAN number" value={staff.panNumber} />
+            </SectionCard>
+          )}
+
+          {(staff.bankAccountNumber || staff.bankIfscCode) && (
+            <SectionCard icon="🏦" title="Bank Details">
+              <Row label="Account number" value={maskDigits(staff.bankAccountNumber)} />
+              <Row label="IFSC code" value={staff.bankIfscCode} />
+              <Row label="Account holder name" value={staff.bankAccountName} />
+              <Row label="Account type" value={staff.bankAccountType} />
+              <Row label="Branch name" value={staff.bankBranchName} />
+              <Row label="Branch code" value={staff.bankBranchCode} />
+              <Row label="Swift code" value={staff.bankSwiftCode} />
+            </SectionCard>
+          )}
 
           {(staff.emergencyName || staff.emergencyNumber) && (
             <SectionCard icon="🚨" title="Emergency Contact">
@@ -848,13 +804,13 @@ function DetailModal({ staff, onClose, onEdit, onRemove }) {
 /* ---------- form modal ---------- */
 
 function FormModal({
-  editingId, form, origStatus, errors, serverError, saving, photoPreview, fileInputRef,
-  onField, onSameAddr, onCurrentAddr, onPhotoChange, onRemovePhoto, onSubmit, onClose,
+  editingId, form, errors, serverError, saving, photoPreview, fileInputRef,
+  resumeName, resumeInputRef,
+  onField, onSameAddr, onCurrentAddr, onPhotoChange, onRemovePhoto,
+  onResumeChange, onRemoveResume, onSubmit, onClose,
 }) {
-  const relieving = form.status === "Inactive" && origStatus !== "Inactive";
-  const rejoining = origStatus === "Inactive" && form.status === "Active";
-  const stillInactive = form.status === "Inactive" && origStatus === "Inactive";
-
+  const [showAccountNumber, setShowAccountNumber] = useState(false);
+  const [showConfirmAccountNumber, setShowConfirmAccountNumber] = useState(false);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/55 p-3" onClick={() => !saving && onClose()}>
       <div
@@ -913,10 +869,10 @@ function FormModal({
             <section>
               <h3 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-blue-800">👤 Basic Details</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 max-[479px]:grid-cols-1">
-                <Field label="Full name" required error={errors.fullName}>
+                <Field label="Full name" error={errors.fullName}>
                   <input className={inputClass} value={form.fullName} onChange={(e) => onField("fullName", e.target.value)} />
                 </Field>
-                <Field label="Designation" required error={errors.designation}>
+                <Field label="Designation" error={errors.designation}>
                   <input className={inputClass} value={form.designation} onChange={(e) => onField("designation", e.target.value)} placeholder="e.g. Office Admin" />
                 </Field>
                 <Field label="Date of birth">
@@ -945,47 +901,6 @@ function FormModal({
                   </select>
                 </Field>
               </div>
-
-              {/* ── Relieve: Active → Inactive ── */}
-              {(relieving || stillInactive) && (
-                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-[14px] font-semibold text-amber-900">
-                    {relieving ? "Relieving this staff member" : "Relieving details"}
-                  </p>
-                  {relieving && (
-                    <p className="mt-0.5 text-[12.5px] text-amber-800">
-                      Their current joining period closes on this date. It stays in the employment history.
-                    </p>
-                  )}
-                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3.5 max-[479px]:grid-cols-1">
-                    <Field label="Relieving date" required error={errors.relievedOn}>
-                      <input className={inputClass} type="date" value={form.relievedOn} onChange={(e) => onField("relievedOn", e.target.value)} />
-                    </Field>
-                    <Field label="Reason">
-                      <input
-                        className={inputClass}
-                        list="relieving-reasons"
-                        value={form.relievingReason}
-                        onChange={(e) => onField("relievingReason", e.target.value)}
-                        placeholder="e.g. Resigned"
-                      />
-                      <datalist id="relieving-reasons">
-                        {RELIEVING_REASONS.map((r) => <option key={r} value={r} />)}
-                      </datalist>
-                    </Field>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Rejoin: Inactive → Active ── */}
-              {rejoining && (
-                <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-4" role="status">
-                  <p className="text-[14px] font-semibold text-violet-900">Rejoining</p>
-                  <p className="mt-0.5 text-[12.5px] text-violet-800">
-                    Set the new joining date in Job Details below. The previous joining date stays in the employment history.
-                  </p>
-                </div>
-              )}
             </section>
 
             <section className="mt-5 border-t border-slate-100 pt-5">
@@ -1002,26 +917,63 @@ function FormModal({
                 <Field label="Reporting manager">
                   <input className={inputClass} value={form.reportingManager} onChange={(e) => onField("reportingManager", e.target.value)} />
                 </Field>
-                <Field
-                  label={rejoining ? "New joining date" : "Joining date"}
-                  required={rejoining}
-                  error={errors.dateOfJoining}
-                  help={rejoining ? "The date they rejoined" : undefined}
-                >
-                  <input
-                    className={inputClass + (rejoining ? " border-violet-400 ring-2 ring-violet-100" : "")}
-                    type="date"
-                    value={form.dateOfJoining}
-                    onChange={(e) => onField("dateOfJoining", e.target.value)}
-                  />
+                <Field label="Joining date">
+                  <input className={inputClass} type="date" value={form.dateOfJoining} onChange={(e) => onField("dateOfJoining", e.target.value)} />
                 </Field>
+              </div>
+            </section>
+
+            <section className="mt-5 border-t border-slate-100 pt-5">
+              <h3 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-blue-800">📄 Documents</h3>
+              <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-slate-100 text-[18px]">📎</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13.5px] font-semibold text-slate-700">Resume</p>
+                  {resumeName ? (
+                    <a
+                      href={resumeName.startsWith("http") ? resumeName : undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate text-[12.5px] text-blue-700 underline underline-offset-2"
+                    >
+                      {resumeName.startsWith("http") ? "Current resume — view" : resumeName}
+                    </a>
+                  ) : (
+                    <p className="text-[12.5px] text-slate-400">PDF or Word, up to 8 MB</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => resumeInputRef.current?.click()}
+                    className="min-h-[34px] rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-semibold"
+                  >
+                    {resumeName ? "Change" : "Upload"}
+                  </button>
+                  {resumeName && (
+                    <button
+                      type="button"
+                      onClick={onRemoveResume}
+                      className="min-h-[34px] rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-semibold text-red-600"
+                    >
+                      Remove
+                    </button>
+                  )}
+                  <input
+                    ref={resumeInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    hidden
+                    onChange={onResumeChange}
+                  />
+                </div>
               </div>
             </section>
 
             <section className="mt-5 border-t border-slate-100 pt-5">
               <h3 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-blue-800">📞 Contact Details</h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 max-[479px]:grid-cols-1">
-                <Field label="Mobile number" required error={errors.mobileNumber}>
+                <Field label="Mobile number" error={errors.mobileNumber}>
                   <input className={inputClass} type="tel" value={form.mobileNumber} onChange={(e) => onField("mobileNumber", e.target.value)} />
                 </Field>
                 <Field label="Alternate number">
@@ -1087,6 +1039,119 @@ function FormModal({
                 </Field>
                 <Field label="Skills" help="Separate with commas.">
                   <input className={inputClass} value={form.skills} onChange={(e) => onField("skills", e.target.value)} placeholder="MS Office, Tally, Typing" />
+                </Field>
+              </div>
+            </section>
+
+            <section className="mt-5 border-t border-slate-100 pt-5">
+              <h3 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-blue-800">🪪 Identity Documents</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 max-[479px]:grid-cols-1">
+                <Field label="Aadhar number" error={errors.aadharNumber} help="12 digits, no spaces">
+                  <input
+                    className={inputClass}
+                    inputMode="numeric"
+                    maxLength={12}
+                    value={form.aadharNumber}
+                    onChange={(e) => onField("aadharNumber", e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456789012"
+                  />
+                </Field>
+                <Field label="PAN number" error={errors.panNumber}>
+                  <input
+                    className={inputClass}
+                    maxLength={10}
+                    style={{ textTransform: "uppercase" }}
+                    value={form.panNumber}
+                    onChange={(e) => onField("panNumber", e.target.value.toUpperCase())}
+                    placeholder="ABCDE1234F"
+                  />
+                </Field>
+              </div>
+            </section>
+
+            <section className="mt-5 border-t border-slate-100 pt-5">
+              <h3 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-blue-800">🏦 Bank Details</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 max-[479px]:grid-cols-1">
+                <Field label="Account number" error={errors.bankAccountNumber}>
+                  <div className="relative">
+                    <input
+                      className={inputClass + " pr-10"}
+                      type={showAccountNumber ? "text" : "password"}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={form.bankAccountNumber}
+                      onChange={(e) => onField("bankAccountNumber", e.target.value.replace(/\D/g, ""))}
+                      onCopy={(e) => e.preventDefault()}
+                      onCut={(e) => e.preventDefault()}
+                      onContextMenu={(e) => e.preventDefault()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAccountNumber((v) => !v)}
+                      aria-label={showAccountNumber ? "Hide account number" : "Show account number"}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-slate-500"
+                    >
+                      {showAccountNumber ? "🙈" : "👁"}
+                    </button>
+                  </div>
+                </Field>
+                <Field label="Confirm account number" error={errors.confirmAccountNumber} help="Please retype — pasting is disabled">
+                  <div className="relative">
+                    <input
+                      className={inputClass + " pr-10"}
+                      type={showConfirmAccountNumber ? "text" : "password"}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={form.confirmAccountNumber}
+                      onChange={(e) => onField("confirmAccountNumber", e.target.value.replace(/\D/g, ""))}
+                      onPaste={(e) => e.preventDefault()}
+                      onCopy={(e) => e.preventDefault()}
+                      onCut={(e) => e.preventDefault()}
+                      onDrop={(e) => e.preventDefault()}
+                      onContextMenu={(e) => e.preventDefault()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmAccountNumber((v) => !v)}
+                      aria-label={showConfirmAccountNumber ? "Hide account number" : "Show account number"}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-slate-500"
+                    >
+                      {showConfirmAccountNumber ? "🙈" : "👁"}
+                    </button>
+                  </div>
+                </Field>
+                <Field label="IFSC code" error={errors.bankIfscCode}>
+                  <input
+                    className={inputClass}
+                    maxLength={11}
+                    style={{ textTransform: "uppercase" }}
+                    value={form.bankIfscCode}
+                    onChange={(e) => onField("bankIfscCode", e.target.value.toUpperCase())}
+                    placeholder="HDFC0001234"
+                  />
+                </Field>
+                <Field label="Account holder name">
+                  <input className={inputClass} value={form.bankAccountName} onChange={(e) => onField("bankAccountName", e.target.value)} />
+                </Field>
+                <Field label="Account type">
+                  <select className={inputClass} value={form.bankAccountType} onChange={(e) => onField("bankAccountType", e.target.value)}>
+                    <option value="">Select</option>
+                    {ACCOUNT_TYPES.map((t) => <option key={t}>{t}</option>)}
+                  </select>
+                </Field>
+                <Field label="Branch name">
+                  <input className={inputClass} value={form.bankBranchName} onChange={(e) => onField("bankBranchName", e.target.value)} />
+                </Field>
+                <Field label="Branch code">
+                  <input className={inputClass} value={form.bankBranchCode} onChange={(e) => onField("bankBranchCode", e.target.value)} />
+                </Field>
+                <Field label="Swift code" help="Only needed for international transfers">
+                  <input
+                    className={inputClass}
+                    style={{ textTransform: "uppercase" }}
+                    value={form.bankSwiftCode}
+                    onChange={(e) => onField("bankSwiftCode", e.target.value.toUpperCase())}
+                  />
                 </Field>
               </div>
             </section>
