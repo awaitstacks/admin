@@ -3249,9 +3249,8 @@ const FileChip = ({ file, onRemove, removed }) => {
         </a>
       ) : (
         <span
-          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md text-xs font-bold ${
-            isPdf ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
-          }`}
+          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md text-xs font-bold ${isPdf ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+            }`}
         >
           {isPdf ? "PDF" : "IMG"}
         </span>
@@ -3455,9 +3454,8 @@ const ReplyThread = ({ queryId, api, onChanged }) => {
           return (
             <div key={r._id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
               <span
-                className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                  mine ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
-                }`}
+                className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${mine ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
+                  }`}
                 aria-hidden="true"
               >
                 {mine ? "You".slice(0, 1) : initials(r.staff ? staffName(r.staff) : OTHER_NAME)}
@@ -3995,22 +3993,21 @@ const TicketLanding = () => {
       <div className="flex w-full items-center gap-1.5 xl:w-auto">
         {/* Icons — table la oru row ku 3 (periya screen la 6), mela irundha 2nd row — cut aagadhu */}
         <div className="flex flex-1 flex-wrap items-stretch gap-1.5 xl:grid xl:flex-none xl:grid-cols-3 xl:gap-1 2xl:grid-cols-6">
-        {/* Close / Reject aana apram View mattum */}
-        {ACTIONS.filter((a) => a.from.includes(q.status)).map((a) => (
-          <IconAction
-            key={a.key}
-            kind={a.key}
-            label={a.label}
-            short={a.key === "processing" ? "Process" : undefined}
-            busyText={BUSY_TEXT[a.key]}
-            busy={busy && busyAction === a.key}
-            disabled={busy && busyAction !== a.key}
-            onClick={() => onAction(q, a.key)}
-          />
-        ))}
-        {/* Tour admin raise panna ticket — admin page madhiriye Edit / Delete */}
-        {isMine(q) && !["close", "reject"].includes(q.status) && (
-          <>
+          {/* Close / Reject aana apram View mattum */}
+          {ACTIONS.filter((a) => a.from.includes(q.status)).map((a) => (
+            <IconAction
+              key={a.key}
+              kind={a.key}
+              label={a.label}
+              short={a.key === "processing" ? "Process" : undefined}
+              busyText={BUSY_TEXT[a.key]}
+              busy={busy && busyAction === a.key}
+              disabled={busy && busyAction !== a.key}
+              onClick={() => onAction(q, a.key)}
+            />
+          ))}
+          {/* Tour admin raise panna ticket — admin page madhiriye Edit / Delete */}
+          {isMine(q) && ["open", "pickup"].includes(q.status) && (<>
             <IconAction kind="edit" label="Edit" disabled={busy} onClick={() => openEdit(q)} />
             <IconAction
               kind="delete"
@@ -4021,7 +4018,7 @@ const TicketLanding = () => {
               onClick={() => deleteQuery(q)}
             />
           </>
-        )}
+          )}
         </div>
         {/* Touch pannuna open / close nu kaatura arrow */}
         <span className="ml-auto flex h-9 w-7 flex-shrink-0 items-center justify-center self-center text-gray-400 xl:ml-1" aria-hidden="true">
@@ -4096,9 +4093,8 @@ const TicketLanding = () => {
                   return (
                     <span
                       key={t.name}
-                      className={`inline-flex items-center overflow-hidden rounded-full border text-sm ${
-                        active ? "border-green-600 bg-green-600 font-semibold text-white" : "border-gray-200 bg-gray-50 text-gray-700"
-                      }`}
+                      className={`inline-flex items-center overflow-hidden rounded-full border text-sm ${active ? "border-green-600 bg-green-600 font-semibold text-white" : "border-gray-200 bg-gray-50 text-gray-700"
+                        }`}
                     >
                       <button
                         type="button"
@@ -4168,7 +4164,7 @@ const TicketLanding = () => {
           )}
 
           <div className="mb-4">
-            <label htmlFor="bb-subject" className={labelCls}>Subject</label>
+            <label htmlFor="bb-subject" className={labelCls}>Subject *</label>
             <input
               id="bb-subject"
               value={form.subject}
@@ -4298,226 +4294,225 @@ const TicketLanding = () => {
 
       {tab === "list" && (
         <>
-      {/* Cards */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        {CARDS.map((c) => {
-          const active = filters.status === c.key;
-          return (
-            <button
-              key={c.label}
-              onClick={() => setFilter("status", c.key)}
-              aria-pressed={active}
-              className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition sm:p-4 ${
-                active ? `${c.tint} border-transparent ring-2 ${c.ring} shadow-sm` : "border-gray-200 bg-white hover:-translate-y-0.5 hover:shadow-md"
-              }`}
-            >
-              <span className={`absolute inset-y-0 left-0 w-1 ${c.bar}`} aria-hidden="true" />
-              <div className="flex items-start justify-between gap-2">
-                <p className={`text-2xl font-bold tabular-nums sm:text-3xl ${c.num}`}>{cardCount(c.key)}</p>
-                <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-white ${c.bar}`} aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d={c.icon} />
-                  </svg>
-                </span>
+          {/* Cards */}
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            {CARDS.map((c) => {
+              const active = filters.status === c.key;
+              return (
+                <button
+                  key={c.label}
+                  onClick={() => setFilter("status", c.key)}
+                  aria-pressed={active}
+                  className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition sm:p-4 ${active ? `${c.tint} border-transparent ring-2 ${c.ring} shadow-sm` : "border-gray-200 bg-white hover:-translate-y-0.5 hover:shadow-md"
+                    }`}
+                >
+                  <span className={`absolute inset-y-0 left-0 w-1 ${c.bar}`} aria-hidden="true" />
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`text-2xl font-bold tabular-nums sm:text-3xl ${c.num}`}>{cardCount(c.key)}</p>
+                    <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-white ${c.bar}`} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                        <path d={c.icon} />
+                      </svg>
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm font-medium text-gray-600">{c.label}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filters */}
+          <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
+              <div className="col-span-2 md:col-span-3 xl:col-span-2">
+                <label htmlFor="bd-f-search" className={labelCls}>Search</label>
+                <input
+                  id="bd-f-search"
+                  type="search"
+                  value={filters.search}
+                  onChange={(e) => setFilter("search", e.target.value)}
+                  placeholder="Ticket no (GVTKT001), subject or description"
+                  className={inputCls}
+                />
               </div>
-              <p className="mt-1 text-sm font-medium text-gray-600">{c.label}</p>
-            </button>
-          );
-        })}
-      </div>
+              <div className="col-span-2 md:col-span-1">
+                <label htmlFor="bd-f-type" className={labelCls}>Ticket type</label>
+                <select id="bd-f-type" value={filters.queryType} onChange={(e) => setFilter("queryType", e.target.value)} className={inputCls}>
+                  <option value="">All types</option>
+                  {types.map((t) => (
+                    <option key={t.name} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="bd-f-from" className={labelCls}>From</label>
+                <input id="bd-f-from" type="date" value={filters.fromDate} onChange={(e) => setFilter("fromDate", e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label htmlFor="bd-f-to" className={labelCls}>To</label>
+                <input id="bd-f-to" type="date" value={filters.toDate} onChange={(e) => setFilter("toDate", e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
+              <button onClick={clearFilters} className="h-11 rounded-xl border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                Clear Filters
+              </button>
+              <button onClick={() => fetchQueries()} className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700">
+                Refresh
+              </button>
+            </div>
+          </div>
 
-      {/* Filters */}
-      <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-          <div className="col-span-2 md:col-span-3 xl:col-span-2">
-            <label htmlFor="bd-f-search" className={labelCls}>Search</label>
-            <input
-              id="bd-f-search"
-              type="search"
-              value={filters.search}
-              onChange={(e) => setFilter("search", e.target.value)}
-              placeholder="Ticket no (GVTKT001), subject or description"
-              className={inputCls}
-            />
-          </div>
-          <div className="col-span-2 md:col-span-1">
-            <label htmlFor="bd-f-type" className={labelCls}>Ticket type</label>
-            <select id="bd-f-type" value={filters.queryType} onChange={(e) => setFilter("queryType", e.target.value)} className={inputCls}>
-              <option value="">All types</option>
-              {types.map((t) => (
-                <option key={t.name} value={t.name}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="bd-f-from" className={labelCls}>From</label>
-            <input id="bd-f-from" type="date" value={filters.fromDate} onChange={(e) => setFilter("fromDate", e.target.value)} className={inputCls} />
-          </div>
-          <div>
-            <label htmlFor="bd-f-to" className={labelCls}>To</label>
-            <input id="bd-f-to" type="date" value={filters.toDate} onChange={(e) => setFilter("toDate", e.target.value)} className={inputCls} />
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
-          <button onClick={clearFilters} className="h-11 rounded-xl border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-            Clear Filters
-          </button>
-          <button onClick={() => fetchQueries()} className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700">
-            Refresh
-          </button>
-        </div>
-      </div>
+          {/* Table (big screens) + cards (mobile / tablet) */}
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            {loading && <p className="px-4 py-10 text-center text-sm text-gray-500">Loading queries…</p>}
+            {!loading && queries.length === 0 && (
+              <div className="px-4 py-12 text-center">
+                <p className="font-semibold text-gray-800">No tickets here</p>
+                <p className="mt-1 text-sm text-gray-500">New tickets from admin will show up here automatically.</p>
+              </div>
+            )}
 
-      {/* Table (big screens) + cards (mobile / tablet) */}
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        {loading && <p className="px-4 py-10 text-center text-sm text-gray-500">Loading queries…</p>}
-        {!loading && queries.length === 0 && (
-          <div className="px-4 py-12 text-center">
-            <p className="font-semibold text-gray-800">No tickets here</p>
-            <p className="mt-1 text-sm text-gray-500">New tickets from admin will show up here automatically.</p>
-          </div>
-        )}
+            {!loading && queries.length > 0 && (
+              <>
+                {/* ── Big screens: table ── */}
+                <div className="hidden overflow-x-auto xl:block">
+                  <table className="w-full min-w-[960px] text-left">
+                    <thead className="bg-blue-50 text-sm text-gray-600">
+                      <tr>
+                        <th className="whitespace-nowrap px-4 py-3 font-semibold">Ticket no</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-semibold">Ticket</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised by</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised to</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised on</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
+                        <th className="whitespace-nowrap px-4 py-3 font-semibold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {queries.map((q, i) => {
+                        const open = expandedId === q._id;
+                        return (
+                          <React.Fragment key={q._id}>
+                            <tr onClick={(e) => onRowClick(e, q)} className={`cursor-pointer border-t border-gray-100 transition ${open ? "bg-blue-50/40" : "hover:bg-gray-50"}`}>
+                              <td className={`whitespace-nowrap border-l-4 px-4 py-3 ${STATUS_BAR[q.status] || "border-l-transparent"}`}>
+                                <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold tracking-wide text-blue-800">{q.ticketNo || "—"}</span>
+                              </td>
+                              <td className="max-w-[13rem] px-4 py-3 2xl:max-w-xs">
+                                {renderTitle(q, open)}
+                                {renderMeta(q)}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <p className="font-medium">{staffName(q.raisedBy)}</p>
+                                <p className="text-xs text-gray-500">{staffRole(q.raisedBy)}</p>
+                                {renderVia(q)}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <p className="font-medium">{staffName(q.raisedTo)}</p>
+                                <p className="text-xs text-gray-500">{staffRole(q.raisedTo)}</p>
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3 text-sm">
+                                <p>{fmtDate(q.createdAt)}</p>
+                                <p className="text-xs text-gray-500">{fmtTime(q.createdAt)}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <StatusPill status={q.status} />
+                              </td>
+                              <td className="px-3 py-3">{renderActions(q, open)}</td>
+                            </tr>
+                            {open && (
+                              <tr className="border-t border-gray-100 bg-blue-50/40">
+                                <td colSpan={7} className="px-4 pb-5 pt-2">
+                                  {renderDetail(q)}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-        {!loading && queries.length > 0 && (
-          <>
-            {/* ── Big screens: table ── */}
-            <div className="hidden overflow-x-auto xl:block">
-              <table className="w-full min-w-[960px] text-left">
-                <thead className="bg-blue-50 text-sm text-gray-600">
-                  <tr>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Ticket no</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Ticket</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised by</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised to</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Raised on</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+                {/* ── Mobile / tablet / small laptop: cards ── */}
+                <ul className="divide-y divide-gray-100 xl:hidden">
                   {queries.map((q, i) => {
                     const open = expandedId === q._id;
                     return (
-                      <React.Fragment key={q._id}>
-                        <tr onClick={(e) => onRowClick(e, q)} className={`cursor-pointer border-t border-gray-100 transition ${open ? "bg-blue-50/40" : "hover:bg-gray-50"}`}>
-                          <td className={`whitespace-nowrap border-l-4 px-4 py-3 ${STATUS_BAR[q.status] || "border-l-transparent"}`}>
-                            <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold tracking-wide text-blue-800">{q.ticketNo || "—"}</span>
-                          </td>
-                          <td className="max-w-[13rem] px-4 py-3 2xl:max-w-xs">
-                            {renderTitle(q, open)}
+                      <li
+                        key={q._id}
+                        onClick={(e) => onRowClick(e, q)}
+                        className={`cursor-pointer border-l-4 p-4 transition ${STATUS_BAR[q.status] || "border-l-transparent"} ${open ? "bg-blue-50/40" : "active:bg-gray-50"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="mb-1 inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold tracking-wide text-blue-800">{q.ticketNo || "—"}</p>
+                            {renderTitle(q, open, true)}
                             {renderMeta(q)}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <p className="font-medium">{staffName(q.raisedBy)}</p>
-                            <p className="text-xs text-gray-500">{staffRole(q.raisedBy)}</p>
-                            {renderVia(q)}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <p className="font-medium">{staffName(q.raisedTo)}</p>
-                            <p className="text-xs text-gray-500">{staffRole(q.raisedTo)}</p>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm">
-                            <p>{fmtDate(q.createdAt)}</p>
-                            <p className="text-xs text-gray-500">{fmtTime(q.createdAt)}</p>
-                          </td>
-                          <td className="px-4 py-3">
+                          </div>
+                          <div className="flex-shrink-0">
                             <StatusPill status={q.status} />
-                          </td>
-                          <td className="px-3 py-3">{renderActions(q, open)}</td>
-                        </tr>
+                          </div>
+                        </div>
+                        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                          <div className="min-w-0">
+                            <dt className="text-xs text-gray-500">Raised by</dt>
+                            <dd className="truncate font-medium">{staffName(q.raisedBy)}</dd>
+                            <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedBy)}</dd>
+                            <dd>{renderVia(q)}</dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-xs text-gray-500">Raised to</dt>
+                            <dd className="truncate font-medium">{staffName(q.raisedTo)}</dd>
+                            <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedTo)}</dd>
+                          </div>
+                          <div className="col-span-2 sm:col-span-1">
+                            <dt className="text-xs text-gray-500">Raised on</dt>
+                            <dd>
+                              {fmtDate(q.createdAt)} <span className="text-xs text-gray-500">{fmtTime(q.createdAt)}</span>
+                            </dd>
+                          </div>
+                        </dl>
+                        <div className="mt-3">{renderActions(q, open)}</div>
                         {open && (
-                          <tr className="border-t border-gray-100 bg-blue-50/40">
-                            <td colSpan={7} className="px-4 pb-5 pt-2">
-                              {renderDetail(q)}
-                            </td>
-                          </tr>
+                          <div data-no-toggle className="mt-4 cursor-auto border-t border-gray-200 pt-4">
+                            {renderDetail(q)}
+                          </div>
                         )}
-                      </React.Fragment>
+                      </li>
                     );
                   })}
-                </tbody>
-              </table>
+                </ul>
+              </>
+            )}
+
+            <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+              <span>
+                Showing <b>{queries.length}</b> of <b>{total}</b> queries
+              </span>
+              <div className="flex items-center justify-between gap-2 sm:justify-end">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span className="whitespace-nowrap">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-
-            {/* ── Mobile / tablet / small laptop: cards ── */}
-            <ul className="divide-y divide-gray-100 xl:hidden">
-              {queries.map((q, i) => {
-                const open = expandedId === q._id;
-                return (
-                  <li
-                    key={q._id}
-                    onClick={(e) => onRowClick(e, q)}
-                    className={`cursor-pointer border-l-4 p-4 transition ${STATUS_BAR[q.status] || "border-l-transparent"} ${open ? "bg-blue-50/40" : "active:bg-gray-50"}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="mb-1 inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold tracking-wide text-blue-800">{q.ticketNo || "—"}</p>
-                        {renderTitle(q, open, true)}
-                        {renderMeta(q)}
-                      </div>
-                      <div className="flex-shrink-0">
-                        <StatusPill status={q.status} />
-                      </div>
-                    </div>
-                    <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                      <div className="min-w-0">
-                        <dt className="text-xs text-gray-500">Raised by</dt>
-                        <dd className="truncate font-medium">{staffName(q.raisedBy)}</dd>
-                        <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedBy)}</dd>
-                        <dd>{renderVia(q)}</dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="text-xs text-gray-500">Raised to</dt>
-                        <dd className="truncate font-medium">{staffName(q.raisedTo)}</dd>
-                        <dd className="truncate text-xs text-gray-500">{staffRole(q.raisedTo)}</dd>
-                      </div>
-                      <div className="col-span-2 sm:col-span-1">
-                        <dt className="text-xs text-gray-500">Raised on</dt>
-                        <dd>
-                          {fmtDate(q.createdAt)} <span className="text-xs text-gray-500">{fmtTime(q.createdAt)}</span>
-                        </dd>
-                      </div>
-                    </dl>
-                    <div className="mt-3">{renderActions(q, open)}</div>
-                    {open && (
-                      <div data-no-toggle className="mt-4 cursor-auto border-t border-gray-200 pt-4">
-                        {renderDetail(q)}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-
-        <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            Showing <b>{queries.length}</b> of <b>{total}</b> queries
-          </span>
-          <div className="flex items-center justify-between gap-2 sm:justify-end">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <span className="whitespace-nowrap">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="rounded-lg border border-gray-200 px-3 py-2 font-semibold disabled:opacity-40"
-            >
-              Next
-            </button>
           </div>
-        </div>
-      </div>
 
         </>
       )}
