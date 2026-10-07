@@ -2595,6 +2595,8 @@ const TourContextProvider = (props) => {
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffError, setStaffError] = useState(null);
 
+  const [adminCreatedBookings, setAdminCreatedBookings] = useState([]);
+
   const getAllStaff = useCallback(async () => {
     setStaffLoading(true);
     setStaffError(null);
@@ -2750,6 +2752,106 @@ const TourContextProvider = (props) => {
       return { success: false, message: msg };
     }
   };
+
+  // ==================== AADHAAR OCR + ADMIN BOOKING ====================
+
+  // POST /api/tour/ocr/aadhaar — formData: front (required), back (optional)
+  const extractAadhaar = async (formData) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/ocr/aadhaar`,
+        formData,
+        {
+          headers: { ttoken, "Content-Type": "multipart/form-data" },
+          timeout: 30000,
+        },
+      );
+
+      if (!data.success) {
+        toast.error(data.message || "Could not read Aadhaar image");
+      }
+      return data;
+    } catch (error) {
+      console.error("extractAadhaar error:", error);
+      const msg =
+        error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  // POST /api/tour/ocr/payment-screenshot — formData: screenshot, type, amount
+  const uploadPaymentScreenshot = async (formData) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/ocr/payment-screenshot`,
+        formData,
+        {
+          headers: { ttoken, "Content-Type": "multipart/form-data" },
+          timeout: 20000,
+        },
+      );
+
+      if (!data.success) {
+        toast.error(data.message || "Screenshot upload failed");
+      }
+      return data;
+    } catch (error) {
+      console.error("uploadPaymentScreenshot error:", error);
+      const msg =
+        error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  // POST /api/tour/bookings — admin walk-in booking create
+  const adminAddBooking = async (payload) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/bookings`,
+        payload,
+        { headers: { ttoken }, timeout: 15000 },
+      );
+
+      if (data.success) {
+        toast.success(data.message || "Booking created successfully");
+      } else {
+        toast.error(data.message || "Failed to create booking");
+      }
+      return data;
+    } catch (error) {
+      console.error("adminAddBooking error:", error);
+      const msg =
+        error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  // GET /api/tour/bookings/admin-created
+  const getAdminCreatedBookings = useCallback(async () => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/bookings/admin-created`,
+        { headers: { ttoken } },
+      );
+
+      if (data.success) {
+        setAdminCreatedBookings(data.bookings || []);
+        return { success: true, bookings: data.bookings };
+      } else {
+        setAdminCreatedBookings([]);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("getAdminCreatedBookings error:", error);
+      setAdminCreatedBookings([]);
+      const msg =
+        error.response?.data?.message || error.message || "Network error";
+      return { success: false, message: msg };
+    }
+  }, [backendUrl, ttoken]);
 
   // ==================== GET ALL BOOKINGS ====================
   const getAllBookings = useCallback(async () => {
@@ -5200,6 +5302,12 @@ const TourContextProvider = (props) => {
     createStaff,
     updateStaff,
     deleteStaff,
+
+    adminCreatedBookings,
+    extractAadhaar,
+    uploadPaymentScreenshot,
+    adminAddBooking,
+    getAdminCreatedBookings,
 
     // ─── Tickets (queries) ───
     ticketApi,

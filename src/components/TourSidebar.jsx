@@ -285,6 +285,9 @@ import {
   TicketCheckIcon,
   DownloadCloud,
   UploadCloudIcon,
+  Upload,
+  CreativeCommons,
+  BookIcon,
 } from "lucide-react";
 import { Profiler } from "react";
 
@@ -456,6 +459,25 @@ const tourMenuItems = [
     icon: DownloadCloud,
     label: "Raise/View Tickets",
   },
+
+  {
+    to: "/aadhaar-upload",
+    icon: Upload,
+    label: "Aadhaar Upload",
+  },
+
+  {
+    to: "/creat-bookings",
+    icon: CreativeCommons,
+    label: "Creat Bookings",
+  },
+
+  {
+    to: "/admin-bookings",
+    icon: BookIcon,
+    label: "Admin-Bookings",
+  },
+
 
   {
     to: "/tour-enquiries",

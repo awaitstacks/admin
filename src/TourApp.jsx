@@ -166,6 +166,9 @@ import Invoice from "./pages/Doctor/Invoice.jsx";  // ← ADD THIS
 import AdminProfile from "./pages/Doctor/AdminProfile.jsx";  // ← ADD THIS
 import TicketLanding from "./pages/Doctor/TicketLanding.jsx";  // ← ADD THIS
 import RaiseTicket from "./pages/Admin/RaiseTicket.jsx";  // ← ADD THIS
+import AadhaarUpload from "./pages/Doctor/AadhaarUpload.jsx";  // ← ADD THIS
+import CreateBooking from "./pages/Doctor/CreateBooking.jsx";  // ← ADD THIS
+import AdminCreatedBooking from "./pages/Doctor/AdminCreatedBooking.jsx";  // ← ADD THIS
 import { Ticket } from "lucide-react";
 
 
@@ -223,6 +226,9 @@ const TourApp = () => {
             <Route path="/task-dashboard" element={<TaskDashboard />} />
             <Route path="/staff-profile" element={<AdminProfile />} />
             <Route path="/ticket-landing" element={<TicketLanding />} />
+            <Route path="/aadhaar-upload" element={<AadhaarUpload />} />
+            <Route path="/creat-bookings" element={<CreateBooking />} />
+            <Route path="/admin-bookings" element={<AdminCreatedBooking />} />
             <Route path="/tour-enquiries" element={<TripEnquiries />} />
             <Route path="/tour-dashboard" element={<TourDashboard />} />
             <Route path="/tour-bookings" element={<TourBookings />} />
