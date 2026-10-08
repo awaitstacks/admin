@@ -2853,6 +2853,25 @@ const TourContextProvider = (props) => {
     }
   }, [backendUrl, ttoken]);
 
+  const saveAadhaarBookingNotes = async (payload) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/ocr/booking-notes`,
+        payload,
+        { headers: { ttoken } },
+      );
+      if (!data.success) {
+        toast.error(data.message || "Could not save booking notes");
+      }
+      return data;
+    } catch (error) {
+      console.error("saveAadhaarBookingNotes error:", error);
+      toast.error(error.response?.data?.message || "Could not save booking notes");
+      return { success: false };
+    }
+  };
+
+
   // ==================== GET ALL BOOKINGS ====================
   const getAllBookings = useCallback(async () => {
     try {
@@ -5308,6 +5327,7 @@ const TourContextProvider = (props) => {
     uploadPaymentScreenshot,
     adminAddBooking,
     getAdminCreatedBookings,
+    saveAadhaarBookingNotes,
 
     // ─── Tickets (queries) ───
     ticketApi,
