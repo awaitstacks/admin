@@ -5742,6 +5742,41 @@ const TourContextProvider = (props) => {
     }
   };
 
+  const editAadhaarTraveller = async (docId, fields) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/edit-traveller`,
+        { docId, ...fields },
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not update traveller.");
+      return data;
+    } catch (error) {
+      console.error("editAadhaarTraveller error:", error);
+      toast.error(error?.response?.data?.message || "Could not update traveller.");
+      return { success: false };
+    }
+  };
+
+  // POST /api/tour/delete-traveller — delete a co-traveller, or (for the
+  // main traveller) the entire draft booking group. Backend blocks this
+  // once the group's booking already has a real tnr.
+  const deleteAadhaarTraveller = async (docId) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/delete-traveller`,
+        { docId },
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not delete traveller.");
+      return data;
+    } catch (error) {
+      console.error("deleteAadhaarTraveller error:", error);
+      toast.error(error?.response?.data?.message || "Could not delete traveller.");
+      return { success: false };
+    }
+  };
+
   // POST /api/tour/bookings — admin walk-in booking create
   const adminAddBooking = async (payload) => {
     try {
@@ -8267,6 +8302,8 @@ const TourContextProvider = (props) => {
     addCoTraveller,
     uploadGroupPayment,
     linkGroupTnr,
+    editAadhaarTraveller,
+    deleteAadhaarTraveller,
     adminAddBooking,
     getAdminCreatedBookings,
     saveAadhaarBookingNotes,
