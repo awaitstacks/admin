@@ -5724,6 +5724,22 @@ const TourContextProvider = (props) => {
       return { success: false };
     }
   };
+  const deleteGroupPayment = async (docId) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/delete-group-payment`,
+        { docId },
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not delete payment screenshot.");
+      return data;
+    } catch (error) {
+      console.error("deleteGroupPayment error:", error);
+      toast.error(error?.response?.data?.message || "Could not delete payment screenshot.");
+      return { success: false };
+    }
+  };
+
 
   // POST /api/tour/link-tnr
   const linkGroupTnr = async (payload) => {
@@ -5773,6 +5789,43 @@ const TourContextProvider = (props) => {
     } catch (error) {
       console.error("deleteAadhaarTraveller error:", error);
       toast.error(error?.response?.data?.message || "Could not delete traveller.");
+      return { success: false };
+    }
+  };
+
+  // POST /api/tour/guest/link — mark two bookings (by tnr) as the SAME
+  // real guest, e.g. "Vishvanathan" (one tnr) and "Jeyandhi" (another tnr)
+  // turn out to be the same person. label is optional free text.
+  const linkGuestTnr = async (tnr, linkToTnr, label) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/guest/link`,
+        { tnr, linkToTnr, label },
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not link guest.");
+      return data;
+    } catch (error) {
+      console.error("linkGuestTnr error:", error);
+      toast.error(error?.response?.data?.message || "Could not link guest.");
+      return { success: false };
+    }
+  };
+
+  // POST /api/tour/guest/unlink — remove this one tnr from its guest
+  // group (the rest of the group, if any, stays linked together).
+  const unlinkGuestTnr = async (tnr) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/guest/unlink`,
+        { tnr },
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not unlink guest.");
+      return data;
+    } catch (error) {
+      console.error("unlinkGuestTnr error:", error);
+      toast.error(error?.response?.data?.message || "Could not unlink guest.");
       return { success: false };
     }
   };
@@ -8301,9 +8354,12 @@ const TourContextProvider = (props) => {
     getAadhaarBookings,
     addCoTraveller,
     uploadGroupPayment,
+    deleteGroupPayment,
     linkGroupTnr,
     editAadhaarTraveller,
     deleteAadhaarTraveller,
+    linkGuestTnr,
+    unlinkGuestTnr,
     adminAddBooking,
     getAdminCreatedBookings,
     saveAadhaarBookingNotes,
@@ -8318,3 +8374,4 @@ const TourContextProvider = (props) => {
 };
 
 export default TourContextProvider;
+
