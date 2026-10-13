@@ -2150,6 +2150,43 @@ const TourAdminContextProvider = (props) => {
     }
   }, [aToken, backendUrl, validateApiResponse]);
 
+  // GET /api/touradmin/payment-tasks — same backend data as the Tour Admin
+  // side's Payment Tasks dashboard (advanceTasks / partialTasks / balanceTasks).
+  const getPaymentTasks = useCallback(async () => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/touradmin/payment-tasks`,
+        { headers: { aToken } },
+      );
+      const validated = validateApiResponse(data, "Failed to fetch payment tasks");
+      return validated;
+    } catch (error) {
+      console.error("getPaymentTasks error:", error);
+      const msg = error.response?.data?.message || "Failed to fetch payment tasks";
+      toast.error(msg);
+      throw error;
+    }
+  }, [aToken, backendUrl, validateApiResponse]);
+
+  // POST /api/touradmin/payment-tasks/mark-done — body: { docId }. Manual
+  // "mark done" step for a partial/balance payment task only.
+  const markPaymentTaskDone = async (docId) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/touradmin/payment-tasks/mark-done`,
+        { docId },
+        { headers: { aToken } },
+      );
+      const validated = validateApiResponse(data, "Failed to mark this task done");
+      return validated;
+    } catch (error) {
+      console.error("markPaymentTaskDone error:", error);
+      const msg = error.response?.data?.message || "Failed to mark this task done";
+      toast.error(msg);
+      throw error;
+    }
+  };
+
   const approveBookingUpdate = async (bookingId) => {
     try {
       const { data } = await axios.post(
@@ -3047,6 +3084,8 @@ const TourAdminContextProvider = (props) => {
     deleteBooking,
     releaseBooking,
     getPendingApprovals,
+    getPaymentTasks,
+    markPaymentTaskDone,
     approveBookingUpdate,
     rejectBookingUpdate,
     getAdminDashData,

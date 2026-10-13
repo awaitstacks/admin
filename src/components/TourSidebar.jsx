@@ -288,6 +288,7 @@ import {
   Upload,
   CreativeCommons,
   BookIcon,
+  ListChecks
 } from "lucide-react";
 import { Profiler } from "react";
 
@@ -414,6 +415,7 @@ const adminMenuItems = [
     icon: ChartPieIcon,
     label: "Sales DashBoard",
   },
+  { to: "/admin-payment-tasks", icon: ListChecks, label: "Payment Tasks" },
   { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
   { to: "/ticket-launching", icon: UploadCloudIcon, label: "Raise Tickets" },
   { to: "/all-users", icon: User2Icon, label: "All users" },
@@ -453,6 +455,8 @@ const tourMenuItems = [
     icon: PersonStandingIcon,
     label: "Staff-Profile",
   },
+
+  { to: "/payment-tasks", icon: ListChecks, label: "Payment Tasks" },
 
   {
     to: "/ticket-landing",

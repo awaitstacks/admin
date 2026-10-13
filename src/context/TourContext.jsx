@@ -5740,6 +5740,41 @@ const TourContextProvider = (props) => {
     }
   };
 
+  // GET /api/tour/payment-tasks — the Payment Tasks dashboard's three lists
+  // (advanceTasks / partialTasks / balanceTasks). Read-only.
+  const getPaymentTasks = async () => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/payment-tasks`,
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not fetch payment tasks.");
+      return data;
+    } catch (error) {
+      console.error("getPaymentTasks error:", error);
+      toast.error(error?.response?.data?.message || "Could not fetch payment tasks.");
+      return { success: false };
+    }
+  };
+
+  // POST /api/tour/payment-tasks/mark-done — body: { docId }. Manual
+  // "mark done" step for a partial/balance payment task only.
+  const markPaymentTaskDone = async (docId) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/payment-tasks/mark-done`,
+        { docId },
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not mark this task done.");
+      return data;
+    } catch (error) {
+      console.error("markPaymentTaskDone error:", error);
+      toast.error(error?.response?.data?.message || "Could not mark this task done.");
+      return { success: false };
+    }
+  };
+
 
   // POST /api/tour/link-tnr
   const linkGroupTnr = async (payload) => {
@@ -8355,6 +8390,8 @@ const TourContextProvider = (props) => {
     addCoTraveller,
     uploadGroupPayment,
     deleteGroupPayment,
+    getPaymentTasks,
+    markPaymentTaskDone,
     linkGroupTnr,
     editAadhaarTraveller,
     deleteAadhaarTraveller,
