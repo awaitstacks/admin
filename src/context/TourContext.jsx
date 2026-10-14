@@ -5724,6 +5724,57 @@ const TourContextProvider = (props) => {
       return { success: false };
     }
   };
+
+  // GET /api/tour/user-bookings?tourId=...&email=...
+  const searchUserBookings = async (tourId, email) => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/user-bookings`,
+        { params: { tourId, email }, headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not search online bookings.");
+      return data;
+    } catch (error) {
+      console.error("searchUserBookings error:", error);
+      toast.error(error?.response?.data?.message || "Could not search online bookings.");
+      return { success: false };
+    }
+  };
+
+  // POST /api/tour/user-bookings/upload-aadhaar
+  const uploadUserTravellerAadhaar = async (payload) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/user-bookings/upload-aadhaar`,
+        payload,
+        { headers: { ttoken } },
+      );
+      if (!data.success) toast.error(data.message || "Could not save Aadhaar for this traveller.");
+      return data;
+    } catch (error) {
+      console.error("uploadUserTravellerAadhaar error:", error);
+      toast.error(error?.response?.data?.message || "Could not save Aadhaar for this traveller.");
+      return { success: false };
+    }
+  };
+
+  // POST /api/tour/user-bookings/upload-payment
+  const uploadUserBookingPayment = async (formData) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/user-bookings/upload-payment`,
+        formData,
+        { headers: { ttoken, "Content-Type": "multipart/form-data" } },
+      );
+      if (!data.success) toast.error(data.message || "Upload failed.");
+      return data;
+    } catch (error) {
+      console.error("uploadUserBookingPayment error:", error);
+      toast.error(error?.response?.data?.message || "Upload failed.");
+      return { success: false };
+    }
+  };
+
   const deleteGroupPayment = async (docId) => {
     try {
       const { data } = await axios.post(
@@ -8389,6 +8440,9 @@ const TourContextProvider = (props) => {
     getAadhaarBookings,
     addCoTraveller,
     uploadGroupPayment,
+    searchUserBookings,
+    uploadUserTravellerAadhaar,
+    uploadUserBookingPayment,
     deleteGroupPayment,
     getPaymentTasks,
     markPaymentTaskDone,
