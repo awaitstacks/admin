@@ -6009,6 +6009,32 @@ const TourContextProvider = (props) => {
     }
   }, [backendUrl, ttoken]);
 
+  // "Export Active Travellers PDF" button (Aadhaar Upload → All Bookings
+  // tab) — tnrs is the list of TNRs currently showing for that tour;
+  // returns { name, age, gender, aadhaarNumber } rows for every
+  // non-cancelled traveller. The frontend feeds these straight into the
+  // PDF it builds client-side and never renders aadhaarNumber on screen.
+  const exportActiveTravellersPdfData = async (tnrs) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/tour/bookings/export-active-travellers`,
+        { tnrs: Array.isArray(tnrs) ? tnrs : [] },
+        { headers: { ttoken }, timeout: 60000 },
+      );
+      if (data.success) {
+        return { success: true, travellers: data.travellers };
+      }
+      toast.error(data.message || "Could not prepare the PDF data");
+      return { success: false, message: data.message };
+    } catch (error) {
+      console.error("exportActiveTravellersPdfData error:", error);
+      const msg =
+        error.response?.data?.message || error.message || "Network error";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
   // 1. taskMarkAdvanceReceiptSent
   const taskMarkAdvanceReceiptSent = async (tnr) => {
     try {
@@ -8317,6 +8343,7 @@ const TourContextProvider = (props) => {
     getBookings,
     allBookings,
     getAllBookings,
+    exportActiveTravellersPdfData,
     dashData,
     setDashData,
     getDashData,
