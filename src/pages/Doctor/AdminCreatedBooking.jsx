@@ -1,3 +1,4 @@
+
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TourContext } from "../../context/TourContext";
@@ -13,6 +14,8 @@ import {
   QrCode,
   Train,
   Plane,
+  Search,
+  X,
 } from "lucide-react";
 
 const renderTripWiseAddons = (traveller, currencySymbol) => {
@@ -209,10 +212,17 @@ const AdminCreatedBooking = () => {
   };
 
   const filteredBookings = adminCreatedBookings.filter((item) => {
-    const matchesTitle = item.tourData.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    if (!matchesTitle) return false;
+    // One box searches TNR, tour title, and traveller names.
+    const q = searchTerm.trim().toLowerCase();
+    if (q) {
+      const tnr = String(item.tnr || "").toLowerCase();
+      const title = String(item.tourData?.title || "").toLowerCase();
+      const names = (item.travellers || [])
+        .map((t) => [t.title, t.firstName, t.lastName].filter(Boolean).join(" ").toLowerCase())
+        .join(" | ");
+      const matches = tnr.includes(q) || title.includes(q) || names.includes(q);
+      if (!matches) return false;
+    }
 
     if (statusFilter === "all") return true;
     if (statusFilter !== "all" && allTravellersCancelled(item)) return false;
@@ -254,13 +264,29 @@ const AdminCreatedBooking = () => {
           </h1>
 
           <div className="bg-white/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 shadow-lg mb-8 flex flex-col md:flex-row gap-4">
-            <input
-              type="text"
-              placeholder="Search by tour title..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all outline-none text-sm sm:text-base"
-            />
+            <div className="relative flex-1">
+              <Search
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder="Search by TNR, traveller name or tour title..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all outline-none text-sm sm:text-base"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  title="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}

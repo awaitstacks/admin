@@ -449,6 +449,7 @@ const tourMenuItems = [
     icon: LucideThermometerSnowflake,
     label: "Task Dashboard",
   },
+  { to: "/payment-tasks", icon: ListChecks, label: "Payment Tasks" },
 
   {
     to: "/staff-profile",
@@ -456,30 +457,38 @@ const tourMenuItems = [
     label: "Staff-Profile",
   },
 
-  { to: "/payment-tasks", icon: ListChecks, label: "Payment Tasks" },
 
-  {
-    to: "/ticket-landing",
-    icon: DownloadCloud,
-    label: "Raise/View Tickets",
-  },
+  { to: "/add-tourDetail", icon: Plus, label: "Add Tour" },
+  { to: "/tour-profile", icon: User, label: "Tour profile" },
 
   {
     to: "/aadhaar-upload",
     icon: Upload,
-    label: "Aadhaar Upload",
+    label: "Create Booking(auto)",
   },
 
   {
     to: "/creat-bookings",
     icon: CreativeCommons,
-    label: "Creat Bookings",
+    label: "Creat Booking",
   },
 
   {
     to: "/admin-bookings",
     icon: BookIcon,
     label: "Admin-Bookings",
+  },
+  { to: "/tour-bookings", icon: BookImage, label: "Tour Bookings" },
+
+  {
+    to: "/tour-allbookings",
+    icon: Calendar,
+    label: "All Bookings",
+  },
+  {
+    to: "/ticket-landing",
+    icon: DownloadCloud,
+    label: "Raise/View Tickets",
   },
 
 
@@ -488,15 +497,10 @@ const tourMenuItems = [
     icon: MapPinHouse,
     label: "FIT Enquiries",
   },
-  {
-    to: "/tour-allbookings",
-    icon: Calendar,
-    label: "All Bookings",
-  },
+
   { to: "/tour-dashboard", icon: Info, label: "Tour info" },
-  { to: "/tour-bookings", icon: BookImage, label: "Tour Bookings" },
-  { to: "/add-tourDetail", icon: Plus, label: "Add Tour" },
-  { to: "/tour-profile", icon: User, label: "Tour profile" },
+
+
   { to: "/tour-namelist", icon: FileText, label: "Tour Name List" },
 
   {

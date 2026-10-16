@@ -1,3 +1,4 @@
+
 // // import React, { useContext, useEffect, useRef, useState } from "react";
 // // import { useNavigate } from "react-router-dom";
 // // import JSZip from "jszip";
@@ -38,16 +39,12 @@
 // //   ChevronLeft,
 // //   ChevronRight,
 // //   X,
+// //   FileText,
 // // } from "lucide-react";
 // // import { toast, ToastContainer } from "react-toastify";
 // // import "react-toastify/dist/ReactToastify.css";
 
-// // // Small copy-to-clipboard icon for a TNR shown next to it anywhere on this
-// // // page — the admin reads a lot of TNRs off this page to paste elsewhere
-// // // (WhatsApp, search boxes, etc.), so a click-to-copy beats select-and-copy
-// // // by hand every time. stopPropagation matters here: every place this sits
-// // // is itself inside a bigger clickable row (expand/collapse), so without it
-// // // a copy click would also toggle that row.
+// // // Click-to-copy TNR. stopPropagation so it never toggles the parent row.
 // // const CopyTnrButton = ({ tnr, className = "" }) => {
 // //   const [copied, setCopied] = useState(false);
 // //   const handleCopy = async (e) => {
@@ -73,11 +70,7 @@
 // //   );
 // // };
 
-// // // Three-state traveller badge: a pending cancellation request, one the
-// // // admin rejected (traveller stays active/bookable), or one actually
-// // // approved/cancelled — backend (getAadhaarBookings) already resolves
-// // // which of the three a traveller is in, this just renders it. Nothing
-// // // shown for an active traveller (status is null).
+// // // Three-state traveller cancellation badge (resolved by the backend).
 // // const CANCEL_STATUS = {
 // //   request: { label: "Cancellation Requested", className: "bg-amber-100 text-amber-700 border border-amber-200" },
 // //   rejected: { label: "Cancellation Rejected", className: "bg-gray-100 text-gray-600 border border-gray-300" },
@@ -93,10 +86,7 @@
 // //   );
 // // };
 
-// // // One-at-a-time image viewer for a list of payment screenshots — clicking
-// // // any uploaded item (Advance/Balance/Partial, however many there are)
-// // // opens this instead of a raw new-tab link, with Prev/Next to step through
-// // // every screenshot in that list one by one without leaving the page.
+// // // One-at-a-time payment screenshot viewer with Prev/Next.
 // // const ScreenshotViewer = ({ items, index, onClose, onNav }) => {
 // //   if (index === null || index === undefined || !items?.[index]) return null;
 // //   const item = items[index];
@@ -148,9 +138,7 @@
 // //   );
 // // };
 
-// // // stationCode is NOT guaranteed unique within a tour's boardingPoints /
-// // // deboardingPoints array — match by each point's own _id (same fix as
-// // // TourBooking.jsx / CreateBooking.jsx).
+// // // Match boarding/deboarding points by their own _id (stationCode isn't unique).
 // // const getPointId = (point) => {
 // //   if (!point) return "";
 // //   const raw = point._id;
@@ -158,10 +146,7 @@
 // //   return raw !== undefined && raw !== null ? String(raw) : "";
 // // };
 
-// // // Traveller shape now holds ONLY person-level fields — identity + sharing +
-// // // Aadhaar. Package Type, Boarding/Deboarding Point, Add-ons and Remarks are
-// // // BOOKING-wide (set once, fetched from the selected tour's own data below —
-// // // not typed free-text).
+// // // Person-level fields only — package/boarding/addons/remarks are booking-wide.
 // // const blankTraveller = (isMain) => ({
 // //   title: "Mr",
 // //   firstName: "",
@@ -169,12 +154,6 @@
 // //   age: "",
 // //   gender: "Male",
 // //   sharingType: "",
-// //   // Address/Mobile — same fields for main AND co-travellers. OCR fills
-// //   // these when it can; the admin can always edit/correct them here.
-// //   // `address` stays as the one combined OCR'd line (kept so older code
-// //   // paths and the booking card's view mode still have something to show);
-// //   // the split fields below are what the form itself edits — Country is
-// //   // always "India" and isn't a stored field, just a fixed label.
 // //   phone: "",
 // //   address: "",
 // //   addressLine1: "",
@@ -183,27 +162,17 @@
 // //   state: "",
 // //   pincode: "",
 // //   isCoTraveller: !isMain,
-// //   // Aadhaar OCR
 // //   front: null,
 // //   back: null,
 // //   ocrLoading: false,
 // //   _frontFile: null,
 // //   _backFile: null,
-// //   source: "aadhaar", // "aadhaar" | "manual" — co-travellers can switch to manual
+// //   source: "aadhaar", // "aadhaar" | "manual"
 // // });
 
-// // // ───────────────────────── Booking-wide section (Package / Boarding / Deboarding / Add-ons / Remarks) ─────────────────────────
-// // // IMPORTANT: defined OUTSIDE AadhaarUpload (module scope), not as a function
-// // // created fresh on every render. A component defined INSIDE a parent's
-// // // render body gets a brand-new identity every re-render, so React unmounts
-// // // and remounts the whole subtree on every keystroke — every input loses
-// // // focus and the cursor jumps out after each character. Keeping it at
-// // // module scope with plain props fixes that.
-// // //
-// // // Package Type / Boarding Point / Deboarding Point / Add-ons are now
-// // // fetched from the selected tour's own data (tourInfo) via dropdowns —
-// // // not typed free-text — so what the admin picks here actually matches a
-// // // real package/boarding/deboarding/addon on that tour.
+// // // ───────────── Booking-wide section ─────────────
+// // // Module scope (not inside AadhaarUpload) so inputs don't lose focus on
+// // // every keystroke.
 // // const BookingWideSection = ({
 // //   tourInfo,
 // //   packageSelection,
@@ -233,9 +202,6 @@
 // //     .map((flight, flightIndex) => ({ flight, flightIndex }))
 // //     .filter(({ flight }) => Array.isArray(flight.addons) && flight.addons.length > 0);
 
-// //   // Train/flight-wise addon selection — SAME pattern CreateBooking.jsx
-// //   // uses per traveller, promoted to booking-wide here (one selection
-// //   // applied to the whole booking instead of per traveller).
 // //   const handleAddonChange = (trainIndex, addonId) => {
 // //     const train = trainDetails[trainIndex];
 // //     if (!train) return;
@@ -440,10 +406,6 @@
 // //         )}
 
 // //         <div className="mt-5 pt-5 border-t border-sky-200/70">
-// //           {/* Who's actually saving this booking — picked from the
-// //               Staff-Profile directory (not typed), so every booking's All
-// //               Bookings card can show "Raised by: <name>" instead of a
-// //               generic "admin" tag. Required so it's never silently blank. */}
 // //           <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
 // //             <UserCheck className="w-3.5 h-3.5 text-sky-600" /> Raised By (who is saving this booking?) *
 // //           </label>
@@ -475,8 +437,7 @@
 // //   );
 // // };
 
-// // // ───────────────────────── Per-person traveller card (identity + sharing + Aadhaar) ─────────────────────────
-// // // Also module-scope for the same reason as BookingWideSection above.
+// // // ───────────── Per-person traveller card ─────────────
 // // const TravellerCard = ({
 // //   traveller,
 // //   index,
@@ -488,10 +449,6 @@
 // //   clearTravellerAadhaar,
 // //   handleTravellerChange,
 // // }) => {
-// //   // Lets the "clear chosen file" buttons below actually reset what the
-// //   // native <input type="file"> displays (browsers won't blank that text
-// //   // just because React state changes — the input's own .value has to be
-// //   // reset directly).
 // //   const frontInputRef = useRef(null);
 // //   const backInputRef = useRef(null);
 // //   const [showRawText, setShowRawText] = useState(false);
@@ -505,12 +462,8 @@
 // //     setTravellerBackFile(index, null);
 // //   };
 
-// //   // One cross mark, one place, for the whole lifecycle of this image:
-// //   // before extraction it just clears the chosen file; after extraction
-// //   // (traveller.front/back is set) it also wipes the OCR'd result so the
-// //   // admin can redo it with the right image. Either way the button stays
-// //   // put next to "Choose File" instead of disappearing after Extract and
-// //   // reappearing somewhere else.
+// //   // One cross mark for the whole lifecycle — clears the picker, and the
+// //   // OCR'd result too if already extracted.
 // //   const clearFront = () => {
 // //     clearChosenFront();
 // //     if (traveller.front) clearTravellerAadhaar(index);
@@ -521,355 +474,324 @@
 // //   };
 
 // //   return (
-// //   <div
-// //     className={`mb-6 rounded-2xl border shadow-sm overflow-hidden ${
-// //       isMain ? "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/50" : "border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/50"
-// //     }`}
-// //   >
 // //     <div
-// //       className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b bg-white/60 ${
-// //         isMain ? "border-indigo-200/70" : "border-purple-200/70"
-// //       }`}
+// //       className={`mb-6 rounded-2xl border shadow-sm overflow-hidden ${isMain ? "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/50" : "border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/50"
+// //         }`}
 // //     >
-// //       <div className="flex items-center gap-3">
-// //         <div
-// //           className={`w-10 h-10 rounded-xl text-white flex items-center justify-center shadow-sm ${
-// //             isMain ? "bg-indigo-600" : "bg-purple-600"
+// //       <div
+// //         className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b bg-white/60 ${isMain ? "border-indigo-200/70" : "border-purple-200/70"
 // //           }`}
-// //         >
-// //           {isMain ? <IdCard className="w-5 h-5" /> : <Users className="w-5 h-5" />}
-// //         </div>
-// //         <div>
-// //           <p className="font-bold text-gray-800 leading-tight">
-// //             {isMain ? "Main Traveller" : `Co-Traveller ${index}`}
-// //           </p>
-// //           {!isMain && (
-// //             <p className="text-xs text-gray-500">
-// //               {traveller.source === "aadhaar" ? "Via Aadhaar OCR" : "Manual entry"}
+// //       >
+// //         <div className="flex items-center gap-3">
+// //           <div
+// //             className={`w-10 h-10 rounded-xl text-white flex items-center justify-center shadow-sm ${isMain ? "bg-indigo-600" : "bg-purple-600"
+// //               }`}
+// //           >
+// //             {isMain ? <IdCard className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+// //           </div>
+// //           <div>
+// //             <p className="font-bold text-gray-800 leading-tight">
+// //               {isMain ? "Main Traveller" : `Co-Traveller ${index}`}
 // //             </p>
-// //           )}
+// //             {!isMain && (
+// //               <p className="text-xs text-gray-500">
+// //                 {traveller.source === "aadhaar" ? "Via Aadhaar OCR" : "Manual entry"}
+// //               </p>
+// //             )}
+// //           </div>
 // //         </div>
+// //         {!isMain && (
+// //           <button
+// //             onClick={() => removeCoTraveller(index)}
+// //             className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+// //             title="Remove co-traveller"
+// //           >
+// //             <Trash2 className="w-4.5 h-4.5" />
+// //           </button>
+// //         )}
 // //       </div>
-// //       {!isMain && (
-// //         <button
-// //           onClick={() => removeCoTraveller(index)}
-// //           className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
-// //           title="Remove co-traveller"
-// //         >
-// //           <Trash2 className="w-4.5 h-4.5" />
-// //         </button>
-// //       )}
-// //     </div>
 
-// //     <div className="p-5 sm:p-6">
-// //       {/* Aadhaar upload — skippable for manual co-travellers */}
-// //       {traveller.source === "aadhaar" && (
-// //         <div className="p-4 bg-white rounded-xl border border-dashed border-gray-300 mb-5">
-// //           <div className="flex flex-wrap items-end gap-3">
-// //             <div className="flex-1 min-w-[160px]">
-// //               <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-// //                 Aadhaar Front {isMain ? "(required)" : ""}
-// //               </label>
-// //               <div className="flex items-center gap-2">
-// //                 <input
-// //                   ref={frontInputRef}
-// //                   type="file"
-// //                   accept="image/*"
-// //                   onChange={(e) => setTravellerFrontFile(index, e.target.files?.[0] || null)}
-// //                   className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
-// //                 />
-// //                 {/* Same cross mark whether a file is just chosen (clears
-// //                     the picker) or already extracted (also wipes the OCR'd
-// //                     result) — stays in this one spot either way, never
-// //                     hides after Extract. */}
-// //                 {(traveller._frontFile || traveller.front) && (
-// //                   <button
-// //                     type="button"
-// //                     onClick={clearFront}
-// //                     className="shrink-0 text-gray-400 hover:text-red-600"
-// //                     title={traveller.front ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
-// //                   >
-// //                     <XCircle className="w-4 h-4" />
-// //                   </button>
-// //                 )}
-// //               </div>
-// //             </div>
-// //             {isMain && (
+// //       <div className="p-5 sm:p-6">
+// //         {traveller.source === "aadhaar" && (
+// //           <div className="p-4 bg-white rounded-xl border border-dashed border-gray-300 mb-5">
+// //             <div className="flex flex-wrap items-end gap-3">
 // //               <div className="flex-1 min-w-[160px]">
-// //                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Back (optional)</label>
+// //                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+// //                   Aadhaar Front {isMain ? "(required)" : ""}
+// //                 </label>
 // //                 <div className="flex items-center gap-2">
 // //                   <input
-// //                     ref={backInputRef}
+// //                     ref={frontInputRef}
 // //                     type="file"
-// //                     accept="image/*"
-// //                     onChange={(e) => setTravellerBackFile(index, e.target.files?.[0] || null)}
+// //                     accept="image/*,application/pdf"
+// //                     onChange={(e) => setTravellerFrontFile(index, e.target.files?.[0] || null)}
 // //                     className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
 // //                   />
-// //                   {(traveller._backFile || traveller.back) && (
+// //                   {(traveller._frontFile || traveller.front) && (
 // //                     <button
 // //                       type="button"
-// //                       onClick={clearBack}
+// //                       onClick={clearFront}
 // //                       className="shrink-0 text-gray-400 hover:text-red-600"
-// //                       title={traveller.back ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
+// //                       title={traveller.front ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
 // //                     >
 // //                       <XCircle className="w-4 h-4" />
 // //                     </button>
 // //                   )}
 // //                 </div>
 // //               </div>
-// //             )}
-// //             <button
-// //               onClick={() => extractTravellerAadhaar(index)}
-// //               disabled={traveller.ocrLoading || !traveller._frontFile}
-// //               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-bold text-sm shadow-sm transition-colors"
-// //             >
-// //               {traveller.ocrLoading ? (
-// //                 <>
-// //                   <Loader2 className="w-4 h-4 animate-spin" /> Reading...
-// //                 </>
-// //               ) : (
-// //                 <>
-// //                   <Upload className="w-4 h-4" /> Extract Aadhaar
-// //                 </>
+// //               {isMain && (
+// //                 <div className="flex-1 min-w-[160px]">
+// //                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Back (optional)</label>
+// //                   <div className="flex items-center gap-2">
+// //                     <input
+// //                       ref={backInputRef}
+// //                       type="file"
+// //                       accept="image/*,application/pdf"
+// //                       onChange={(e) => setTravellerBackFile(index, e.target.files?.[0] || null)}
+// //                       className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
+// //                     />
+// //                     {(traveller._backFile || traveller.back) && (
+// //                       <button
+// //                         type="button"
+// //                         onClick={clearBack}
+// //                         className="shrink-0 text-gray-400 hover:text-red-600"
+// //                         title={traveller.back ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
+// //                       >
+// //                         <XCircle className="w-4 h-4" />
+// //                       </button>
+// //                     )}
+// //                   </div>
+// //                 </div>
 // //               )}
-// //             </button>
-// //             {!isMain && (
 // //               <button
-// //                 onClick={() => handleTravellerChange(index, "source", "manual")}
-// //                 className="px-4 py-2.5 text-sm font-semibold text-purple-700 border border-purple-300 rounded-xl hover:bg-purple-50 transition-colors"
+// //                 onClick={() => extractTravellerAadhaar(index)}
+// //                 disabled={traveller.ocrLoading || !traveller._frontFile}
+// //                 className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-bold text-sm shadow-sm transition-colors"
 // //               >
-// //                 Switch to Manual
+// //                 {traveller.ocrLoading ? (
+// //                   <>
+// //                     <Loader2 className="w-4 h-4 animate-spin" /> Reading...
+// //                   </>
+// //                 ) : (
+// //                   <>
+// //                     <Upload className="w-4 h-4" /> Extract Aadhaar
+// //                   </>
+// //                 )}
 // //               </button>
-// //             )}
-// //           </div>
-// //           {traveller.front && (
-// //             <div className="mt-3 flex flex-wrap items-center gap-3">
-// //               <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
-// //                 <CheckCircle2 className="w-4 h-4" />
-// //                 Aadhaar front {traveller.back ? "+ back " : ""}read
-// //               </span>
-// //               <a
-// //                 href={traveller.front?.url}
-// //                 target="_blank"
-// //                 rel="noopener noreferrer"
-// //                 className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
-// //               >
-// //                 View Front
-// //               </a>
-// //               {traveller.back && (
+// //               {!isMain && (
+// //                 <button
+// //                   onClick={() => handleTravellerChange(index, "source", "manual")}
+// //                   className="px-4 py-2.5 text-sm font-semibold text-purple-700 border border-purple-300 rounded-xl hover:bg-purple-50 transition-colors"
+// //                 >
+// //                   Switch to Manual
+// //                 </button>
+// //               )}
+// //             </div>
+// //             {traveller.front && (
+// //               <div className="mt-3 flex flex-wrap items-center gap-3">
+// //                 <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+// //                   <CheckCircle2 className="w-4 h-4" />
+// //                   Aadhaar front {traveller.back ? "+ back " : ""}read
+// //                 </span>
 // //                 <a
-// //                   href={traveller.back?.url}
+// //                   href={traveller.front?.url}
 // //                   target="_blank"
 // //                   rel="noopener noreferrer"
 // //                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
 // //                 >
-// //                   View Back
+// //                   View Front
 // //                 </a>
-// //               )}
-// //               {/* The cross mark next to "Choose File" above already covers
-// //                   Remove now (it stays in the same place before AND after
-// //                   extraction) — no separate Remove button here anymore, so
-// //                   there's only one clear button to look for, not two. */}
-// //               {/* If the name/age (or address) came out wrong, this shows
-// //                   exactly what Tesseract actually read off the image — no
-// //                   need to open the browser console to check. The address
-// //                   only ever comes off the BACK side, so both are shown
-// //                   separately, labeled, whenever a back side exists. */}
-// //               {(traveller.front?.ocrText || traveller.back?.ocrText) && (
-// //                 <button
-// //                   type="button"
-// //                   onClick={() => setShowRawText((v) => !v)}
-// //                   className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600"
-// //                 >
-// //                   {showRawText ? "Hide" : "Show"} raw text read
-// //                 </button>
-// //               )}
-// //             </div>
-// //           )}
-// //           {showRawText && traveller.front?.ocrText && (
-// //             <div className="mt-2">
-// //               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Front</p>
-// //               <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
-// //                 {traveller.front.ocrText}
-// //               </pre>
-// //             </div>
-// //           )}
-// //           {showRawText && traveller.back?.ocrText && (
-// //             <div className="mt-2">
-// //               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Back (address comes from here)</p>
-// //               <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
-// //                 {traveller.back.ocrText}
-// //               </pre>
-// //             </div>
-// //           )}
-// //         </div>
-// //       )}
+// //                 {traveller.back && (
+// //                   <a
+// //                     href={traveller.back?.url}
+// //                     target="_blank"
+// //                     rel="noopener noreferrer"
+// //                     className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+// //                   >
+// //                     View Back
+// //                   </a>
+// //                 )}
+// //                 {(traveller.front?.ocrText || traveller.back?.ocrText) && (
+// //                   <button
+// //                     type="button"
+// //                     onClick={() => setShowRawText((v) => !v)}
+// //                     className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600"
+// //                   >
+// //                     {showRawText ? "Hide" : "Show"} raw text read
+// //                   </button>
+// //                 )}
+// //               </div>
+// //             )}
+// //             {showRawText && traveller.front?.ocrText && (
+// //               <div className="mt-2">
+// //                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Front</p>
+// //                 <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+// //                   {traveller.front.ocrText}
+// //                 </pre>
+// //               </div>
+// //             )}
+// //             {showRawText && traveller.back?.ocrText && (
+// //               <div className="mt-2">
+// //                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Back (address comes from here)</p>
+// //                 <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+// //                   {traveller.back.ocrText}
+// //                 </pre>
+// //               </div>
+// //             )}
+// //           </div>
+// //         )}
 
-// //       {/* Basic identity fields */}
-// //       <div className="grid md:grid-cols-4 gap-4 mb-4">
-// //         <div>
-// //           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Title</label>
-// //           <select
-// //             value={traveller.title}
-// //             onChange={(e) => handleTravellerChange(index, "title", e.target.value)}
-// //             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //           >
-// //             <option>Mr</option>
-// //             <option>Mrs</option>
-// //             <option>Ms</option>
-// //           </select>
-// //         </div>
-// //         <div>
-// //           <label className="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
-// //           <input
-// //             type="text"
-// //             value={traveller.firstName}
-// //             onChange={(e) => handleTravellerChange(index, "firstName", e.target.value)}
-// //             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //           />
-// //         </div>
-// //         <div>
-// //           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
-// //           <input
-// //             type="text"
-// //             value={traveller.lastName}
-// //             onChange={(e) => handleTravellerChange(index, "lastName", e.target.value)}
-// //             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //           />
-// //         </div>
-// //         <div>
-// //           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Age</label>
-// //           <input
-// //             type="number"
-// //             value={traveller.age}
-// //             onChange={(e) => handleTravellerChange(index, "age", e.target.value)}
-// //             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //           />
-// //         </div>
-// //       </div>
-
-// //       <div className="grid md:grid-cols-2 gap-4 mb-4">
-// //         <div>
-// //           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender</label>
-// //           <select
-// //             value={traveller.gender}
-// //             onChange={(e) => handleTravellerChange(index, "gender", e.target.value)}
-// //             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //           >
-// //             <option>Male</option>
-// //             <option>Female</option>
-// //             <option>Other</option>
-// //           </select>
-// //         </div>
-// //         <div>
-// //           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sharing Type</label>
-// //           <select
-// //             value={traveller.sharingType}
-// //             onChange={(e) => handleTravellerChange(index, "sharingType", e.target.value)}
-// //             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //           >
-// //             <option value="">Select Sharing</option>
-// //             {Number(traveller.age) >= 11 ? (
-// //               <>
-// //                 <option value="double">Double Sharing</option>
-// //                 <option value="triple">Triple Sharing</option>
-// //               </>
-// //             ) : Number(traveller.age) >= 6 && Number(traveller.age) <= 10 ? (
-// //               <>
-// //                 <option value="withBerth">Child with Berth</option>
-// //                 <option value="withoutBerth">Child without Berth</option>
-// //               </>
-// //             ) : null}
-// //           </select>
-// //         </div>
-// //       </div>
-
-// //       {/* Mobile Number / Address — MAIN TRAVELLER ONLY. Only the main
-// //           traveller's phone/address are used anywhere (as the booking's
-// //           contact number / billing address) — co-travellers don't need
-// //           these fields at all. */}
-// //       {isMain && (
-// //         <div className="space-y-4">
+// //         <div className="grid md:grid-cols-4 gap-4 mb-4">
 // //           <div>
-// //             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
-// //               <Phone className="w-3.5 h-3.5 text-indigo-500" /> Mobile Number
-// //             </label>
+// //             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Title</label>
+// //             <select
+// //               value={traveller.title}
+// //               onChange={(e) => handleTravellerChange(index, "title", e.target.value)}
+// //               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //             >
+// //               <option>Mr</option>
+// //               <option>Mrs</option>
+// //               <option>Ms</option>
+// //             </select>
+// //           </div>
+// //           <div>
+// //             <label className="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
 // //             <input
-// //               type="tel"
-// //               value={traveller.phone}
-// //               onChange={(e) => handleTravellerChange(index, "phone", e.target.value)}
-// //               placeholder="e.g. 9876543210"
+// //               type="text"
+// //               value={traveller.firstName}
+// //               onChange={(e) => handleTravellerChange(index, "firstName", e.target.value)}
 // //               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
 // //             />
 // //           </div>
-
-// //           {/* Address — split into the fields below (OCR fills them, admin
-// //               can correct each one on its own instead of editing one long
-// //               blob). `address` (the one combined line) is still kept
-// //               alongside, in sync, for older code that still reads it. */}
 // //           <div>
-// //             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
-// //               <Home className="w-3.5 h-3.5 text-indigo-500" /> Address
-// //             </label>
-// //             <div className="grid sm:grid-cols-2 gap-3">
-// //               <input
-// //                 type="text"
-// //                 value={traveller.addressLine1}
-// //                 onChange={(e) => handleTravellerChange(index, "addressLine1", e.target.value)}
-// //                 placeholder="Address Line 1"
-// //                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //               />
-// //               <input
-// //                 type="text"
-// //                 value={traveller.addressLine2}
-// //                 onChange={(e) => handleTravellerChange(index, "addressLine2", e.target.value)}
-// //                 placeholder="Address Line 2"
-// //                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //               />
-// //               <input
-// //                 type="text"
-// //                 value={traveller.city}
-// //                 onChange={(e) => handleTravellerChange(index, "city", e.target.value)}
-// //                 placeholder="City"
-// //                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //               />
-// //               <input
-// //                 type="text"
-// //                 value={traveller.state}
-// //                 onChange={(e) => handleTravellerChange(index, "state", e.target.value)}
-// //                 placeholder="State"
-// //                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //               />
-// //               <input
-// //                 type="text"
-// //                 value={traveller.pincode}
-// //                 onChange={(e) => handleTravellerChange(index, "pincode", e.target.value)}
-// //                 placeholder="Pincode"
-// //                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-// //               />
-// //               <input
-// //                 type="text"
-// //                 value="India"
-// //                 readOnly
-// //                 disabled
-// //                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm text-gray-500 cursor-not-allowed"
-// //               />
-// //             </div>
+// //             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
+// //             <input
+// //               type="text"
+// //               value={traveller.lastName}
+// //               onChange={(e) => handleTravellerChange(index, "lastName", e.target.value)}
+// //               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //             />
+// //           </div>
+// //           <div>
+// //             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Age</label>
+// //             <input
+// //               type="number"
+// //               value={traveller.age}
+// //               onChange={(e) => handleTravellerChange(index, "age", e.target.value)}
+// //               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //             />
 // //           </div>
 // //         </div>
-// //       )}
+
+// //         <div className="grid md:grid-cols-2 gap-4 mb-4">
+// //           <div>
+// //             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender</label>
+// //             <select
+// //               value={traveller.gender}
+// //               onChange={(e) => handleTravellerChange(index, "gender", e.target.value)}
+// //               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //             >
+// //               <option>Male</option>
+// //               <option>Female</option>
+// //               <option>Other</option>
+// //             </select>
+// //           </div>
+// //           <div>
+// //             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sharing Type</label>
+// //             <select
+// //               value={traveller.sharingType}
+// //               onChange={(e) => handleTravellerChange(index, "sharingType", e.target.value)}
+// //               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //             >
+// //               <option value="">Select Sharing</option>
+// //               {Number(traveller.age) >= 11 ? (
+// //                 <>
+// //                   <option value="double">Double Sharing</option>
+// //                   <option value="triple">Triple Sharing</option>
+// //                 </>
+// //               ) : Number(traveller.age) >= 6 && Number(traveller.age) <= 10 ? (
+// //                 <>
+// //                   <option value="withBerth">Child with Berth</option>
+// //                   <option value="withoutBerth">Child without Berth</option>
+// //                 </>
+// //               ) : null}
+// //             </select>
+// //           </div>
+// //         </div>
+
+// //         {/* Mobile / Address — main traveller only. */}
+// //         {isMain && (
+// //           <div className="space-y-4">
+// //             <div>
+// //               <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
+// //                 <Phone className="w-3.5 h-3.5 text-indigo-500" /> Mobile Number
+// //               </label>
+// //               <input
+// //                 type="tel"
+// //                 value={traveller.phone}
+// //                 onChange={(e) => handleTravellerChange(index, "phone", e.target.value)}
+// //                 placeholder="e.g. 9876543210"
+// //                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //               />
+// //             </div>
+
+// //             <div>
+// //               <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
+// //                 <Home className="w-3.5 h-3.5 text-indigo-500" /> Address
+// //               </label>
+// //               <div className="grid sm:grid-cols-2 gap-3">
+// //                 <input
+// //                   type="text"
+// //                   value={traveller.addressLine1}
+// //                   onChange={(e) => handleTravellerChange(index, "addressLine1", e.target.value)}
+// //                   placeholder="Address Line 1"
+// //                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //                 />
+// //                 <input
+// //                   type="text"
+// //                   value={traveller.addressLine2}
+// //                   onChange={(e) => handleTravellerChange(index, "addressLine2", e.target.value)}
+// //                   placeholder="Address Line 2"
+// //                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //                 />
+// //                 <input
+// //                   type="text"
+// //                   value={traveller.city}
+// //                   onChange={(e) => handleTravellerChange(index, "city", e.target.value)}
+// //                   placeholder="City"
+// //                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //                 />
+// //                 <input
+// //                   type="text"
+// //                   value={traveller.state}
+// //                   onChange={(e) => handleTravellerChange(index, "state", e.target.value)}
+// //                   placeholder="State"
+// //                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //                 />
+// //                 <input
+// //                   type="text"
+// //                   value={traveller.pincode}
+// //                   onChange={(e) => handleTravellerChange(index, "pincode", e.target.value)}
+// //                   placeholder="Pincode"
+// //                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //                 />
+// //                 <input
+// //                   type="text"
+// //                   value="India"
+// //                   readOnly
+// //                   disabled
+// //                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm text-gray-500 cursor-not-allowed"
+// //                 />
+// //               </div>
+// //             </div>
+// //           </div>
+// //         )}
+// //       </div>
 // //     </div>
-// //   </div>
 // //   );
 // // };
 
-// // // ───────────────────────── All Bookings tab ─────────────────────────
-// // // Everything saved from Tab 1 (one card per groupId): view Aadhaar +
-// // // advance screenshot, upload Balance/Partial Balance (repeatable), add
-// // // more co-travellers (Aadhaar front only — saved to the server right
-// // // away, unlike Tab 1 where it waits for Save), and either "Create
-// // // Booking" (navigates to the existing, untouched CreateBooking.jsx) or,
-// // // once a tnr has been linked, "Raise Manage Booking" per co-traveller.
+// // // ───────────── All Bookings tab ─────────────
 // // const PAYMENT_TYPES = [
 // //   { type: "advance", label: "Advance" },
 // //   { type: "balance", label: "Balance" },
@@ -877,17 +799,15 @@
 // // ];
 
 // // const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, deleteGroupPayment, refresh }) => {
-// //   // queue holds files picked together but not yet uploaded, queueAmounts
-// //   // the (optional) amount typed against each one, same index. "Upload All"
-// //   // then sends them to the backend ONE AT A TIME in order (not in
-// //   // parallel) so each screenshot lands as its own doc — the admin picks
-// //   // several together but doesn't have to click Upload once per file.
 // //   const [queue, setQueue] = useState([]);
 // //   const [queueAmounts, setQueueAmounts] = useState([]);
+// //   const [queueRemarks, setQueueRemarks] = useState([]);
 // //   const [uploading, setUploading] = useState(false);
 // //   const [uploadProgress, setUploadProgress] = useState(null); // { current, total }
 // //   const [deletingId, setDeletingId] = useState(null);
 // //   const [viewerIndex, setViewerIndex] = useState(null);
+// //   // Synchronous double-click guard.
+// //   const uploadingRef = useRef(false);
 
 // //   const handleDelete = async (docId) => {
 // //     if (!window.confirm(`Delete this ${label} screenshot? This can't be undone.`)) return;
@@ -908,15 +828,14 @@
 // //   const handleRemoveQueued = (idx) => {
 // //     setQueue((prev) => prev.filter((_, i) => i !== idx));
 // //     setQueueAmounts((prev) => prev.filter((_, i) => i !== idx));
+// //     setQueueRemarks((prev) => prev.filter((_, i) => i !== idx));
 // //   };
 
-// //   const uploadOne = async (file, amount) => {
+// //   const uploadOne = async (file, amount, remarks) => {
 // //     const formData = new FormData();
 // //     formData.append("screenshot", file);
-// //     // A genuine walk-in group has a real groupId; a booking merged in
-// //     // straight from tourBookingModel only carries a synthetic
-// //     // "real-<id>" placeholder (so React has a key) — send its tnr
-// //     // instead so the backend can key the upload correctly either way.
+// //     // Real walk-in group → groupId; booking merged from tourBookingModel
+// //     // ("real-<id>" placeholder) → tnr.
 // //     if (groupId && !String(groupId).startsWith("real-")) {
 // //       formData.append("groupId", groupId);
 // //     } else if (tnr) {
@@ -924,6 +843,7 @@
 // //     }
 // //     formData.append("type", type);
 // //     if (amount) formData.append("amount", amount);
+// //     if (remarks?.trim()) formData.append("remarks", remarks.trim());
 // //     return uploadGroupPayment(formData);
 // //   };
 
@@ -934,12 +854,14 @@
 // //         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
 // //       }
 // //     }
+// //     if (uploadingRef.current) return;
+// //     uploadingRef.current = true;
 // //     setUploading(true);
 // //     let successCount = 0;
 // //     for (let i = 0; i < queue.length; i++) {
 // //       setUploadProgress({ current: i + 1, total: queue.length });
 // //       try {
-// //         const result = await uploadOne(queue[i], queueAmounts[i]);
+// //         const result = await uploadOne(queue[i], queueAmounts[i], queueRemarks[i]);
 // //         if (result?.success) successCount += 1;
 // //       } catch (err) {
 // //         console.error("uploadGroupPayment error:", err);
@@ -949,6 +871,8 @@
 // //     setUploadProgress(null);
 // //     setQueue([]);
 // //     setQueueAmounts([]);
+// //     setQueueRemarks([]);
+// //     uploadingRef.current = false;
 // //     if (successCount > 0) {
 // //       toast.success(`${successCount} ${label} screenshot${successCount > 1 ? "s" : ""} uploaded`);
 // //     }
@@ -971,9 +895,6 @@
 // //               key={item._id || i}
 // //               className="relative flex items-start gap-1 text-xs font-semibold text-[#235F47] bg-[#EDF6F1] border border-[#B6DFC8] rounded-lg pl-2.5 pr-1.5 py-1.5 hover:bg-[#D7EEE0]"
 // //             >
-// //               {/* Opens the one-at-a-time viewer instead of a raw new-tab
-// //                   link, so several screenshots can be stepped through
-// //                   (Prev/Next) without leaving the page. */}
 // //               <button
 // //                 type="button"
 // //                 onClick={() => setViewerIndex(i)}
@@ -994,6 +915,9 @@
 // //                       minute: "2-digit",
 // //                     })}
 // //                   </span>
+// //                 )}
+// //                 {item.remarks && (
+// //                   <span className="font-normal text-[#2E7D5E] italic">{item.remarks}</span>
 // //                 )}
 // //               </button>
 // //               {item._id && deleteGroupPayment && (
@@ -1026,7 +950,7 @@
 // //       {queue.length > 0 && (
 // //         <div className="flex flex-col gap-1.5 mb-2">
 // //           {queue.map((f, i) => (
-// //             <div key={i} className="flex items-center gap-1.5">
+// //             <div key={i} className="flex items-center gap-1.5 flex-wrap">
 // //               <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white border border-[#DEE2E8] rounded-lg px-2.5 py-2 truncate">
 // //                 <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
 // //                 {f.name}
@@ -1039,7 +963,21 @@
 // //                   setQueueAmounts((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
 // //                 }
 // //                 disabled={uploading}
-// //                 className="w-28 shrink-0 px-2 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
+// //                 className="w-20 sm:w-28 shrink-0 px-2 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
+// //               />
+// //               <input
+// //                 type="text"
+// //                 placeholder="Bank (e.g. SBI)"
+// //                 value={queueRemarks[i] || ""}
+// //                 onChange={(e) =>
+// //                   setQueueRemarks((prev) => {
+// //                     const next = [...prev];
+// //                     next[i] = e.target.value;
+// //                     return next;
+// //                   })
+// //                 }
+// //                 disabled={uploading}
+// //                 className="w-24 sm:w-32 shrink-0 px-2 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
 // //               />
 // //               <button
 // //                 type="button"
@@ -1060,7 +998,7 @@
 // //         {queue.length > 0 ? "Add more screenshot(s)" : "Choose screenshot(s)"}
 // //         <input
 // //           type="file"
-// //           accept="image/*"
+// //           accept="image/*,application/pdf"
 // //           multiple
 // //           className="hidden"
 // //           onChange={(e) => {
@@ -1068,6 +1006,7 @@
 // //             if (!files.length) return;
 // //             setQueue((prev) => [...prev, ...files]);
 // //             setQueueAmounts((prev) => [...prev, ...files.map(() => "")]);
+// //             setQueueRemarks((prev) => [...prev, ...files.map(() => "")]);
 // //             e.target.value = "";
 // //           }}
 // //         />
@@ -1089,9 +1028,6 @@
 // //   );
 // // };
 
-// // // Friendly labels for the raw sharingType values stored on each traveller
-// // // (set in TravellerCard's Sharing Type dropdown) — shown as a small badge
-// // // next to Main Traveller / each Co-Traveller instead of the raw code.
 // // const SHARING_LABELS = {
 // //   double: "Double Sharing",
 // //   triple: "Triple Sharing",
@@ -1099,18 +1035,10 @@
 // //   withoutBerth: "Child w/o Berth",
 // // };
 
-// // // Inline edit form for a Main Traveller or Co-Traveller already captured
-// // // on the All Bookings page — fixing OCR mistakes after the fact, not a
-// // // new extraction (addCoTraveller's OCR-only rule is untouched). Shared by
-// // // both so the two stay visually/behaviourally identical; `accent` just
-// // // swaps the color so it still reads as "this card" vs "that card".
+// // // Inline edit form for an already-captured traveller.
 // // const TravellerEditForm = ({ draft, setDraft, onSave, onCancel, saving, accent = "indigo" }) => {
 // //   if (!draft) return null;
 // //   const update = (field, value) => setDraft((prev) => ({ ...prev, [field]: value }));
-// //   // Address Line1/2/City/State/Pincode each update their own field AND keep
-// //   // the one combined `address` line in sync (same reasoning as the Save
-// //   // Booking form's handleTravellerChange) — older code and the All
-// //   // Bookings view still read `address` as one line.
 // //   const updateAddressField = (field, value) =>
 // //     setDraft((prev) => {
 // //       const next = { ...prev, [field]: value };
@@ -1283,6 +1211,7 @@
 // //   deleteAadhaarTraveller,
 // //   linkGuestTnr,
 // //   unlinkGuestTnr,
+// //   deleteBookingByTnr,
 // //   allBookings,
 // //   onCreateBooking,
 // //   navigate,
@@ -1291,9 +1220,7 @@
 // //   const [ctFile, setCtFile] = useState(null);
 // //   const [ctExtracting, setCtExtracting] = useState(false);
 // //   const [ctSaving, setCtSaving] = useState(false);
-// //   // Holds the OCR'd + editable fields between "Extract Aadhaar" and "Add
-// //   // Co-Traveller" — same two-step shape as the main booking form's
-// //   // TravellerCard, instead of extracting and saving in one blind click.
+// //   const ctSavingRef = useRef(false); // synchronous double-click guard
 // //   const [ctDraft, setCtDraft] = useState(null);
 // //   const ctInputRef = useRef(null);
 // //   const [showCtRawText, setShowCtRawText] = useState(false);
@@ -1301,27 +1228,14 @@
 // //   const [linkingTnr, setLinkingTnr] = useState(false);
 // //   const [showTnrInput, setShowTnrInput] = useState(false);
 
-// //   // "Same guest, different TNR" linking — e.g. a booking under
-// //   // "Vishvanathan" and another under "Jeyandhi" turn out to be the same
-// //   // real guest. Purely a cross-reference between two tnr'd bookings; see
-// //   // aadhaarModel's type:"guestLink" docs / linkGuestTnr/unlinkGuestTnr.
-// //   // Picked from a checkbox dropdown of every other booking (TNR + main
-// //   // traveller name) instead of typing a TNR by hand.
 // //   const [guestSearch, setGuestSearch] = useState("");
 // //   const [selectedGuestTnrs, setSelectedGuestTnrs] = useState([]);
 // //   const [showGuestInput, setShowGuestInput] = useState(false);
 // //   const [linkingGuest, setLinkingGuest] = useState(false);
 // //   const [unlinkingGuest, setUnlinkingGuest] = useState(false);
 
-// //   // Edit/Delete for Main Traveller & Co-Travellers — only meaningful
-// //   // BEFORE this booking has a real tnr (the backend enforces this too,
-// //   // but hiding the buttons once booking.tnr exists keeps the admin from
-// //   // hitting a wall they don't understand). `editingId` holds the
-// //   // aadhaarModel doc _id currently being edited (main or a co-traveller —
-// //   // both are "aadhaarFront" docs, same shape), `editDraft` its editable
-// //   // field copy, `deletingId` the one mid-delete (disables its buttons so
-// //   // a double-click can't fire two deletes).
 // //   const [editingId, setEditingId] = useState(null);
+// //   const [editingDocId, setEditingDocId] = useState(null);
 // //   const [editDraft, setEditDraft] = useState(null);
 // //   const [savingEdit, setSavingEdit] = useState(false);
 // //   const [deletingId, setDeletingId] = useState(null);
@@ -1329,6 +1243,7 @@
 
 // //   const startEdit = (traveller) => {
 // //     setEditingId(traveller._id);
+// //     setEditingDocId(traveller.aadhaarDocId || traveller._id);
 // //     setEditDraft({
 // //       title: traveller.title || "",
 // //       firstName: traveller.firstName || "",
@@ -1347,13 +1262,14 @@
 // //   };
 // //   const cancelEdit = () => {
 // //     setEditingId(null);
+// //     setEditingDocId(null);
 // //     setEditDraft(null);
 // //   };
 // //   const saveEdit = async () => {
 // //     if (!editingId || !editDraft) return;
 // //     setSavingEdit(true);
 // //     try {
-// //       const result = await editAadhaarTraveller(editingId, editDraft);
+// //       const result = await editAadhaarTraveller(editingDocId || editingId, editDraft);
 // //       if (result?.success) {
 // //         toast.success("Traveller updated");
 // //         cancelEdit();
@@ -1364,15 +1280,23 @@
 // //     }
 // //   };
 // //   const handleDeleteTraveller = async (traveller, isMain) => {
+// //     const travellerName =
+// //       [traveller.title, traveller.firstName, traveller.lastName].filter(Boolean).join(" ") || "this co-traveller";
 // //     const confirmMsg = isMain
-// //       ? "Delete the main traveller? This removes the ENTIRE draft booking (all co-travellers, Aadhaar images, payment notes) — this cannot be undone."
-// //       : `Remove ${[traveller.title, traveller.firstName, traveller.lastName].filter(Boolean).join(" ") || "this co-traveller"}?`;
+// //       ? "Delete the Aadhaar FILES (front/back image or PDF) for every traveller in this booking (main + co-travellers)? The already-extracted details (Name, Age, Gender, Address, Aadhaar Number) are kept — only the uploaded files are removed from storage. This cannot be undone."
+// //       : `Remove ${travellerName} from this booking? This cannot be undone.`;
 // //     if (!window.confirm(confirmMsg)) return;
 // //     setDeletingId(traveller._id);
 // //     try {
-// //       const result = await deleteAadhaarTraveller(traveller._id);
+// //       const result = await deleteAadhaarTraveller(traveller.aadhaarDocId || traveller._id);
 // //       if (result?.success) {
-// //         toast.success(isMain ? "Draft booking deleted" : "Co-traveller removed");
+// //         toast.success(
+// //           isMain
+// //             ? "Aadhaar files deleted for this booking"
+// //             : result.removedTraveller
+// //               ? "Co-traveller removed from this booking"
+// //               : "Co-traveller's Aadhaar file removed",
+// //         );
 // //         refresh();
 // //       }
 // //     } finally {
@@ -1385,10 +1309,6 @@
 // //     .join(" ") || "Unnamed traveller";
 // //   const travellerCount = 1 + (booking.coTravellers?.length || 0);
 
-// //   // Candidate bookings for the "Link as same guest" dropdown — every OTHER
-// //   // tnr'd booking in this tour, minus ones already in this booking's own
-// //   // guest group, with each one's main-traveller name for display, filtered
-// //   // by whatever the admin has typed in the search box.
 // //   const guestCandidates = (allBookings || [])
 // //     .filter((b) => b.tnr && b.tnr !== booking.tnr)
 // //     .filter((b) => !(booking.guestGroup?.otherTnrs || []).includes(b.tnr))
@@ -1408,24 +1328,14 @@
 // //     );
 // //   };
 
-// //   // Download a ZIP of Aadhaar images for the travellers CURRENTLY on this
-// //   // booking — i.e. the "active" ones. A traveller removed via Delete/Remove
-// //   // above is already gone from booking.main/booking.coTravellers by the time
-// //   // this reads them (the backend doc is deleted), so this naturally only
-// //   // ever includes active travellers; nothing extra to filter out.
 // //   const safeFileName = (name) =>
 // //     (name || "traveller").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "traveller";
 // //   const extFromUrl = (url) => {
 // //     const match = url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
 // //     return match ? match[1] : "jpg";
 // //   };
+// //   // ZIP of Aadhaar images of this booking's active (not approved-cancelled) travellers.
 // //   const handleDownloadZip = async () => {
-// //     // booking.main.cancelled / booking.coTravellers[].cancelled come from
-// //     // the real tourBookingModel record once this booking's tnr is linked
-// //     // (see getAadhaarBookings on the backend) — true for an APPROVED
-// //     // cancellation only. A pending cancellation request, or one the admin
-// //     // rejected, leaves this false and the traveller stays in the zip. No
-// //     // tnr yet → nothing was there to check, so nobody is marked cancelled.
 // //     const entries = [];
 // //     if (booking.main?.front?.url && !booking.main?.cancelled) {
 // //       entries.push({ name: `Main - ${mainName} - Front`, url: booking.main.front.url });
@@ -1493,10 +1403,7 @@
 // //     }
 // //   };
 
-// //   // Step 1 of 2 — OCR the chosen file, but don't save yet. Lands the read
-// //   // into an editable draft (title/name/age/gender/sharing) just like the
-// //   // main booking form's TravellerCard, instead of the old one-click
-// //   // "choose file → immediately saved, no chance to check or fix it first".
+// //   // Step 1 of 2 — OCR into an editable draft (not saved yet).
 // //   const handleExtractCt = async () => {
 // //     if (!ctFile) return toast.error("Choose the co-traveller's Aadhaar front image first");
 // //     setCtExtracting(true);
@@ -1504,7 +1411,6 @@
 // //       const formData = new FormData();
 // //       formData.append("front", ctFile);
 // //       const ocrResult = await extractAadhaar(formData);
-// //       console.log("[AddCoTraveller] OCR result:", ocrResult);
 // //       if (!ocrResult?.success) {
 // //         if (ocrResult === undefined) {
 // //           toast.error("Aadhaar read failed — no response from server. Check your connection and try again.");
@@ -1513,7 +1419,6 @@
 // //       }
 // //       if (!ocrResult.front?.url) {
 // //         toast.error("Aadhaar was read but the image didn't upload — please try again.");
-// //         console.error("[AddCoTraveller] OCR succeeded but front.url missing:", ocrResult);
 // //         return;
 // //       }
 
@@ -1546,8 +1451,6 @@
 // //     }
 // //   };
 
-// //   // Same cross mark, one place, as TravellerCard above — clears the chosen
-// //   // file before extraction, or the whole extracted draft after it.
 // //   const clearCtFile = () => {
 // //     if (ctInputRef.current) ctInputRef.current.value = "";
 // //     setCtFile(null);
@@ -1572,13 +1475,18 @@
 // //     });
 // //   };
 
-// //   // Step 2 of 2 — save the (possibly hand-corrected) draft.
+// //   // Step 2 of 2 — save the draft. For a real booking ("real-<id>") this
+// //   // sends tnr; the backend keeps it pending (NOT in Tour Bookings) until
+// //   // Raise Manage Booking is approved.
 // //   const handleAddCoTraveller = async () => {
 // //     if (!ctDraft?.front?.url) return toast.error("Extract the co-traveller's Aadhaar first");
+// //     if (ctSavingRef.current) return;
+// //     ctSavingRef.current = true;
 // //     setCtSaving(true);
 // //     try {
+// //       const isRealBooking = String(booking.groupId || "").startsWith("real-");
 // //       const addResult = await addCoTravellerApi({
-// //         groupId: booking.groupId,
+// //         ...(isRealBooking ? { tnr: booking.tnr } : { groupId: booking.groupId }),
 // //         title: ctDraft.title,
 // //         firstName: ctDraft.firstName,
 // //         lastName: ctDraft.lastName,
@@ -1595,19 +1503,23 @@
 // //         pincode: ctDraft.pincode,
 // //         front: ctDraft.front,
 // //       });
-// //       console.log("[AddCoTraveller] addCoTraveller result:", addResult);
 // //       if (!addResult?.success) {
 // //         toast.error(addResult?.message || "Could not save the co-traveller — please try again.");
 // //         return;
 // //       }
 
-// //       toast.success("Co-traveller added");
+// //       toast.success(
+// //         booking.tnr
+// //           ? "Co-traveller added — click Raise Manage Booking to add them to the booking"
+// //           : "Co-traveller added",
+// //       );
 // //       clearCtFile();
 // //       refresh();
 // //     } catch (err) {
 // //       console.error("addCoTraveller error:", err);
 // //       toast.error("Something went wrong adding this co-traveller. Check the console for details.");
 // //     } finally {
+// //       ctSavingRef.current = false;
 // //       setCtSaving(false);
 // //     }
 // //   };
@@ -1633,10 +1545,6 @@
 // //     if (selectedGuestTnrs.length === 0) return toast.error("Select at least one booking to link");
 // //     setLinkingGuest(true);
 // //     try {
-// //       // linkGuestTnr pairs one TNR at a time, but it always merges into
-// //       // whatever group either side already belongs to — so linking each
-// //       // checked booking to this one, one by one, still lands every
-// //       // checked booking in the SAME single group as this booking.
 // //       let okCount = 0;
 // //       for (const tnr of selectedGuestTnrs) {
 // //         const result = await linkGuestTnr(booking.tnr, tnr);
@@ -1684,7 +1592,7 @@
 // //           lastName: traveller.lastName,
 // //           age: traveller.age,
 // //           gender: traveller.gender,
-// //           aadhaarId: traveller._id || null,
+// //           aadhaarId: traveller.aadhaarDocId || traveller._id || null,
 // //           isCoTraveller: true,
 // //           addedBy: "admin",
 // //           addedPostBooking: true,
@@ -1693,24 +1601,20 @@
 // //     });
 // //   };
 
-// //   // The card's left-edge "spine" reads this booking's payment state at a
-// //   // glance across a long list, before anyone expands it — same three
-// //   // states as the badge inside (see the Payments section below): paid in
-// //   // full, balance still due, or not priceable yet / no tnr.
 // //   const spineColor = booking.paymentSummary?.fullyPaid
 // //     ? "border-l-[#2E7D5E]"
 // //     : booking.paymentSummary
 // //       ? "border-l-[#B8641F]"
 // //       : "border-l-[#C3D4E8]";
+// //   const avatarGradient = booking.paymentSummary?.fullyPaid
+// //     ? "from-emerald-600 to-emerald-500 shadow-emerald-200"
+// //     : booking.paymentSummary
+// //       ? "from-amber-600 to-amber-500 shadow-amber-200"
+// //       : "from-[#2A5490] to-sky-500 shadow-sky-200";
 
 // //   return (
-// //     <div className={`rounded-2xl border border-[#DEE2E8] border-l-4 ${spineColor} shadow-sm overflow-hidden bg-white transition-colors`}>
-// //       <div className="w-full flex items-center justify-between gap-3 px-5 py-4 bg-[#F5F6F8] hover:bg-[#EEF0F3] transition-colors">
-// //         {/* A real <button> here would nest CopyTnrButton's own <button>
-// //             inside it — invalid HTML ("<button> cannot contain a nested
-// //             <button>", console warns and browsers mangle the DOM to
-// //             recover) — so this is a div acting as the toggle, with the
-// //             same keyboard behavior a button would give for free. */}
+// //     <div className={`rounded-2xl border border-[#DEE2E8] border-l-4 ${spineColor} shadow-sm hover:shadow-md transition-shadow overflow-hidden bg-white`}>
+// //       <div className="w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 px-3.5 sm:px-5 py-3.5 sm:py-4 bg-gradient-to-r from-[#F5F6F8] to-[#F8FAFC] hover:from-[#EEF0F3] hover:to-[#EEF3FA] transition-colors">
 // //         <div
 // //           role="button"
 // //           tabIndex={0}
@@ -1721,37 +1625,38 @@
 // //               onToggle();
 // //             }
 // //           }}
-// //           className="flex-1 min-w-0 flex items-center gap-3 text-left cursor-pointer"
+// //           className="flex-1 min-w-0 flex items-center gap-2.5 sm:gap-3 text-left cursor-pointer"
 // //         >
-// //           <div className="w-10 h-10 shrink-0 rounded-xl bg-[#2A5490] text-white flex items-center justify-center">
-// //             <IdCard className="w-5 h-5" />
+// //           <div className={`w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-br ${avatarGradient} text-white flex items-center justify-center shadow-sm`}>
+// //             <IdCard className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
 // //           </div>
 // //           <div className="min-w-0">
 // //             <p className="font-bold text-[#1C2733] truncate">{mainName}</p>
-// //             <p className="text-xs text-gray-500 truncate">
-// //               {booking.tourTitle || "Tour"} · {travellerCount} traveller{travellerCount !== 1 ? "s" : ""}
+// //             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+// //               <span className="truncate max-w-full">
+// //                 {booking.tourTitle || "Tour"} · {travellerCount} traveller{travellerCount !== 1 ? "s" : ""}
+// //               </span>
 // //               {booking.tnr && (
-// //                 <span className="ml-2 inline-flex items-center gap-1 text-[#1F3F6E] font-bold font-mono tracking-wide">
-// //                   <Ticket className="w-3 h-3" /> {booking.tnr}
+// //                 <span className="inline-flex items-center gap-1 text-[#1F3F6E] font-bold font-mono tracking-wide">
+// //                   <Ticket className="w-3 h-3 shrink-0" /> {booking.tnr}
 // //                   <CopyTnrButton tnr={booking.tnr} />
 // //                 </span>
 // //               )}
 // //               {booking.tnr && (
 // //                 <span
-// //                   className={`ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-// //                     booking.createdBy === "user" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-// //                   }`}
+// //                   className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${booking.createdBy === "user" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+// //                     }`}
 // //                 >
 // //                   ● {booking.createdBy === "user" ? "USER" : "ADMIN"}
 // //                 </span>
 // //               )}
 // //               {booking.raisedBy?.name && (
-// //                 <span className="ml-2 inline-flex items-center gap-1 text-emerald-700 font-semibold">
-// //                   <UserCheck className="w-3 h-3" /> Raised by {booking.raisedBy.name}
+// //                 <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+// //                   <UserCheck className="w-3 h-3 shrink-0" /> Raised by {booking.raisedBy.name}
 // //                   {booking.raisedBy.employeeId ? ` (${booking.raisedBy.employeeId})` : ""}
 // //                 </span>
 // //               )}
-// //             </p>
+// //             </div>
 // //           </div>
 // //         </div>
 // //         <div className="flex items-center gap-2 shrink-0">
@@ -1759,10 +1664,10 @@
 // //             onClick={(e) => { e.stopPropagation(); handleDownloadZip(); }}
 // //             disabled={downloadingZip}
 // //             title="Download Aadhaar images of this booking's current travellers as a ZIP"
-// //             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#C3D4E8] bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+// //             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-[#C3D4E8] bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 // //           >
 // //             {downloadingZip ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-// //             {downloadingZip ? "Zipping..." : "Aadhaar ZIP"}
+// //             <span className="hidden sm:inline">{downloadingZip ? "Zipping..." : "Aadhaar ZIP"}</span>
 // //           </button>
 // //           <button onClick={onToggle} className="shrink-0 p-1">
 // //             {expanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -1772,9 +1677,7 @@
 
 // //       {expanded && (
 // //         <div className="p-5 sm:p-6 border-t-2 border-dashed border-[#DEE2E8] space-y-6">
-// //           {/* "Same guest, different TNR" — e.g. Vishvanathan's booking and
-// //               Jeyandhi's booking turn out to be the same real guest. Only
-// //               meaningful once this booking has a real tnr. */}
+// //           {/* Same guest, different TNR */}
 // //           {booking.tnr && (
 // //             <div className="rounded-xl border border-[#F5E6C8] bg-[#FBF4E7]/50 p-3">
 // //               {booking.guestGroup ? (
@@ -1784,9 +1687,6 @@
 // //                   </p>
 // //                   <div className="flex flex-wrap gap-1.5">
 // //                     {booking.guestGroup.otherTnrs.map((t) => {
-// //                       // guestGroup only carries the raw TNRs — look up each
-// //                       // one's main traveller name from the tour's booking
-// //                       // list (same data the link-picker's dropdown uses).
 // //                       const matched = (allBookings || []).find((b) => b.tnr === t);
 // //                       const matchedName = matched
 // //                         ? [matched.main?.title, matched.main?.firstName, matched.main?.lastName]
@@ -1894,22 +1794,23 @@
 // //           {/* Booking notes — reference only */}
 // //           {booking.bookingNotes && (
 // //             <div className="text-xs text-gray-500 bg-[#F7F8FA] rounded-xl p-3 border border-[#E7EAEF] space-y-1.5">
-// //               <div>
-// //                 {booking.bookingNotes.packageType && <span className="mr-3"><b>Package:</b> {booking.bookingNotes.packageType}</span>}
-// //                 {booking.bookingNotes.boardingPoint && <span className="mr-3"><b>Boarding:</b> {booking.bookingNotes.boardingPoint}</span>}
-// //                 {booking.bookingNotes.deboardingPoint && <span className="mr-3"><b>Deboarding:</b> {booking.bookingNotes.deboardingPoint}</span>}
+// //               <div className="flex flex-col gap-1">
+// //                 {booking.bookingNotes.packageType && <span><b>Package:</b> {booking.bookingNotes.packageType}</span>}
+// //                 {booking.bookingNotes.boardingPoint && <span><b>Boarding:</b> {booking.bookingNotes.boardingPoint}</span>}
+// //                 {booking.bookingNotes.deboardingPoint && <span><b>Deboarding:</b> {booking.bookingNotes.deboardingPoint}</span>}
 // //                 {booking.bookingNotes.remarks && <span><b>Remarks:</b> {booking.bookingNotes.remarks}</span>}
 // //               </div>
-// //               {/* Train/flight-wise add-ons — shown per leg, not as one bulk
-// //                   "Add-ons: X, Y" line. Falls back to the old flat string for
-// //                   bookings saved before addonsDetail existed. */}
 // //               {booking.bookingNotes.addonsDetail?.length > 0 ? (
-// //                 <div className="flex flex-wrap gap-1.5 pt-0.5">
+// //                 <div className="flex flex-col gap-1.5 pt-1">
 // //                   {booking.bookingNotes.addonsDetail.map((a, i) => (
-// //                     <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#DCE6F2] text-[#17314F] font-medium">
-// //                       <Train className="w-3 h-3" /> {a.label ? `${a.label}: ` : ""}{a.name}
-// //                       {a.amount > 0 && <span className="text-[#2A5490]">(₹{a.amount})</span>}
-// //                     </span>
+// //                     <div
+// //                       key={i}
+// //                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#DCE6F2] text-[#17314F] font-medium"
+// //                     >
+// //                       <Train className="w-3.5 h-3.5 shrink-0" />
+// //                       <span className="flex-1 min-w-0 truncate">{a.label ? `${a.label}: ` : ""}{a.name}</span>
+// //                       {a.amount > 0 && <span className="shrink-0 text-[#2A5490] font-semibold">₹{a.amount}</span>}
+// //                     </div>
 // //                   ))}
 // //                 </div>
 // //               ) : (
@@ -1933,12 +1834,12 @@
 // //                 accent="indigo"
 // //               />
 // //             ) : (
-// //               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 bg-[#EEF3FA]/60 border border-[#DCE6F2] rounded-xl p-3">
+// //               <div className="flex flex-col items-start gap-1.5 text-sm text-gray-600 bg-[#EEF3FA]/60 border border-[#DCE6F2] rounded-xl p-3">
 // //                 <span className="font-semibold text-gray-800">{mainName}</span>
 // //                 <CancelStatusBadge status={booking.main?.cancelStatus} />
-// //                 <span>Age {booking.main?.age || "—"}</span>
-// //                 <span>{booking.main?.gender}</span>
-// //                 <span>{booking.main?.phone}</span>
+// //                 <span>Age: {booking.main?.age || "—"}</span>
+// //                 <span>Gender: {booking.main?.gender || "—"}</span>
+// //                 <span>Mobile: {booking.main?.phone || "—"}</span>
 // //                 {booking.main?.sharingType && (
 // //                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#DCE6F2] text-[#1F3F6E] font-semibold text-xs">
 // //                     {SHARING_LABELS[booking.main.sharingType] || booking.main.sharingType}
@@ -1955,9 +1856,7 @@
 // //                     <Home className="w-3.5 h-3.5 text-[#3A6698] shrink-0" /> {booking.main.address}
 // //                   </span>
 // //                 )}
-// //                 {/* Edit/Delete only make sense before a real tnr exists —
-// //                     once the booking is live, changes go through Raise
-// //                     Manage Booking instead (backend enforces this too). */}
+// //                 {/* Edit/Delete only before a real tnr exists. */}
 // //                 {!booking.tnr && booking.main?._id && (
 // //                   <div className="w-full flex items-center gap-2 pt-1">
 // //                     <button
@@ -1977,37 +1876,27 @@
 // //                 )}
 // //               </div>
 // //             )}
-// //             {/* Missing Aadhaar on a REAL booking (tnr already exists) —
-// //                 mainly the online/admin bookings now merged into this tab
-// //                 straight from tourBookingModel, which never went through
-// //                 this page's own OCR capture at all. Same upload UI/logic
-// //                 as the User Bookings tab's per-traveller row, reused here
-// //                 via the shared uploadUserTravellerAadhaar endpoint.
-// //                 Hidden for "cancelled" AND "rejected" — no point asking
-// //                 the admin to chase down Aadhaar for someone who isn't
-// //                 travelling any more (or whose cancellation was turned
-// //                 down and needs re-raising, not an Aadhaar upload). Only
-// //                 shown for an active traveller or one with a cancellation
-// //                 request still pending. */}
+// //             {/* Missing Aadhaar on a real booking — upload row (hidden for
+// //                 cancelled/rejected travellers). */}
 // //             {booking.tnr && booking.main?._id && !booking.main?.front?.url && uploadUserTravellerAadhaar &&
 // //               booking.main?.cancelStatus !== "cancelled" && booking.main?.cancelStatus !== "rejected" && (
-// //               <TravellerAadhaarRow
-// //                 traveller={{
-// //                   _id: booking.main._id,
-// //                   title: booking.main.title,
-// //                   firstName: booking.main.firstName,
-// //                   lastName: booking.main.lastName,
-// //                   age: booking.main.age,
-// //                   gender: booking.main.gender,
-// //                   isCoTraveller: false,
-// //                   hasAadhaar: false,
-// //                 }}
-// //                 tnr={booking.tnr}
-// //                 extractAadhaar={extractAadhaar}
-// //                 uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-// //                 onSaved={refresh}
-// //               />
-// //             )}
+// //                 <TravellerAadhaarRow
+// //                   traveller={{
+// //                     _id: booking.main._id,
+// //                     title: booking.main.title,
+// //                     firstName: booking.main.firstName,
+// //                     lastName: booking.main.lastName,
+// //                     age: booking.main.age,
+// //                     gender: booking.main.gender,
+// //                     isCoTraveller: false,
+// //                     hasAadhaar: false,
+// //                   }}
+// //                   tnr={booking.tnr}
+// //                   extractAadhaar={extractAadhaar}
+// //                   uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+// //                   onSaved={refresh}
+// //                 />
+// //               )}
 // //           </div>
 
 // //           {/* Co-travellers */}
@@ -2034,89 +1923,89 @@
 // //                   }
 // //                   return (
 // //                     <React.Fragment key={ct._id || i}>
-// //                     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 bg-[#FBF4E7]/60 border border-[#F5E6C8] rounded-xl p-3">
-// //                       <div className="flex flex-wrap items-center gap-3">
-// //                         <span className="font-semibold text-gray-800">{ctName}</span>
-// //                         <CancelStatusBadge status={ct.cancelStatus} />
-// //                         <span>Age {ct.age || "—"}</span>
-// //                         <span>{ct.gender || "—"}</span>
-// //                         {ct.sharingType && (
-// //                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F5E6C8] text-[#8C6220] font-semibold text-xs">
-// //                             {SHARING_LABELS[ct.sharingType] || ct.sharingType}
+// //                       <div className="flex flex-col gap-3 text-sm text-gray-600 bg-[#FBF4E7]/60 border border-[#F5E6C8] rounded-xl p-3">
+// //                         <div className="flex flex-col items-start gap-1.5">
+// //                           <span className="font-semibold text-gray-800">{ctName}</span>
+// //                           <CancelStatusBadge status={ct.cancelStatus} />
+// //                           <span>Age: {ct.age || "—"}</span>
+// //                           <span>Gender: {ct.gender || "—"}</span>
+// //                           {ct.sharingType && (
+// //                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F5E6C8] text-[#8C6220] font-semibold text-xs">
+// //                               {SHARING_LABELS[ct.sharingType] || ct.sharingType}
+// //                             </span>
+// //                           )}
+// //                           {ct.url && (
+// //                             <a href={ct.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Front</a>
+// //                           )}
+// //                           {ct.back?.url && (
+// //                             <a href={ct.back.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Back</a>
+// //                           )}
+// //                         </div>
+// //                         {/* Before a tnr exists → Edit/Remove.
+// //                             After a tnr exists, for a co-traveller added later
+// //                             (postBooking) → Edit/Remove + Raise Manage Booking,
+// //                             UNTIL Manage Booking is approved and they're in
+// //                             Tour Bookings (ct.inRealBooking) → then only the
+// //                             "Added to booking" badge. Rejected → not in Tour
+// //                             Bookings → buttons visible again. Same for ADMIN
+// //                             and USER bookings. */}
+// //                         {(!booking.tnr || ct.postBooking) && !ct.inRealBooking && (
+// //                           <div className="flex flex-wrap items-center gap-2">
+// //                             <button
+// //                               onClick={() => startEdit(ct)}
+// //                               className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#DCB86D] hover:bg-[#F5E6C8] text-[#8C6220] rounded-lg text-xs font-semibold transition-colors"
+// //                             >
+// //                               <Pencil className="w-3 h-3" /> Edit
+// //                             </button>
+// //                             <button
+// //                               onClick={() => handleDeleteTraveller(ct, false)}
+// //                               disabled={deletingId === ct._id}
+// //                               className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#D99999] hover:bg-[#FBEEEE] text-[#A33333] rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+// //                             >
+// //                               <Trash2 className="w-3 h-3" /> {deletingId === ct._id ? "Removing..." : "Remove"}
+// //                             </button>
+// //                             {booking.tnr && ct.postBooking && (
+// //                               <button
+// //                                 onClick={() => handleRaiseManageBooking(ct)}
+// //                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#B07D2B] hover:bg-[#8C6220] text-white rounded-lg text-xs font-bold transition-colors"
+// //                               >
+// //                                 Raise Manage Booking <ArrowRight className="w-3.5 h-3.5" />
+// //                               </button>
+// //                             )}
+// //                           </div>
+// //                         )}
+// //                         {booking.tnr && ct.postBooking && ct.inRealBooking && (
+// //                           <span className="inline-flex w-fit items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EDF6F1] border border-[#B6DFC8] text-[#235F47] text-xs font-bold">
+// //                             <CheckCircle2 className="w-3.5 h-3.5" /> Added to booking
 // //                           </span>
 // //                         )}
-// //                         {ct.url && (
-// //                           <a href={ct.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Front</a>
-// //                         )}
-// //                         {ct.back?.url && (
-// //                           <a href={ct.back.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Back</a>
-// //                         )}
 // //                       </div>
-// //                       {/* Before a real tnr exists: Edit/Delete, same as the
-// //                           Main Traveller above. Once a tnr exists: only a
-// //                           traveller added AFTER the booking already had a
-// //                           tnr (postBooking) gets "Raise Manage Booking" —
-// //                           someone who was part of the ORIGINAL booking gets
-// //                           no button here at all (editing them isn't this
-// //                           page's job once the real booking exists). */}
-// //                       {!booking.tnr ? (
-// //                         <div className="flex items-center gap-2">
-// //                           <button
-// //                             onClick={() => startEdit(ct)}
-// //                             className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#DCB86D] hover:bg-[#F5E6C8] text-[#8C6220] rounded-lg text-xs font-semibold transition-colors"
-// //                           >
-// //                             <Pencil className="w-3 h-3" /> Edit
-// //                           </button>
-// //                           <button
-// //                             onClick={() => handleDeleteTraveller(ct, false)}
-// //                             disabled={deletingId === ct._id}
-// //                             className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#D99999] hover:bg-[#FBEEEE] text-[#A33333] rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
-// //                           >
-// //                             <Trash2 className="w-3 h-3" /> {deletingId === ct._id ? "Removing..." : "Remove"}
-// //                           </button>
-// //                         </div>
-// //                       ) : ct.postBooking ? (
-// //                         <button
-// //                           onClick={() => handleRaiseManageBooking(ct)}
-// //                           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#B07D2B] hover:bg-[#8C6220] text-white rounded-lg text-xs font-bold transition-colors"
-// //                         >
-// //                           Raise Manage Booking <ArrowRight className="w-3.5 h-3.5" />
-// //                         </button>
-// //                       ) : null}
-// //                     </div>
-// //                     {/* Same "missing Aadhaar on a real booking" upload row
-// //                         as the Main Traveller above — mostly fires for the
-// //                         online/admin bookings merged in straight from
-// //                         tourBookingModel, which never had a chance to
-// //                         capture this co-traveller's Aadhaar here. */}
-// //                     {booking.tnr && ct._id && !ct.url && uploadUserTravellerAadhaar &&
-// //                       ct.cancelStatus !== "cancelled" && ct.cancelStatus !== "rejected" && (
-// //                       <TravellerAadhaarRow
-// //                         traveller={{
-// //                           _id: ct._id,
-// //                           title: ct.title,
-// //                           firstName: ct.firstName,
-// //                           lastName: ct.lastName,
-// //                           age: ct.age,
-// //                           gender: ct.gender,
-// //                           isCoTraveller: true,
-// //                           hasAadhaar: false,
-// //                         }}
-// //                         tnr={booking.tnr}
-// //                         extractAadhaar={extractAadhaar}
-// //                         uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-// //                         onSaved={refresh}
-// //                       />
-// //                     )}
+// //                       {booking.tnr && ct._id && !ct.url && uploadUserTravellerAadhaar &&
+// //                         ct.cancelStatus !== "cancelled" && ct.cancelStatus !== "rejected" && (
+// //                           <TravellerAadhaarRow
+// //                             traveller={{
+// //                               _id: ct._id,
+// //                               title: ct.title,
+// //                               firstName: ct.firstName,
+// //                               lastName: ct.lastName,
+// //                               age: ct.age,
+// //                               gender: ct.gender,
+// //                               isCoTraveller: true,
+// //                               hasAadhaar: false,
+// //                             }}
+// //                             tnr={booking.tnr}
+// //                             extractAadhaar={extractAadhaar}
+// //                             uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+// //                             onSaved={refresh}
+// //                           />
+// //                         )}
 // //                     </React.Fragment>
 // //                   );
 // //                 })}
 // //               </div>
 // //             )}
 
-// //             {/* Add co-traveller — same two-step OCR-then-edit card as the
-// //                 main booking form (extract first, check/fix the fields,
-// //                 then save), not a bare file input + button. */}
+// //             {/* Add co-traveller — OCR first, verify, then save. */}
 // //             <div className="p-4 sm:p-5 rounded-xl border-2 border-dashed border-[#DCB86D] bg-[#FBF4E7]/30">
 // //               <p className="text-xs font-bold text-gray-600 mb-3">Add Co-Traveller (via Aadhaar)</p>
 // //               <div className="flex flex-wrap items-end gap-3">
@@ -2126,16 +2015,13 @@
 // //                     <input
 // //                       ref={ctInputRef}
 // //                       type="file"
-// //                       accept="image/*"
+// //                       accept="image/*,application/pdf"
 // //                       onChange={(e) => {
 // //                         setCtFile(e.target.files?.[0] || null);
 // //                         setCtDraft(null);
 // //                       }}
 // //                       className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#F5E6C8] file:text-[#8C6220] hover:file:bg-[#EAD29C]"
 // //                     />
-// //                     {/* Same persistent cross mark pattern as TravellerCard —
-// //                         stays put whether a file is just chosen or already
-// //                         extracted, never hides after Extract. */}
 // //                     {(ctFile || ctDraft) && (
 // //                       <button
 // //                         type="button"
@@ -2243,10 +2129,6 @@
 // //                       </select>
 // //                     </div>
 // //                   </div>
-// //                   {/* If the name/age came out wrong (like the garbled read
-// //                       this was added for), this shows exactly what
-// //                       Tesseract actually saw on the card — no console
-// //                       needed to report it back. */}
 // //                   {ctDraft.front?.ocrText && (
 // //                     <button
 // //                       type="button"
@@ -2280,21 +2162,8 @@
 // //               <h4 className="flex items-center gap-2 font-bold text-gray-800 text-sm">
 // //                 <IndianRupee className="w-4 h-4 text-[#2E7D5E]" /> Payment Screenshots
 // //               </h4>
-// //               {/* Advance + Balance + Partial vs this booking's real package
-// //                   amount (computePackageAmount on the backend — age-bracket
-// //                   + sharingType slabs off the tour's live pricing, same
-// //                   formula adminAddBooking uses, + addons). null means the
-// //                   backend couldn't price it (e.g. an older booking saved
-// //                   before packageKind existed) — show nothing rather than a
-// //                   guess. Once fully covered, show ONLY the status badge, no
-// //                   running number — remaining balance keeps moving up/down
-// //                   as screenshots are added/removed until then. */}
 // //               {booking.paymentSummary && (
 // //                 booking.paymentSummary.fullyPaid ? (
-// //                   // The one deliberately bolder moment on this card — styled
-// //                   // like an ink stamp on a ticket (dashed double ring, slight
-// //                   // tilt) rather than another flat pill, since "cleared in
-// //                   // full" is the single most important fact on this section.
 // //                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#235F47] bg-[#EDF6F1] border-2 border-dashed border-[#2E7D5E] rounded-full px-3.5 py-1 -rotate-2 shadow-sm">
 // //                     <CheckCircle2 className="w-3.5 h-3.5" /> Balance Fully Paid
 // //                   </span>
@@ -2310,9 +2179,6 @@
 // //             </div>
 // //             <div className="grid md:grid-cols-3 gap-3">
 // //               {PAYMENT_TYPES.map(({ type, label }) => {
-// //                 // advance used to be capped at one screenshot (only the
-// //                 // latest was ever shown) — it's an array now, same as
-// //                 // balance/partial, so as many can be uploaded as needed.
 // //                 const items = booking.payments[type] || [];
 // //                 return (
 // //                   <PaymentSlot
@@ -2340,11 +2206,6 @@
 // //               >
 // //                 Create Booking <ArrowRight className="w-4 h-4" />
 // //               </button>
-// //               {/* Once Create Booking is finished and a real tnr exists for
-// //                   this phone number + tour, the next Refresh (or re-opening
-// //                   this tab) picks it up on its own — no paste needed. This
-// //                   is only a fallback for when that auto-match can't find it
-// //                   (e.g. the contact number was changed on Create Booking). */}
 // //               <p className="text-center text-[11px] text-gray-400 mt-2">
 // //                 TNR links automatically once the booking is created — hit Refresh above after creating it.
 // //               </p>
@@ -2383,11 +2244,12 @@
 // //   );
 // // };
 
-// // const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi, uploadGroupPayment, deleteGroupPayment, uploadUserTravellerAadhaar, linkGroupTnr, editAadhaarTraveller, deleteAadhaarTraveller, linkGuestTnr, unlinkGuestTnr, navigate, tourId, tourTitle }) => {
+// // const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi, uploadGroupPayment, deleteGroupPayment, uploadUserTravellerAadhaar, linkGroupTnr, editAadhaarTraveller, deleteAadhaarTraveller, linkGuestTnr, unlinkGuestTnr, deleteBookingByTnr, navigate, tourId, tourTitle }) => {
 // //   const [bookings, setBookings] = useState([]);
 // //   const [loading, setLoading] = useState(true);
 // //   const [expanded, setExpanded] = useState({});
 // //   const [downloadingAllZip, setDownloadingAllZip] = useState(false);
+// //   const [searchQuery, setSearchQuery] = useState("");
 
 // //   const fetchBookings = async () => {
 // //     setLoading(true);
@@ -2401,9 +2263,6 @@
 // //     }
 // //   };
 
-// //   // Tour-wise — this tab always shows only the currently selected tour's
-// //   // bookings (same tour picked at the top of the page, shared with the
-// //   // Save Booking tab). Re-fetches whenever the admin switches tours.
 // //   useEffect(() => {
 // //     fetchBookings();
 // //     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2444,9 +2303,6 @@
 // //       state: {
 // //         tourId: booking.tourId,
 // //         travellers: finalTravellers,
-// //         // advance is an array now (can have more than one screenshot) —
-// //         // Create Booking only ever shows ONE advance proof, so hand it
-// //         // the most recent upload.
 // //         paymentScreenshots: booking.payments?.advance?.length
 // //           ? {
 // //             advance: {
@@ -2456,12 +2312,6 @@
 // //           }
 // //           : {},
 // //         contactMobile: mainT?.phone || "",
-// //         // Combined string kept for back-compat with anything still reading
-// //         // it, PLUS the already-split components (OCR splits these out —
-// //         // see splitAddressComponents in aadhaarController.js) so
-// //         // CreateBooking.jsx's Billing Address can fill Address Line 1/2,
-// //         // City, State and Pincode into their own separate boxes instead of
-// //         // cramming the whole address into one line.
 // //         contactAddress: mainT?.address || "",
 // //         contactAddressLine1: mainT?.addressLine1 || "",
 // //         contactAddressLine2: mainT?.addressLine2 || "",
@@ -2469,35 +2319,35 @@
 // //         contactState: mainT?.state || "",
 // //         contactPincode: mainT?.pincode || "",
 // //         groupId: booking.groupId,
-// //         // Boarding/deboarding point and addon notes captured during Aadhaar
-// //         // Upload (free-text strings, e.g. "MAS - CHENNAI") — CreateBooking.jsx
-// //         // matches the boarding/deboarding strings against the real tour's
-// //         // boardingPoints/deboardingPoints by stationCode to auto-select them.
-// //         // addonsDetail has no addonId (it was flattened for display only),
-// //         // so it's shown there as a read-only reminder, not auto-selected.
 // //         bookingNotes: booking.bookingNotes || null,
 // //       },
 // //     });
 // //   };
 
-// //   // This tab is only ever rendered once a tour is selected (the parent
-// //   // page gates it on tourId), so filtering is just belt-and-braces here.
 // //   const visibleBookings = tourId
 // //     ? bookings.filter((b) => String(b.tourId || "") === String(tourId))
 // //     : bookings;
 
-// //   // Whole-tour Aadhaar ZIP — ALL images go flat into one single zip (no
-// //   // per-booking sub-folders), with the booking's name/tnr baked into each
-// //   // filename so files stay identifiable without needing folders.
-// //   // Only ever pulls from visibleBookings' live data, so — same as the
-// //   // per-booking download — a removed/deleted traveller is already gone
-// //   // from the data and never ends up in the zip; nothing extra to filter.
+// //   const bookingMatchesSearch = (b, q) => {
+// //     const names = [b.main, ...(b.coTravellers || [])]
+// //       .map((t) => [t?.title, t?.firstName, t?.lastName].filter(Boolean).join(" "))
+// //       .join(" ");
+// //     const haystack = [names, b.tnr, b.main?.phone, b.main?.aadhaarNumber].filter(Boolean).join(" ").toLowerCase();
+// //     return haystack.includes(q);
+// //   };
+// //   const searchedBookings = (() => {
+// //     const q = searchQuery.trim().toLowerCase();
+// //     if (!q) return visibleBookings;
+// //     return visibleBookings.filter((b) => bookingMatchesSearch(b, q));
+// //   })();
+
 // //   const tourZipSafeName = (name) =>
 // //     (name || "file").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "file";
 // //   const tourZipExtFromUrl = (url) => {
 // //     const match = url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
 // //     return match ? match[1] : "jpg";
 // //   };
+// //   // Whole-tour Aadhaar ZIP — flat, booking name/tnr baked into each filename.
 // //   const handleDownloadAllZip = async () => {
 // //     if (visibleBookings.length === 0) {
 // //       toast.error("No bookings to download for this tour");
@@ -2514,8 +2364,6 @@
 // //           const mainName = [booking.main?.title, booking.main?.firstName, booking.main?.lastName]
 // //             .filter(Boolean)
 // //             .join(" ") || `Booking ${bIdx + 1}`;
-// //           // Every file carries the booking prefix (index + name + tnr) in
-// //           // its own filename instead of a sub-folder, so the zip stays flat.
 // //           const bookingPrefix = `${bIdx + 1}. ${tourZipSafeName(mainName)}${booking.tnr ? `_${booking.tnr}` : ""}`;
 
 // //           const entries = [];
@@ -2543,7 +2391,6 @@
 // //                 const res = await fetch(entry.url);
 // //                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 // //                 const blob = await res.blob();
-// //                 // Flat: file goes straight into the zip root, not a folder.
 // //                 zip.file(`${tourZipSafeName(entry.name)}.${tourZipExtFromUrl(entry.url)}`, blob);
 // //                 fetchedCount += 1;
 // //               } catch (err) {
@@ -2580,35 +2427,113 @@
 // //     }
 // //   };
 
+// //   // Deletes Aadhaar FILES (never extracted data) for every booking in this
+// //   // tour — main traveller's aadhaarDocId clears the whole booking.
+// //   const [deletingAllAadhaar, setDeletingAllAadhaar] = useState(false);
+// //   const handleDeleteAllAadhaar = async () => {
+// //     const mainDocIds = visibleBookings.map((b) => b.main?.aadhaarDocId).filter(Boolean);
+// //     if (mainDocIds.length === 0) {
+// //       toast.error("No bookings with Aadhaar to delete for this tour");
+// //       return;
+// //     }
+// //     if (
+// //       !window.confirm(
+// //         `Delete the Aadhaar FILES for ALL ${mainDocIds.length} booking(s) in this tour? Extracted details (Name/Age/Gender/Address/Aadhaar Number) are kept — only the uploaded files are removed from storage. This cannot be undone.`,
+// //       )
+// //     ) {
+// //       return;
+// //     }
+// //     setDeletingAllAadhaar(true);
+// //     try {
+// //       let okCount = 0;
+// //       for (const docId of mainDocIds) {
+// //         try {
+// //           const result = await deleteAadhaarTraveller(docId);
+// //           if (result?.success) okCount += 1;
+// //         } catch (err) {
+// //           console.error(`handleDeleteAllAadhaar: failed for docId ${docId}:`, err);
+// //         }
+// //       }
+// //       toast.success(
+// //         okCount === mainDocIds.length
+// //           ? "Aadhaar files deleted for all bookings"
+// //           : `Aadhaar files deleted for ${okCount}/${mainDocIds.length} booking(s) — check console for the rest`,
+// //       );
+// //       fetchBookings();
+// //     } finally {
+// //       setDeletingAllAadhaar(false);
+// //     }
+// //   };
+
 // //   return (
 // //     <div className="mb-8">
-// //       <div className="flex items-center justify-between flex-wrap gap-3 mb-5 pb-4 border-b-2 border-dashed border-[#DEE2E8]">
-// //         <div className="flex items-center gap-2.5">
-// //           <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full bg-[#1C2733] text-white text-sm font-bold font-mono">
+// //       <div className="mb-5 pb-4 border-b-2 border-dashed border-[#DEE2E8] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+// //         <div className="flex items-center justify-between lg:justify-start gap-2.5 min-w-0 lg:flex-1">
+// //           <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full bg-gradient-to-br from-indigo-600 to-sky-500 text-white text-sm font-bold font-mono shadow-sm shadow-indigo-200 shrink-0">
 // //             {visibleBookings.length}
 // //           </span>
-// //           <p className="text-sm text-[#1C2733]">
+// //           <p className="text-sm text-[#1C2733] min-w-0 lg:truncate">
 // //             booking{visibleBookings.length !== 1 ? "s" : ""}
 // //             {tourTitle ? <span className="text-gray-500"> for {tourTitle}</span> : ""}
 // //           </p>
-// //         </div>
-// //         <div className="flex items-center gap-3">
-// //           <button
-// //             onClick={handleDownloadAllZip}
-// //             disabled={downloadingAllZip || visibleBookings.length === 0}
-// //             title="Download Aadhaar images of every booking in this tour as one ZIP"
-// //             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#C3D4E8] bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-// //           >
-// //             {downloadingAllZip ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-// //             {downloadingAllZip ? "Zipping..." : "Download All (Tour) ZIP"}
-// //           </button>
 // //           <button
 // //             onClick={fetchBookings}
-// //             className="flex items-center gap-1.5 text-xs font-semibold text-[#2A5490] hover:text-[#17314F]"
+// //             title="Refresh"
+// //             className="lg:hidden shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
 // //           >
-// //             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+// //             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
 // //           </button>
 // //         </div>
+// //         <div className="flex items-center gap-2 sm:gap-3">
+// //           <div className="flex flex-col sm:flex-row w-full lg:w-fit rounded-xl border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 shadow-sm overflow-hidden">
+// //             <button
+// //               onClick={handleDeleteAllAadhaar}
+// //               disabled={deletingAllAadhaar || visibleBookings.length === 0}
+// //               title="Delete the uploaded Aadhaar files for EVERY booking in this tour (keeps the extracted Name/Age/Gender/Address/Aadhaar Number — does not delete any booking)"
+// //               className="sm:flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 bg-white text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+// //             >
+// //               {deletingAllAadhaar ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 shrink-0" />}
+// //               <span className="whitespace-nowrap">{deletingAllAadhaar ? "Deleting..." : "Delete All Aadhaar"}</span>
+// //             </button>
+// //             <button
+// //               onClick={handleDownloadAllZip}
+// //               disabled={downloadingAllZip || visibleBookings.length === 0}
+// //               title="Download Aadhaar images of every booking in this tour as one ZIP"
+// //               className="sm:flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+// //             >
+// //               {downloadingAllZip ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
+// //               <span className="whitespace-nowrap">{downloadingAllZip ? "Zipping..." : "Download All (Tour) ZIP"}</span>
+// //             </button>
+// //           </div>
+// //           <button
+// //             onClick={fetchBookings}
+// //             title="Refresh"
+// //             className="hidden lg:flex shrink-0 items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
+// //           >
+// //             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+// //           </button>
+// //         </div>
+// //       </div>
+
+// //       <div className="relative mb-5">
+// //         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+// //         <input
+// //           type="text"
+// //           value={searchQuery}
+// //           onChange={(e) => setSearchQuery(e.target.value)}
+// //           placeholder="Filter by name, mobile, TNR or Aadhaar number (optional)"
+// //           className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+// //         />
+// //         {searchQuery && (
+// //           <button
+// //             type="button"
+// //             onClick={() => setSearchQuery("")}
+// //             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+// //             title="Clear"
+// //           >
+// //             <XCircle className="w-4 h-4" />
+// //           </button>
+// //         )}
 // //       </div>
 
 // //       {loading ? (
@@ -2617,9 +2542,11 @@
 // //         </div>
 // //       ) : visibleBookings.length === 0 ? (
 // //         <div className="text-center py-16 text-gray-400 text-sm rounded-2xl border-2 border-dashed border-[#DEE2E8]">No bookings saved for this tour yet.</div>
+// //       ) : searchedBookings.length === 0 ? (
+// //         <div className="text-center py-16 text-gray-400 text-sm rounded-2xl border-2 border-dashed border-[#DEE2E8]">No booking matches "{searchQuery}".</div>
 // //       ) : (
 // //         <div className="space-y-4">
-// //           {visibleBookings.map((booking) => (
+// //           {searchedBookings.map((booking) => (
 // //             <BookingCard
 // //               key={booking.groupId}
 // //               booking={booking}
@@ -2635,6 +2562,7 @@
 // //               deleteAadhaarTraveller={deleteAadhaarTraveller}
 // //               linkGuestTnr={linkGuestTnr}
 // //               unlinkGuestTnr={unlinkGuestTnr}
+// //               deleteBookingByTnr={deleteBookingByTnr}
 // //               allBookings={visibleBookings}
 // //               onCreateBooking={() => handleCreateBooking(booking)}
 // //               navigate={navigate}
@@ -2669,47 +2597,33 @@
 // //     searchUserBookings,
 // //     uploadUserTravellerAadhaar,
 // //     uploadUserBookingPayment,
+// //     deleteBookingByTnr,
 // //   } = useContext(TourContext);
 
 // //   const [saving, setSaving] = useState(false);
+// //   const savingRef = useRef(false); // synchronous double-click guard
 
-// //   // Three tabs on this one page: "save" = capture a new walk-in booking,
-// //   // "all" = everything saved so far (balance/partial upload, add more
-// //   // co-travellers, Create Booking → tnr → Raise Manage Booking), "user" =
-// //   // find a real online booking (by tour + email) the guest already made on
-// //   // the website themselves, and attach Aadhaar/payment proof to it.
+// //   // "save" = new walk-in booking, "all" = All Bookings, "user" = User Bookings.
 // //   const [activeTab, setActiveTab] = useState("save");
 
 // //   const [tourId, setTourId] = useState("");
 // //   const [tourInfo, setTourInfo] = useState(null);
 
-// //   // ───────────── Booking-wide fields (apply to every traveller) ─────────────
-// //   // Fetched from the selected tour's own data (tourInfo), not typed.
 // //   const [packageSelection, setPackageSelection] = useState({ type: "main", variantIndex: null });
 // //   const [boardingPoint, setBoardingPoint] = useState(null);
 // //   const [deboardingPoint, setDeboardingPoint] = useState(null);
-// //   const [selectedAddons, setSelectedAddons] = useState([]); // train/flight-wise, same shape as CreateBooking.jsx
+// //   const [selectedAddons, setSelectedAddons] = useState([]);
 // //   const [remarks, setRemarks] = useState("");
-// //   // Who's actually saving this booking — picked from the Staff-Profile
-// //   // directory, so "Raised by" on the All Bookings card shows a real name
-// //   // instead of the generic uploadedBy:"admin" tag.
 // //   const [raisedByStaffId, setRaisedByStaffId] = useState("");
 
-// //   // Single main traveller only — co-traveller add, Partial/Balance
-// //   // screenshot upload, and finalizing the booking with a TNR all happen
-// //   // later, from the All Bookings page, not here.
 // //   const [travellers, setTravellers] = useState([blankTraveller(true)]);
 
 // //   const [paymentScreenshots, setPaymentScreenshots] = useState({});
-// //   // { [type]: { current, total } | undefined } — sequential upload progress.
 // //   const [paymentLoading, setPaymentLoading] = useState({});
-// //   // { [type]: File[] } — files picked together but not yet uploaded.
+// //   const paymentUploadingRef = useRef({});
 // //   const [paymentFiles, setPaymentFiles] = useState({});
-// //   // { [type]: string[] } — optional amount typed against each queued file,
-// //   // same index as paymentFiles[type].
 // //   const [paymentAmounts, setPaymentAmounts] = useState({});
-// //   // { [type]: index | null } — which uploaded screenshot (if any) is open
-// //   // in the one-at-a-time viewer for that payment type.
+// //   const [paymentRemarks, setPaymentRemarks] = useState({});
 // //   const [paymentViewerIndex, setPaymentViewerIndex] = useState({});
 
 // //   useEffect(() => {
@@ -2729,7 +2643,6 @@
 // //     setTourInfo(tourList.find((t) => t._id === tourId) || null);
 // //   }, [tourId, tourList]);
 
-// //   // Reset booking-wide fields whenever the tour changes.
 // //   useEffect(() => {
 // //     setPackageSelection({ type: "main", variantIndex: null });
 // //     setBoardingPoint(null);
@@ -2738,15 +2651,12 @@
 // //     setRemarks("");
 // //   }, [tourId]);
 
-// //   // Reset boarding/deboarding/addons whenever the package selection changes
-// //   // (different package = different boarding/deboarding/train/flight list).
 // //   useEffect(() => {
 // //     setBoardingPoint(null);
 // //     setDeboardingPoint(null);
 // //     setSelectedAddons([]);
 // //   }, [packageSelection.type, packageSelection.variantIndex]);
 
-// //   // ───────────────────────── Traveller (person-level) fields ─────────────────────────
 // //   const handleTravellerChange = (index, field, value) => {
 // //     const updated = [...travellers];
 // //     const t = { ...updated[index] };
@@ -2772,10 +2682,6 @@
 
 // //     t[field] = value;
 
-// //     // Keep the one combined `address` line in sync whenever any of the
-// //     // split fields is edited by hand — older code (and the All Bookings
-// //     // view) still reads `address` as one line, so it shouldn't go stale
-// //     // the moment the admin corrects, say, just the Pincode box.
 // //     if (["addressLine1", "addressLine2", "city", "state", "pincode"].includes(field)) {
 // //       t.address = [t.addressLine1, t.addressLine2, t.city, t.state, t.pincode]
 // //         .filter(Boolean)
@@ -2786,13 +2692,6 @@
 // //     setTravellers(updated);
 // //   };
 
-// //   // ───────────────────────── Co-travellers (Tab 1) ─────────────────────────
-// //   // No cap — add as many co-travellers as the booking needs. Each
-// //   // co-traveller is Aadhaar FRONT side only (TravellerCard already skips
-// //   // the back-side input whenever isMain is false). These stay local state
-// //   // here and are only persisted when "Save Booking" is pressed, same as
-// //   // the main traveller — unlike Tab 2, where Add Co-Traveller saves
-// //   // straight to the server because that booking already exists.
 // //   const addCoTraveller = () => {
 // //     setTravellers((prev) => [...prev, blankTraveller(false)]);
 // //   };
@@ -2824,13 +2723,7 @@
 // //       if (t._backFile) formData.append("back", t._backFile);
 
 // //       const result = await extractAadhaar(formData);
-// //       // Shows exactly what Tesseract actually read off this image — if
-// //       // the name/age come out wrong, this is what to send back so the
-// //       // text-parsing regex (not the image-quality preprocessing) can be
-// //       // fixed for that specific case.
-// //       console.log("[ExtractAadhaar] raw OCR text:", result.front?.ocrText);
-// //       console.log("[ExtractAadhaar] parsed:", result.parsed);
-// //       if (!result.success) {
+// //       if (!result?.success) {
 // //         handleTravellerChange(index, "ocrLoading", false);
 // //         return;
 // //       }
@@ -2840,17 +2733,11 @@
 // //       const updated = [...travellers];
 // //       updated[index] = {
 // //         ...updated[index],
-// //         // Title follows whatever gender OCR actually read — was always
-// //         // hardcoded to "Mr" before, even for a card OCR correctly read as
-// //         // Female.
 // //         title: readGender === "Female" ? "Mrs" : "Mr",
 // //         firstName: p.firstName || "",
 // //         lastName: p.lastName || "",
 // //         age: p.age || "",
 // //         gender: readGender,
-// //         // Keep whatever the admin already typed if OCR couldn't read a
-// //         // phone/address this time (some Aadhaar cards don't print a
-// //         // mobile number at all, and address OCR isn't always clean).
 // //         phone: p.phone || updated[index].phone || "",
 // //         address: p.address || updated[index].address || "",
 // //         addressLine1: p.addressLine1 || updated[index].addressLine1 || "",
@@ -2865,9 +2752,6 @@
 // //         _backFile: null,
 // //       };
 // //       setTravellers(updated);
-// //       // Phone/address only matter for the MAIN traveller (index 0) — that
-// //       // toast would be noise for a co-traveller, who has no phone/address
-// //       // fields on this card at all.
 // //       if (index === 0 && (!p.phone || !p.address)) {
 // //         toast.info(
 // //           `Traveller ${index + 1}'s Aadhaar read. ${!p.phone ? "Mobile number" : "Address"}${!p.phone && !p.address ? " & address" : ""} couldn't be read — please fill it in.`,
@@ -2881,10 +2765,6 @@
 // //     }
 // //   };
 
-// //   // Wrong Aadhaar uploaded for this traveller — clear the read image(s)
-// //   // and whatever identity fields OCR filled in, so the admin can redo it
-// //   // with the right photo instead of being stuck with a bad read until
-// //   // Save. Local state only (nothing's been persisted yet on Tab 1).
 // //   const clearTravellerAadhaar = (index) => {
 // //     const updated = [...travellers];
 // //     updated[index] = {
@@ -2899,35 +2779,29 @@
 // //       back: null,
 // //       _frontFile: null,
 // //       _backFile: null,
-// //       // Main traveller's phone/address are typed/used elsewhere — only
-// //       // clear them for a co-traveller, who has no such fields anyway.
 // //       ...(index !== 0 ? { phone: "", address: "" } : {}),
 // //     };
 // //     setTravellers(updated);
 // //     toast.info(`Traveller ${index + 1}'s Aadhaar cleared — upload the correct image and extract again.`);
 // //   };
 
-// //   // ───────────────────────── Payment screenshots ─────────────────────────
-// //   // Only Advance is collected here. Balance/Partial Balance come later
-// //   // (often ~30 days after), once the booking has a TNR — that happens
-// //   // from the All Bookings page, not here.
+// //   // Only Advance is collected here.
 // //   const paymentSlots = [
 // //     { type: "advance", label: "Advance Payment", cardClass: "bg-indigo-50 border-indigo-200" },
 // //   ];
 
-// //   // paymentFiles[type] can hold several screenshots picked together, but
-// //   // they're still sent to the backend ONE AT A TIME, in order — a single
-// //   // "Upload All" click walks the whole queue sequentially (not in
-// //   // parallel) instead of requiring a click per file.
 // //   const handlePaymentUpload = async (type) => {
 // //     const queue = paymentFiles[type] || [];
 // //     const amounts = paymentAmounts[type] || [];
+// //     const remarksQueue = paymentRemarks[type] || [];
 // //     if (queue.length === 0) return toast.error(`Select at least one ${type} screenshot first`);
 // //     for (let i = 0; i < amounts.length; i++) {
 // //       if (amounts[i] && Number(amounts[i]) <= 0) {
 // //         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
 // //       }
 // //     }
+// //     if (paymentUploadingRef.current[type]) return;
+// //     paymentUploadingRef.current[type] = true;
 
 // //     let successCount = 0;
 // //     for (let i = 0; i < queue.length; i++) {
@@ -2942,7 +2816,10 @@
 // //           successCount += 1;
 // //           setPaymentScreenshots((prev) => ({
 // //             ...prev,
-// //             [type]: [...(prev[type] || []), { url: result.url, amount: result.amount }],
+// //             [type]: [
+// //               ...(prev[type] || []),
+// //               { url: result.url, amount: result.amount, remarks: (remarksQueue[i] || "").trim() },
+// //             ],
 // //           }));
 // //         }
 // //       } catch (err) {
@@ -2952,6 +2829,8 @@
 // //     setPaymentLoading((prev) => ({ ...prev, [type]: false }));
 // //     setPaymentFiles((prev) => ({ ...prev, [type]: [] }));
 // //     setPaymentAmounts((prev) => ({ ...prev, [type]: [] }));
+// //     setPaymentRemarks((prev) => ({ ...prev, [type]: [] }));
+// //     paymentUploadingRef.current[type] = false;
 // //     if (successCount > 0) {
 // //       toast.success(`${successCount} ${type} screenshot${successCount > 1 ? "s" : ""} uploaded`);
 // //     }
@@ -2960,26 +2839,13 @@
 // //     }
 // //   };
 
-// //   // ───────────────────────── Save booking ─────────────────────────
-// //   // Persists this capture (tour, booking-wide details, main traveller,
-// //   // advance screenshot) straight into aadhaarModel — Aadhaar front/back,
-// //   // paymentAdvance and bookingNotes docs, all tied by one groupId. No
-// //   // navigation to CreateBooking.jsx: this page's job ends at Save.
-// //   // Co-traveller add, Partial/Balance screenshot upload and finalizing
-// //   // the booking (with a real TNR, via CreateBooking.jsx) happen afterwards
-// //   // from the All Bookings page.
 // //   const handleSaveBooking = async () => {
-// //     // Every OTHER "required" gate was removed on request (no tour, no
-// //     // name, no Aadhaar front/back, no Raised By, no co-traveller
-// //     // completeness) — this is now the ONE field this form still blocks
-// //     // Save Booking on: at least one Advance Payment screenshot must be
-// //     // attached before a booking can be created at all. Everything else
-// //     // still only fails later, with a toast pulled straight from the
-// //     // server's own error message (saveAadhaarUpload's try/catch below
-// //     // already surfaces whatever message the API sends back).
+// //     // The ONE hard requirement: at least one Advance Payment screenshot.
 // //     if (!(paymentScreenshots.advance || []).length) {
 // //       return toast.error("Attach the Advance Payment screenshot before creating this booking");
 // //     }
+// //     if (savingRef.current) return;
+// //     savingRef.current = true;
 // //     const mainTraveller = travellers[0];
 
 // //     const coTravellerRows = travellers.slice(1);
@@ -2996,15 +2862,12 @@
 // //       : "";
 // //     const addonsStr = selectedAddons.map((a) => a.name).join(", ");
 // //     const raisedByStaff = (staffList || []).find((s) => s._id === raisedByStaffId);
-// //     // Train/flight-wise breakdown — kept structured (not flattened into one
-// //     // string) so the All Bookings card can show exactly which leg each
-// //     // add-on belongs to instead of one bulk "Add-ons: X, Y" line.
 // //     const addonsDetail = selectedAddons.map((a) => ({
 // //       label: a.trainName
 // //         ? `${a.trainName} (${a.trainNo})${a.tripType ? ` - ${a.tripType}` : ""}`
 // //         : a.flightNo
-// //         ? `${a.airline || "Flight"} ${a.flightNo}${a.tripType ? ` - ${a.tripType}` : ""}`
-// //         : "",
+// //           ? `${a.airline || "Flight"} ${a.flightNo}${a.tripType ? ` - ${a.tripType}` : ""}`
+// //           : "",
 // //       name: a.name,
 // //       amount: a.amount || 0,
 // //     }));
@@ -3014,10 +2877,6 @@
 // //       const result = await saveAadhaarUpload({
 // //         tourId,
 // //         packageType: packageTypeStr,
-// //         // Machine-readable pair alongside the display string above — lets
-// //         // the backend look up this exact package's real price later (see
-// //         // computePackageAmount in aadhaarController.js) to show the
-// //         // Advance+Balance+Partial-vs-package-amount status on this card.
 // //         packageKind: packageSelection.type,
 // //         variantPackageIndex: packageSelection.type === "variant" ? packageSelection.variantIndex : null,
 // //         boardingPoint: boardingPointStr,
@@ -3062,11 +2921,8 @@
 // //           city: t.city,
 // //           state: t.state,
 // //           pincode: t.pincode,
-// //           front: t.front, // front side only
+// //           front: t.front,
 // //         })),
-// //         // Plural now — the admin can attach more than one Advance
-// //         // screenshot before saving (see the one-at-a-time upload queue
-// //         // above), so every one of them gets saved against this booking.
 // //         advanceScreenshots: paymentScreenshots.advance || [],
 // //       });
 
@@ -3074,338 +2930,368 @@
 
 // //       toast.success("Booking saved. Find it on the All Bookings page.");
 
-// //       // Reset the form for the next walk-in booking.
 // //       setTourId("");
 // //       setTourInfo(null);
 // //       setTravellers([blankTraveller(true)]);
 // //       setPaymentScreenshots({});
 // //       setPaymentFiles({});
 // //       setPaymentAmounts({});
+// //       setPaymentRemarks({});
 // //     } catch (err) {
 // //       console.error("handleSaveBooking error:", err);
 // //       toast.error("Could not save this booking. Please try again.");
 // //     } finally {
+// //       savingRef.current = false;
 // //       setSaving(false);
 // //     }
 // //   };
 
 // //   return (
-// //     <div className="min-h-screen bg-gray-50/60 py-6 px-4">
-// //       <div className="max-w-5xl mx-auto bg-white shadow-xl rounded-3xl border border-gray-100 p-6 sm:p-8">
-// //         <ToastContainer position="top-right" autoClose={4000} />
+// //     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-slate-50 to-sky-50 py-4 px-2.5 sm:py-8 sm:px-4">
+// //       <div className="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-indigo-300/30 blur-3xl" />
+// //       <div className="pointer-events-none absolute top-1/3 -right-24 w-80 h-80 rounded-full bg-sky-300/30 blur-3xl" />
+// //       <div className="pointer-events-none absolute bottom-0 left-1/4 w-72 h-72 rounded-full bg-purple-200/30 blur-3xl" />
 
-// //         <div className="flex items-center gap-4 border-b border-gray-100 pb-6 mb-6">
-// //           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-indigo-200">
-// //             <UserPlus className="w-7 h-7" />
-// //           </div>
-// //           <div>
-// //             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 leading-tight">Aadhaar Upload</h1>
-// //             <p className="text-sm text-gray-500 mt-0.5">Walk-in bookings, read straight off the Aadhaar card</p>
-// //           </div>
-// //         </div>
+// //       <div className="relative max-w-5xl mx-auto bg-white/90 backdrop-blur-sm shadow-2xl shadow-indigo-200/50 rounded-2xl sm:rounded-[2rem] border border-white ring-1 ring-indigo-100 overflow-hidden">
+// //         <div className="h-1.5 sm:h-2 bg-gradient-to-r from-indigo-600 via-violet-500 to-sky-500" />
 
-// //         {/* Tour comes FIRST — everything below (Save Booking AND All
-// //               Bookings) is scoped to this one tour. Switching tours clears
-// //               the Save Booking draft; All Bookings re-fetches for the new
-// //               tour automatically. */}
-// //         <div className="mb-6">
-// //           <label className="block text-sm font-semibold text-gray-700 mb-2">Select Tour *</label>
-// //           <select
-// //             value={tourId}
-// //             onChange={(e) => setTourId(e.target.value)}
-// //             className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-base transition-all"
-// //           >
-// //             <option value="">-- Select a tour --</option>
-// //             {tourList?.map((t) => (
-// //               <option key={t._id} value={t._id}>
-// //                 {t.title}
-// //               </option>
-// //             ))}
-// //           </select>
-// //         </div>
+// //         <div className="p-3.5 sm:p-6 md:p-8">
+// //           <ToastContainer position="top-right" autoClose={4000} />
 
-// //         {/* Two-tab pill header */}
-// //         <div className="flex gap-2 p-1.5 bg-gray-100 rounded-2xl mb-8 w-full sm:w-fit">
-// //           <button
-// //             onClick={() => setActiveTab("save")}
-// //             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none ${
-// //               activeTab === "save" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-// //             }`}
-// //           >
-// //             <UserPlus className="w-4 h-4" /> Save Booking
-// //           </button>
-// //           <button
-// //             onClick={() => setActiveTab("all")}
-// //             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none ${
-// //               activeTab === "all" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-// //             }`}
-// //           >
-// //             <BookOpenCheck className="w-4 h-4" /> All Bookings
-// //           </button>
-// //           <button
-// //             onClick={() => setActiveTab("user")}
-// //             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none ${
-// //               activeTab === "user" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-// //             }`}
-// //           >
-// //             <Search className="w-4 h-4" /> User Bookings
-// //           </button>
-// //         </div>
-
-// //         {!tourId && (
-// //           <div className="text-center py-16 text-gray-400 text-sm">Select a tour above to continue.</div>
-// //         )}
-
-// //         {tourId && activeTab === "all" && (
-// //           <AllBookingsTab
-// //             getAadhaarBookings={getAadhaarBookings}
-// //             extractAadhaar={extractAadhaar}
-// //             addCoTravellerApi={addCoTravellerApi}
-// //             uploadGroupPayment={uploadGroupPayment}
-// //             deleteGroupPayment={deleteGroupPayment}
-// //             uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-// //             linkGroupTnr={linkGroupTnr}
-// //             editAadhaarTraveller={editAadhaarTraveller}
-// //             deleteAadhaarTraveller={deleteAadhaarTraveller}
-// //             linkGuestTnr={linkGuestTnr}
-// //             unlinkGuestTnr={unlinkGuestTnr}
-// //             navigate={navigate}
-// //             tourId={tourId}
-// //             tourTitle={tourInfo?.title}
-// //           />
-// //         )}
-
-// //         {tourId && activeTab === "user" && (
-// //           <UserBookingsTab
-// //             tourId={tourId}
-// //             searchUserBookings={searchUserBookings}
-// //             uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-// //             uploadUserBookingPayment={uploadUserBookingPayment}
-// //             deleteGroupPayment={deleteGroupPayment}
-// //             extractAadhaar={extractAadhaar}
-// //           />
-// //         )}
-
-// //         {tourId && activeTab === "save" && (
-// //           <>
-// //         {tourInfo && (
-// //           <>
-// //             <BookingWideSection
-// //               tourInfo={tourInfo}
-// //               packageSelection={packageSelection}
-// //               setPackageSelection={setPackageSelection}
-// //               boardingPoint={boardingPoint}
-// //               setBoardingPoint={setBoardingPoint}
-// //               deboardingPoint={deboardingPoint}
-// //               setDeboardingPoint={setDeboardingPoint}
-// //               selectedAddons={selectedAddons}
-// //               setSelectedAddons={setSelectedAddons}
-// //               remarks={remarks}
-// //               setRemarks={setRemarks}
-// //               staffList={staffList}
-// //               raisedByStaffId={raisedByStaffId}
-// //               setRaisedByStaffId={setRaisedByStaffId}
-// //             />
-
-// //             <TravellerCard
-// //               traveller={travellers[0]}
-// //               index={0}
-// //               isMain={true}
-// //               setTravellerFrontFile={setTravellerFrontFile}
-// //               setTravellerBackFile={setTravellerBackFile}
-// //               extractTravellerAadhaar={extractTravellerAadhaar}
-// //               clearTravellerAadhaar={clearTravellerAadhaar}
-// //               handleTravellerChange={handleTravellerChange}
-// //             />
-
-// //             {/* Co-travellers — up to 9 more, Aadhaar front side only.
-// //                   Added here and saved together with the main traveller
-// //                   when "Save Booking" is pressed. */}
-// //             {travellers.slice(1).map((t, i) => (
-// //               <TravellerCard
-// //                 key={i + 1}
-// //                 traveller={t}
-// //                 index={i + 1}
-// //                 isMain={false}
-// //                 removeCoTraveller={removeCoTraveller}
-// //                 setTravellerFrontFile={setTravellerFrontFile}
-// //                 setTravellerBackFile={setTravellerBackFile}
-// //                 extractTravellerAadhaar={extractTravellerAadhaar}
-// //                 clearTravellerAadhaar={clearTravellerAadhaar}
-// //                 handleTravellerChange={handleTravellerChange}
-// //               />
-// //             ))}
-
-// //             <button
-// //               onClick={addCoTraveller}
-// //               className="w-full flex items-center justify-center gap-2 px-5 py-3 mb-8 border-2 border-dashed border-indigo-300 text-indigo-700 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-all"
-// //             >
-// //               <PlusCircle className="w-4.5 h-4.5" />
-// //               Add Co-Traveller
-// //             </button>
-
-// //             {/* Payment screenshot — Advance only. Balance / Partial
-// //                   Balance come later from the All Bookings page once a
-// //                   TNR exists. */}
-// //               <div className="mb-8">
-// //                 <h3 className="flex items-center gap-2 font-bold text-gray-800 text-lg mb-4">
-// //                   <IndianRupee className="w-6 h-6 text-indigo-600" /> Advance Payment Screenshot <span className="text-red-500">*</span>
-// //                   <span className="text-xs font-normal text-gray-400">
-// //                     (required to create this booking — OCR tries to read the amount automatically, type it in only if OCR misses)
-// //                   </span>
-// //                 </h3>
-// //                 <div className="grid md:grid-cols-3 gap-4">
-// //                   {paymentSlots.map(({ type, label, cardClass }) => {
-// //                     const uploaded = paymentScreenshots[type] || [];
-// //                     const queue = paymentFiles[type] || [];
-// //                     const amounts = paymentAmounts[type] || [];
-// //                     const progress = paymentLoading[type];
-// //                     return (
-// //                       <div
-// //                         key={type}
-// //                         className={`p-5 rounded-2xl border shadow-sm ${uploaded.length > 0 ? "bg-green-50 border-green-300" : `${cardClass} border`}`}
-// //                       >
-// //                         <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3">
-// //                           <FileImage className="w-5 h-5" /> {label}
-// //                         </h4>
-
-// //                         {uploaded.length > 0 && (
-// //                           <div className="flex flex-col gap-1 mb-3">
-// //                             {uploaded.map((u, i) => (
-// //                               <button
-// //                                 type="button"
-// //                                 key={i}
-// //                                 onClick={() =>
-// //                                   setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))
-// //                                 }
-// //                                 className="flex items-center gap-2 text-sm text-green-700 font-medium hover:underline text-left"
-// //                               >
-// //                                 <CheckCircle2 className="w-4 h-4 shrink-0" /> #{i + 1}
-// //                                 {u.amount ? ` — ₹${u.amount}` : " — amount not entered"}
-// //                               </button>
-// //                             ))}
-// //                           </div>
-// //                         )}
-// //                         <ScreenshotViewer
-// //                           items={uploaded}
-// //                           index={paymentViewerIndex[type] ?? null}
-// //                           onClose={() => setPaymentViewerIndex((prev) => ({ ...prev, [type]: null }))}
-// //                           onNav={(i) => setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))}
-// //                         />
-
-// //                         {/* Pick several screenshots together — they still
-// //                             go to the backend one at a time (sequentially),
-// //                             but a single "Upload All" click walks the whole
-// //                             queue instead of needing a click per file. */}
-// //                         {queue.length > 0 && (
-// //                           <div className="flex flex-col gap-1.5 mb-2.5">
-// //                             {queue.map((f, i) => (
-// //                               <div key={i} className="flex items-center gap-1.5">
-// //                                 <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2.5 py-2 truncate">
-// //                                   <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-// //                                   {f.name}
-// //                                 </div>
-// //                                 <input
-// //                                   type="number"
-// //                                   placeholder="₹ (optional — OCR tries first)"
-// //                                   value={amounts[i] || ""}
-// //                                   onChange={(e) =>
-// //                                     setPaymentAmounts((prev) => ({
-// //                                       ...prev,
-// //                                       [type]: (prev[type] || []).map((a, idx) => (idx === i ? e.target.value : a)),
-// //                                     }))
-// //                                   }
-// //                                   disabled={!!progress}
-// //                                   className="w-24 shrink-0 px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
-// //                                 />
-// //                                 <button
-// //                                   type="button"
-// //                                   onClick={() => {
-// //                                     setPaymentFiles((prev) => ({
-// //                                       ...prev,
-// //                                       [type]: (prev[type] || []).filter((_, idx) => idx !== i),
-// //                                     }));
-// //                                     setPaymentAmounts((prev) => ({
-// //                                       ...prev,
-// //                                       [type]: (prev[type] || []).filter((_, idx) => idx !== i),
-// //                                     }));
-// //                                   }}
-// //                                   disabled={!!progress}
-// //                                   title="Remove from queue"
-// //                                   className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors"
-// //                                 >
-// //                                   <X className="w-3.5 h-3.5" />
-// //                                 </button>
-// //                               </div>
-// //                             ))}
-// //                           </div>
-// //                         )}
-
-// //                         <label className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg px-3 py-3 mb-2.5 cursor-pointer hover:border-indigo-400">
-// //                           <Upload className="w-3.5 h-3.5" />
-// //                           {queue.length > 0 ? "Add more screenshot(s)" : "Choose screenshot(s)"}
-// //                           <input
-// //                             type="file"
-// //                             accept="image/*"
-// //                             multiple
-// //                             className="hidden"
-// //                             onChange={(e) => {
-// //                               const files = Array.from(e.target.files || []);
-// //                               if (!files.length) return;
-// //                               setPaymentFiles((prev) => ({ ...prev, [type]: [...(prev[type] || []), ...files] }));
-// //                               setPaymentAmounts((prev) => ({
-// //                                 ...prev,
-// //                                 [type]: [...(prev[type] || []), ...files.map(() => "")],
-// //                               }));
-// //                               e.target.value = "";
-// //                             }}
-// //                           />
-// //                         </label>
-
-// //                         {queue.length > 0 && (
-// //                           <button
-// //                             onClick={() => handlePaymentUpload(type)}
-// //                             disabled={!!progress}
-// //                             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-semibold transition-colors"
-// //                           >
-// //                             {progress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-// //                             {progress
-// //                               ? `Uploading ${progress.current} of ${progress.total}...`
-// //                               : `Upload ${queue.length > 1 ? `All (${queue.length})` : ""}`}
-// //                           </button>
-// //                         )}
-// //                       </div>
-// //                     );
-// //                   })}
-// //                 </div>
+// //           <div className="flex items-center gap-3 sm:gap-4 border-b border-gray-100 pb-4 sm:pb-6 mb-4 sm:mb-6">
+// //             <div className="relative shrink-0">
+// //               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 blur-md opacity-40" />
+// //               <div className="relative w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-sky-500 text-white flex items-center justify-center shadow-lg shadow-indigo-300/60 ring-2 ring-white">
+// //                 <UserPlus className="w-5.5 h-5.5 sm:w-7 sm:h-7" />
 // //               </div>
+// //             </div>
+// //             <div className="min-w-0">
+// //               <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight truncate bg-gradient-to-r from-indigo-700 via-indigo-600 to-sky-600 bg-clip-text text-transparent">
+// //                 Aadhaar Upload
+// //               </h1>
+// //               <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Walk-in bookings, read straight off the Aadhaar card</p>
+// //             </div>
+// //           </div>
 
-// //               <button
-// //                 onClick={handleSaveBooking}
-// //                 disabled={saving}
-// //                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-700 to-indigo-600 hover:from-indigo-800 hover:to-indigo-700 disabled:opacity-60 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all"
+// //           <div className="mb-5 sm:mb-6">
+// //             <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+// //               <MapPin className="w-4 h-4 text-indigo-500" /> Select Tour *
+// //             </label>
+// //             <div className="relative">
+// //               <select
+// //                 value={tourId}
+// //                 onChange={(e) => setTourId(e.target.value)}
+// //                 className="w-full appearance-none pl-3.5 sm:pl-4 pr-10 sm:pr-11 py-3 sm:py-3.5 bg-gradient-to-br from-indigo-50/70 to-white border-2 border-indigo-100 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm sm:text-base font-semibold text-gray-800 truncate transition-all cursor-pointer"
 // //               >
-// //                 {saving ? (
-// //                   <>
-// //                     <Loader2 className="w-5 h-5 animate-spin" /> Saving...
-// //                   </>
-// //                 ) : (
-// //                   <>
-// //                     Save Booking <ArrowRight className="w-5 h-5" />
-// //                   </>
-// //                 )}
-// //               </button>
-// //           </>
-// //         )}
-// //           </>
-// //         )}
+// //                 <option value="">-- Select a tour --</option>
+// //                 {tourList?.map((t) => (
+// //                   <option key={t._id} value={t._id}>
+// //                     {t.title}
+// //                   </option>
+// //                 ))}
+// //               </select>
+// //               <ChevronDown className="pointer-events-none absolute right-3.5 sm:right-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-indigo-400" />
+// //             </div>
+// //           </div>
+
+// //           <div className="grid grid-cols-3 sm:flex sm:flex-row gap-1.5 sm:gap-2 p-1.5 bg-gradient-to-br from-gray-100 to-indigo-50/60 rounded-2xl mb-6 sm:mb-8 w-full sm:w-fit ring-1 ring-black/5">
+// //             <button
+// //               onClick={() => setActiveTab("save")}
+// //               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "save"
+// //                 ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+// //                 : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+// //                 }`}
+// //             >
+// //               <UserPlus className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>Save Booking</span>
+// //             </button>
+// //             <button
+// //               onClick={() => setActiveTab("all")}
+// //               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "all"
+// //                 ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+// //                 : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+// //                 }`}
+// //             >
+// //               <BookOpenCheck className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>All Bookings</span>
+// //             </button>
+// //             <button
+// //               onClick={() => setActiveTab("user")}
+// //               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "user"
+// //                 ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+// //                 : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+// //                 }`}
+// //             >
+// //               <Search className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>User Bookings</span>
+// //             </button>
+// //           </div>
+
+// //           {!tourId && (
+// //             <div className="text-center py-16 text-gray-400 text-sm">Select a tour above to continue.</div>
+// //           )}
+
+// //           {tourId && activeTab === "all" && (
+// //             <AllBookingsTab
+// //               getAadhaarBookings={getAadhaarBookings}
+// //               extractAadhaar={extractAadhaar}
+// //               addCoTravellerApi={addCoTravellerApi}
+// //               uploadGroupPayment={uploadGroupPayment}
+// //               deleteGroupPayment={deleteGroupPayment}
+// //               uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+// //               linkGroupTnr={linkGroupTnr}
+// //               editAadhaarTraveller={editAadhaarTraveller}
+// //               deleteAadhaarTraveller={deleteAadhaarTraveller}
+// //               linkGuestTnr={linkGuestTnr}
+// //               unlinkGuestTnr={unlinkGuestTnr}
+// //               deleteBookingByTnr={deleteBookingByTnr}
+// //               navigate={navigate}
+// //               tourId={tourId}
+// //               tourTitle={tourInfo?.title}
+// //             />
+// //           )}
+
+// //           {tourId && activeTab === "user" && (
+// //             <UserBookingsTab
+// //               tourId={tourId}
+// //               searchUserBookings={searchUserBookings}
+// //               uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+// //               uploadUserBookingPayment={uploadUserBookingPayment}
+// //               deleteGroupPayment={deleteGroupPayment}
+// //               extractAadhaar={extractAadhaar}
+// //             />
+// //           )}
+
+// //           {tourId && activeTab === "save" && (
+// //             <>
+// //               {tourInfo && (
+// //                 <>
+// //                   <BookingWideSection
+// //                     tourInfo={tourInfo}
+// //                     packageSelection={packageSelection}
+// //                     setPackageSelection={setPackageSelection}
+// //                     boardingPoint={boardingPoint}
+// //                     setBoardingPoint={setBoardingPoint}
+// //                     deboardingPoint={deboardingPoint}
+// //                     setDeboardingPoint={setDeboardingPoint}
+// //                     selectedAddons={selectedAddons}
+// //                     setSelectedAddons={setSelectedAddons}
+// //                     remarks={remarks}
+// //                     setRemarks={setRemarks}
+// //                     staffList={staffList}
+// //                     raisedByStaffId={raisedByStaffId}
+// //                     setRaisedByStaffId={setRaisedByStaffId}
+// //                   />
+
+// //                   <TravellerCard
+// //                     traveller={travellers[0]}
+// //                     index={0}
+// //                     isMain={true}
+// //                     setTravellerFrontFile={setTravellerFrontFile}
+// //                     setTravellerBackFile={setTravellerBackFile}
+// //                     extractTravellerAadhaar={extractTravellerAadhaar}
+// //                     clearTravellerAadhaar={clearTravellerAadhaar}
+// //                     handleTravellerChange={handleTravellerChange}
+// //                   />
+
+// //                   {travellers.slice(1).map((t, i) => (
+// //                     <TravellerCard
+// //                       key={i + 1}
+// //                       traveller={t}
+// //                       index={i + 1}
+// //                       isMain={false}
+// //                       removeCoTraveller={removeCoTraveller}
+// //                       setTravellerFrontFile={setTravellerFrontFile}
+// //                       setTravellerBackFile={setTravellerBackFile}
+// //                       extractTravellerAadhaar={extractTravellerAadhaar}
+// //                       clearTravellerAadhaar={clearTravellerAadhaar}
+// //                       handleTravellerChange={handleTravellerChange}
+// //                     />
+// //                   ))}
+
+// //                   <button
+// //                     onClick={addCoTraveller}
+// //                     className="w-full flex items-center justify-center gap-2 px-5 py-3 mb-8 border-2 border-dashed border-indigo-300 text-indigo-700 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-all"
+// //                   >
+// //                     <PlusCircle className="w-4.5 h-4.5" />
+// //                     Add Co-Traveller
+// //                   </button>
+
+// //                   <div className="mb-8">
+// //                     <h3 className="flex items-center gap-2 font-bold text-gray-800 text-lg mb-4">
+// //                       <IndianRupee className="w-6 h-6 text-indigo-600" /> Advance Payment Screenshot <span className="text-red-500">*</span>
+// //                       <span className="text-xs font-normal text-gray-400">
+// //                         (required to create this booking — OCR tries to read the amount automatically, type it in only if OCR misses)
+// //                       </span>
+// //                     </h3>
+// //                     <div className="grid md:grid-cols-3 gap-4">
+// //                       {paymentSlots.map(({ type, label, cardClass }) => {
+// //                         const uploaded = paymentScreenshots[type] || [];
+// //                         const queue = paymentFiles[type] || [];
+// //                         const amounts = paymentAmounts[type] || [];
+// //                         const remarksQueue = paymentRemarks[type] || [];
+// //                         const progress = paymentLoading[type];
+// //                         return (
+// //                           <div
+// //                             key={type}
+// //                             className={`p-5 rounded-2xl border shadow-sm ${uploaded.length > 0 ? "bg-green-50 border-green-300" : `${cardClass} border`}`}
+// //                           >
+// //                             <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3">
+// //                               <FileImage className="w-5 h-5" /> {label}
+// //                             </h4>
+
+// //                             {uploaded.length > 0 && (
+// //                               <div className="flex flex-col gap-1 mb-3">
+// //                                 {uploaded.map((u, i) => (
+// //                                   <button
+// //                                     type="button"
+// //                                     key={i}
+// //                                     onClick={() =>
+// //                                       setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))
+// //                                     }
+// //                                     className="flex items-center gap-2 text-sm text-green-700 font-medium hover:underline text-left"
+// //                                   >
+// //                                     <CheckCircle2 className="w-4 h-4 shrink-0" /> #{i + 1}
+// //                                     {u.amount ? ` — ₹${u.amount}` : " — amount not entered"}
+// //                                     {u.remarks ? ` — ${u.remarks}` : ""}
+// //                                   </button>
+// //                                 ))}
+// //                               </div>
+// //                             )}
+// //                             <ScreenshotViewer
+// //                               items={uploaded}
+// //                               index={paymentViewerIndex[type] ?? null}
+// //                               onClose={() => setPaymentViewerIndex((prev) => ({ ...prev, [type]: null }))}
+// //                               onNav={(i) => setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))}
+// //                             />
+
+// //                             {queue.length > 0 && (
+// //                               <div className="flex flex-col gap-1.5 mb-2.5">
+// //                                 {queue.map((f, i) => (
+// //                                   <div key={i} className="flex items-center gap-1.5 flex-wrap">
+// //                                     <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2.5 py-2 truncate">
+// //                                       <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+// //                                       {f.name}
+// //                                     </div>
+// //                                     <input
+// //                                       type="number"
+// //                                       placeholder="₹ (optional — OCR tries first)"
+// //                                       value={amounts[i] || ""}
+// //                                       onChange={(e) =>
+// //                                         setPaymentAmounts((prev) => ({
+// //                                           ...prev,
+// //                                           [type]: (prev[type] || []).map((a, idx) => (idx === i ? e.target.value : a)),
+// //                                         }))
+// //                                       }
+// //                                       disabled={!!progress}
+// //                                       className="w-24 shrink-0 px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+// //                                     />
+// //                                     <input
+// //                                       type="text"
+// //                                       placeholder="Bank (e.g. SBI)"
+// //                                       value={remarksQueue[i] || ""}
+// //                                       onChange={(e) =>
+// //                                         setPaymentRemarks((prev) => ({
+// //                                           ...prev,
+// //                                           [type]: (prev[type] || []).map((r, idx) => (idx === i ? e.target.value : r)),
+// //                                         }))
+// //                                       }
+// //                                       disabled={!!progress}
+// //                                       className="w-28 shrink-0 px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+// //                                     />
+// //                                     <button
+// //                                       type="button"
+// //                                       onClick={() => {
+// //                                         setPaymentFiles((prev) => ({
+// //                                           ...prev,
+// //                                           [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+// //                                         }));
+// //                                         setPaymentAmounts((prev) => ({
+// //                                           ...prev,
+// //                                           [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+// //                                         }));
+// //                                         setPaymentRemarks((prev) => ({
+// //                                           ...prev,
+// //                                           [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+// //                                         }));
+// //                                       }}
+// //                                       disabled={!!progress}
+// //                                       title="Remove from queue"
+// //                                       className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors"
+// //                                     >
+// //                                       <X className="w-3.5 h-3.5" />
+// //                                     </button>
+// //                                   </div>
+// //                                 ))}
+// //                               </div>
+// //                             )}
+
+// //                             <label className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg px-3 py-3 mb-2.5 cursor-pointer hover:border-indigo-400">
+// //                               <Upload className="w-3.5 h-3.5" />
+// //                               {queue.length > 0 ? "Add more screenshot(s)" : "Choose screenshot(s)"}
+// //                               <input
+// //                                 type="file"
+// //                                 accept="image/*,application/pdf"
+// //                                 multiple
+// //                                 className="hidden"
+// //                                 onChange={(e) => {
+// //                                   const files = Array.from(e.target.files || []);
+// //                                   if (!files.length) return;
+// //                                   setPaymentFiles((prev) => ({ ...prev, [type]: [...(prev[type] || []), ...files] }));
+// //                                   setPaymentAmounts((prev) => ({
+// //                                     ...prev,
+// //                                     [type]: [...(prev[type] || []), ...files.map(() => "")],
+// //                                   }));
+// //                                   setPaymentRemarks((prev) => ({
+// //                                     ...prev,
+// //                                     [type]: [...(prev[type] || []), ...files.map(() => "")],
+// //                                   }));
+// //                                   e.target.value = "";
+// //                                 }}
+// //                               />
+// //                             </label>
+
+// //                             {queue.length > 0 && (
+// //                               <button
+// //                                 onClick={() => handlePaymentUpload(type)}
+// //                                 disabled={!!progress}
+// //                                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-semibold transition-colors"
+// //                               >
+// //                                 {progress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+// //                                 {progress
+// //                                   ? `Uploading ${progress.current} of ${progress.total}...`
+// //                                   : `Upload ${queue.length > 1 ? `All (${queue.length})` : ""}`}
+// //                               </button>
+// //                             )}
+// //                           </div>
+// //                         );
+// //                       })}
+// //                     </div>
+// //                   </div>
+
+// //                   <button
+// //                     onClick={handleSaveBooking}
+// //                     disabled={saving}
+// //                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-700 to-indigo-600 hover:from-indigo-800 hover:to-indigo-700 disabled:opacity-60 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all"
+// //                   >
+// //                     {saving ? (
+// //                       <>
+// //                         <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+// //                       </>
+// //                     ) : (
+// //                       <>
+// //                         Save Booking <ArrowRight className="w-5 h-5" />
+// //                       </>
+// //                     )}
+// //                   </button>
+// //                 </>
+// //               )}
+// //             </>
+// //           )}
+// //         </div>
 // //       </div>
 // //     </div>
 // //   );
 // // };
 
 // // export default AadhaarUpload;
-
 
 // import React, { useContext, useEffect, useRef, useState } from "react";
 // import { useNavigate } from "react-router-dom";
@@ -3452,12 +3338,7 @@
 // import { toast, ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
 
-// // Small copy-to-clipboard icon for a TNR shown next to it anywhere on this
-// // page — the admin reads a lot of TNRs off this page to paste elsewhere
-// // (WhatsApp, search boxes, etc.), so a click-to-copy beats select-and-copy
-// // by hand every time. stopPropagation matters here: every place this sits
-// // is itself inside a bigger clickable row (expand/collapse), so without it
-// // a copy click would also toggle that row.
+// // Click-to-copy TNR. stopPropagation so it never toggles the parent row.
 // const CopyTnrButton = ({ tnr, className = "" }) => {
 //   const [copied, setCopied] = useState(false);
 //   const handleCopy = async (e) => {
@@ -3483,11 +3364,7 @@
 //   );
 // };
 
-// // Three-state traveller badge: a pending cancellation request, one the
-// // admin rejected (traveller stays active/bookable), or one actually
-// // approved/cancelled — backend (getAadhaarBookings) already resolves
-// // which of the three a traveller is in, this just renders it. Nothing
-// // shown for an active traveller (status is null).
+// // Three-state traveller cancellation badge (resolved by the backend).
 // const CANCEL_STATUS = {
 //   request: { label: "Cancellation Requested", className: "bg-amber-100 text-amber-700 border border-amber-200" },
 //   rejected: { label: "Cancellation Rejected", className: "bg-gray-100 text-gray-600 border border-gray-300" },
@@ -3503,10 +3380,7 @@
 //   );
 // };
 
-// // One-at-a-time image viewer for a list of payment screenshots — clicking
-// // any uploaded item (Advance/Balance/Partial, however many there are)
-// // opens this instead of a raw new-tab link, with Prev/Next to step through
-// // every screenshot in that list one by one without leaving the page.
+// // One-at-a-time payment screenshot viewer with Prev/Next.
 // const ScreenshotViewer = ({ items, index, onClose, onNav }) => {
 //   if (index === null || index === undefined || !items?.[index]) return null;
 //   const item = items[index];
@@ -3558,9 +3432,7 @@
 //   );
 // };
 
-// // stationCode is NOT guaranteed unique within a tour's boardingPoints /
-// // deboardingPoints array — match by each point's own _id (same fix as
-// // TourBooking.jsx / CreateBooking.jsx).
+// // Match boarding/deboarding points by their own _id (stationCode isn't unique).
 // const getPointId = (point) => {
 //   if (!point) return "";
 //   const raw = point._id;
@@ -3568,10 +3440,7 @@
 //   return raw !== undefined && raw !== null ? String(raw) : "";
 // };
 
-// // Traveller shape now holds ONLY person-level fields — identity + sharing +
-// // Aadhaar. Package Type, Boarding/Deboarding Point, Add-ons and Remarks are
-// // BOOKING-wide (set once, fetched from the selected tour's own data below —
-// // not typed free-text).
+// // Person-level fields only — package/boarding/addons/remarks are booking-wide.
 // const blankTraveller = (isMain) => ({
 //   title: "Mr",
 //   firstName: "",
@@ -3579,12 +3448,6 @@
 //   age: "",
 //   gender: "Male",
 //   sharingType: "",
-//   // Address/Mobile — same fields for main AND co-travellers. OCR fills
-//   // these when it can; the admin can always edit/correct them here.
-//   // `address` stays as the one combined OCR'd line (kept so older code
-//   // paths and the booking card's view mode still have something to show);
-//   // the split fields below are what the form itself edits — Country is
-//   // always "India" and isn't a stored field, just a fixed label.
 //   phone: "",
 //   address: "",
 //   addressLine1: "",
@@ -3593,27 +3456,17 @@
 //   state: "",
 //   pincode: "",
 //   isCoTraveller: !isMain,
-//   // Aadhaar OCR
 //   front: null,
 //   back: null,
 //   ocrLoading: false,
 //   _frontFile: null,
 //   _backFile: null,
-//   source: "aadhaar", // "aadhaar" | "manual" — co-travellers can switch to manual
+//   source: "aadhaar", // "aadhaar" | "manual"
 // });
 
-// // ───────────────────────── Booking-wide section (Package / Boarding / Deboarding / Add-ons / Remarks) ─────────────────────────
-// // IMPORTANT: defined OUTSIDE AadhaarUpload (module scope), not as a function
-// // created fresh on every render. A component defined INSIDE a parent's
-// // render body gets a brand-new identity every re-render, so React unmounts
-// // and remounts the whole subtree on every keystroke — every input loses
-// // focus and the cursor jumps out after each character. Keeping it at
-// // module scope with plain props fixes that.
-// //
-// // Package Type / Boarding Point / Deboarding Point / Add-ons are now
-// // fetched from the selected tour's own data (tourInfo) via dropdowns —
-// // not typed free-text — so what the admin picks here actually matches a
-// // real package/boarding/deboarding/addon on that tour.
+// // ───────────── Booking-wide section ─────────────
+// // Module scope (not inside AadhaarUpload) so inputs don't lose focus on
+// // every keystroke.
 // const BookingWideSection = ({
 //   tourInfo,
 //   packageSelection,
@@ -3643,9 +3496,6 @@
 //     .map((flight, flightIndex) => ({ flight, flightIndex }))
 //     .filter(({ flight }) => Array.isArray(flight.addons) && flight.addons.length > 0);
 
-//   // Train/flight-wise addon selection — SAME pattern CreateBooking.jsx
-//   // uses per traveller, promoted to booking-wide here (one selection
-//   // applied to the whole booking instead of per traveller).
 //   const handleAddonChange = (trainIndex, addonId) => {
 //     const train = trainDetails[trainIndex];
 //     if (!train) return;
@@ -3717,7 +3567,7 @@
 //       </div>
 
 //       <div className="p-5 sm:p-6">
-//         <div className="grid md:grid-cols-3 gap-4 mb-5">
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
 //           <div>
 //             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
 //               <Package className="w-3.5 h-3.5 text-sky-600" /> Package Type
@@ -3850,10 +3700,6 @@
 //         )}
 
 //         <div className="mt-5 pt-5 border-t border-sky-200/70">
-//           {/* Who's actually saving this booking — picked from the
-//               Staff-Profile directory (not typed), so every booking's All
-//               Bookings card can show "Raised by: <name>" instead of a
-//               generic "admin" tag. Required so it's never silently blank. */}
 //           <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
 //             <UserCheck className="w-3.5 h-3.5 text-sky-600" /> Raised By (who is saving this booking?) *
 //           </label>
@@ -3885,8 +3731,7 @@
 //   );
 // };
 
-// // ───────────────────────── Per-person traveller card (identity + sharing + Aadhaar) ─────────────────────────
-// // Also module-scope for the same reason as BookingWideSection above.
+// // ───────────── Per-person traveller card ─────────────
 // const TravellerCard = ({
 //   traveller,
 //   index,
@@ -3898,10 +3743,6 @@
 //   clearTravellerAadhaar,
 //   handleTravellerChange,
 // }) => {
-//   // Lets the "clear chosen file" buttons below actually reset what the
-//   // native <input type="file"> displays (browsers won't blank that text
-//   // just because React state changes — the input's own .value has to be
-//   // reset directly).
 //   const frontInputRef = useRef(null);
 //   const backInputRef = useRef(null);
 //   const [showRawText, setShowRawText] = useState(false);
@@ -3915,12 +3756,8 @@
 //     setTravellerBackFile(index, null);
 //   };
 
-//   // One cross mark, one place, for the whole lifecycle of this image:
-//   // before extraction it just clears the chosen file; after extraction
-//   // (traveller.front/back is set) it also wipes the OCR'd result so the
-//   // admin can redo it with the right image. Either way the button stays
-//   // put next to "Choose File" instead of disappearing after Extract and
-//   // reappearing somewhere else.
+//   // One cross mark for the whole lifecycle — clears the picker, and the
+//   // OCR'd result too if already extracted.
 //   const clearFront = () => {
 //     clearChosenFront();
 //     if (traveller.front) clearTravellerAadhaar(index);
@@ -3931,355 +3768,324 @@
 //   };
 
 //   return (
-//   <div
-//     className={`mb-6 rounded-2xl border shadow-sm overflow-hidden ${
-//       isMain ? "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/50" : "border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/50"
-//     }`}
-//   >
 //     <div
-//       className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b bg-white/60 ${
-//         isMain ? "border-indigo-200/70" : "border-purple-200/70"
-//       }`}
+//       className={`mb-6 rounded-2xl border shadow-sm overflow-hidden ${isMain ? "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/50" : "border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/50"
+//         }`}
 //     >
-//       <div className="flex items-center gap-3">
-//         <div
-//           className={`w-10 h-10 rounded-xl text-white flex items-center justify-center shadow-sm ${
-//             isMain ? "bg-indigo-600" : "bg-purple-600"
+//       <div
+//         className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b bg-white/60 ${isMain ? "border-indigo-200/70" : "border-purple-200/70"
 //           }`}
-//         >
-//           {isMain ? <IdCard className="w-5 h-5" /> : <Users className="w-5 h-5" />}
-//         </div>
-//         <div>
-//           <p className="font-bold text-gray-800 leading-tight">
-//             {isMain ? "Main Traveller" : `Co-Traveller ${index}`}
-//           </p>
-//           {!isMain && (
-//             <p className="text-xs text-gray-500">
-//               {traveller.source === "aadhaar" ? "Via Aadhaar OCR" : "Manual entry"}
+//       >
+//         <div className="flex items-center gap-3">
+//           <div
+//             className={`w-10 h-10 rounded-xl text-white flex items-center justify-center shadow-sm ${isMain ? "bg-indigo-600" : "bg-purple-600"
+//               }`}
+//           >
+//             {isMain ? <IdCard className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+//           </div>
+//           <div>
+//             <p className="font-bold text-gray-800 leading-tight">
+//               {isMain ? "Main Traveller" : `Co-Traveller ${index}`}
 //             </p>
-//           )}
+//             {!isMain && (
+//               <p className="text-xs text-gray-500">
+//                 {traveller.source === "aadhaar" ? "Via Aadhaar OCR" : "Manual entry"}
+//               </p>
+//             )}
+//           </div>
 //         </div>
+//         {!isMain && (
+//           <button
+//             onClick={() => removeCoTraveller(index)}
+//             className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+//             title="Remove co-traveller"
+//           >
+//             <Trash2 className="w-4.5 h-4.5" />
+//           </button>
+//         )}
 //       </div>
-//       {!isMain && (
-//         <button
-//           onClick={() => removeCoTraveller(index)}
-//           className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
-//           title="Remove co-traveller"
-//         >
-//           <Trash2 className="w-4.5 h-4.5" />
-//         </button>
-//       )}
-//     </div>
 
-//     <div className="p-5 sm:p-6">
-//       {/* Aadhaar upload — skippable for manual co-travellers */}
-//       {traveller.source === "aadhaar" && (
-//         <div className="p-4 bg-white rounded-xl border border-dashed border-gray-300 mb-5">
-//           <div className="flex flex-wrap items-end gap-3">
-//             <div className="flex-1 min-w-[160px]">
-//               <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-//                 Aadhaar Front {isMain ? "(required)" : ""}
-//               </label>
-//               <div className="flex items-center gap-2">
-//                 <input
-//                   ref={frontInputRef}
-//                   type="file"
-//                   accept="image/*,application/pdf"
-//                   onChange={(e) => setTravellerFrontFile(index, e.target.files?.[0] || null)}
-//                   className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
-//                 />
-//                 {/* Same cross mark whether a file is just chosen (clears
-//                     the picker) or already extracted (also wipes the OCR'd
-//                     result) — stays in this one spot either way, never
-//                     hides after Extract. */}
-//                 {(traveller._frontFile || traveller.front) && (
-//                   <button
-//                     type="button"
-//                     onClick={clearFront}
-//                     className="shrink-0 text-gray-400 hover:text-red-600"
-//                     title={traveller.front ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
-//                   >
-//                     <XCircle className="w-4 h-4" />
-//                   </button>
-//                 )}
-//               </div>
-//             </div>
-//             {isMain && (
+//       <div className="p-5 sm:p-6">
+//         {traveller.source === "aadhaar" && (
+//           <div className="p-4 bg-white rounded-xl border border-dashed border-gray-300 mb-5">
+//             <div className="flex flex-wrap items-end gap-3">
 //               <div className="flex-1 min-w-[160px]">
-//                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Back (optional)</label>
+//                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+//                   Aadhaar Front {isMain ? "(required)" : ""}
+//                 </label>
 //                 <div className="flex items-center gap-2">
 //                   <input
-//                     ref={backInputRef}
+//                     ref={frontInputRef}
 //                     type="file"
 //                     accept="image/*,application/pdf"
-//                     onChange={(e) => setTravellerBackFile(index, e.target.files?.[0] || null)}
+//                     onChange={(e) => setTravellerFrontFile(index, e.target.files?.[0] || null)}
 //                     className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
 //                   />
-//                   {(traveller._backFile || traveller.back) && (
+//                   {(traveller._frontFile || traveller.front) && (
 //                     <button
 //                       type="button"
-//                       onClick={clearBack}
+//                       onClick={clearFront}
 //                       className="shrink-0 text-gray-400 hover:text-red-600"
-//                       title={traveller.back ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
+//                       title={traveller.front ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
 //                     >
 //                       <XCircle className="w-4 h-4" />
 //                     </button>
 //                   )}
 //                 </div>
 //               </div>
-//             )}
-//             <button
-//               onClick={() => extractTravellerAadhaar(index)}
-//               disabled={traveller.ocrLoading || !traveller._frontFile}
-//               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-bold text-sm shadow-sm transition-colors"
-//             >
-//               {traveller.ocrLoading ? (
-//                 <>
-//                   <Loader2 className="w-4 h-4 animate-spin" /> Reading...
-//                 </>
-//               ) : (
-//                 <>
-//                   <Upload className="w-4 h-4" /> Extract Aadhaar
-//                 </>
+//               {isMain && (
+//                 <div className="flex-1 min-w-[160px]">
+//                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Back (optional)</label>
+//                   <div className="flex items-center gap-2">
+//                     <input
+//                       ref={backInputRef}
+//                       type="file"
+//                       accept="image/*,application/pdf"
+//                       onChange={(e) => setTravellerBackFile(index, e.target.files?.[0] || null)}
+//                       className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
+//                     />
+//                     {(traveller._backFile || traveller.back) && (
+//                       <button
+//                         type="button"
+//                         onClick={clearBack}
+//                         className="shrink-0 text-gray-400 hover:text-red-600"
+//                         title={traveller.back ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
+//                       >
+//                         <XCircle className="w-4 h-4" />
+//                       </button>
+//                     )}
+//                   </div>
+//                 </div>
 //               )}
-//             </button>
-//             {!isMain && (
 //               <button
-//                 onClick={() => handleTravellerChange(index, "source", "manual")}
-//                 className="px-4 py-2.5 text-sm font-semibold text-purple-700 border border-purple-300 rounded-xl hover:bg-purple-50 transition-colors"
+//                 onClick={() => extractTravellerAadhaar(index)}
+//                 disabled={traveller.ocrLoading || !traveller._frontFile}
+//                 className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-bold text-sm shadow-sm transition-colors"
 //               >
-//                 Switch to Manual
+//                 {traveller.ocrLoading ? (
+//                   <>
+//                     <Loader2 className="w-4 h-4 animate-spin" /> Reading...
+//                   </>
+//                 ) : (
+//                   <>
+//                     <Upload className="w-4 h-4" /> Extract Aadhaar
+//                   </>
+//                 )}
 //               </button>
-//             )}
-//           </div>
-//           {traveller.front && (
-//             <div className="mt-3 flex flex-wrap items-center gap-3">
-//               <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
-//                 <CheckCircle2 className="w-4 h-4" />
-//                 Aadhaar front {traveller.back ? "+ back " : ""}read
-//               </span>
-//               <a
-//                 href={traveller.front?.url}
-//                 target="_blank"
-//                 rel="noopener noreferrer"
-//                 className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
-//               >
-//                 View Front
-//               </a>
-//               {traveller.back && (
+//               {!isMain && (
+//                 <button
+//                   onClick={() => handleTravellerChange(index, "source", "manual")}
+//                   className="px-4 py-2.5 text-sm font-semibold text-purple-700 border border-purple-300 rounded-xl hover:bg-purple-50 transition-colors"
+//                 >
+//                   Switch to Manual
+//                 </button>
+//               )}
+//             </div>
+//             {traveller.front && (
+//               <div className="mt-3 flex flex-wrap items-center gap-3">
+//                 <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+//                   <CheckCircle2 className="w-4 h-4" />
+//                   Aadhaar front {traveller.back ? "+ back " : ""}read
+//                 </span>
 //                 <a
-//                   href={traveller.back?.url}
+//                   href={traveller.front?.url}
 //                   target="_blank"
 //                   rel="noopener noreferrer"
 //                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
 //                 >
-//                   View Back
+//                   View Front
 //                 </a>
-//               )}
-//               {/* The cross mark next to "Choose File" above already covers
-//                   Remove now (it stays in the same place before AND after
-//                   extraction) — no separate Remove button here anymore, so
-//                   there's only one clear button to look for, not two. */}
-//               {/* If the name/age (or address) came out wrong, this shows
-//                   exactly what Tesseract actually read off the image — no
-//                   need to open the browser console to check. The address
-//                   only ever comes off the BACK side, so both are shown
-//                   separately, labeled, whenever a back side exists. */}
-//               {(traveller.front?.ocrText || traveller.back?.ocrText) && (
-//                 <button
-//                   type="button"
-//                   onClick={() => setShowRawText((v) => !v)}
-//                   className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600"
-//                 >
-//                   {showRawText ? "Hide" : "Show"} raw text read
-//                 </button>
-//               )}
-//             </div>
-//           )}
-//           {showRawText && traveller.front?.ocrText && (
-//             <div className="mt-2">
-//               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Front</p>
-//               <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
-//                 {traveller.front.ocrText}
-//               </pre>
-//             </div>
-//           )}
-//           {showRawText && traveller.back?.ocrText && (
-//             <div className="mt-2">
-//               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Back (address comes from here)</p>
-//               <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
-//                 {traveller.back.ocrText}
-//               </pre>
-//             </div>
-//           )}
-//         </div>
-//       )}
+//                 {traveller.back && (
+//                   <a
+//                     href={traveller.back?.url}
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+//                   >
+//                     View Back
+//                   </a>
+//                 )}
+//                 {(traveller.front?.ocrText || traveller.back?.ocrText) && (
+//                   <button
+//                     type="button"
+//                     onClick={() => setShowRawText((v) => !v)}
+//                     className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600"
+//                   >
+//                     {showRawText ? "Hide" : "Show"} raw text read
+//                   </button>
+//                 )}
+//               </div>
+//             )}
+//             {showRawText && traveller.front?.ocrText && (
+//               <div className="mt-2">
+//                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Front</p>
+//                 <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+//                   {traveller.front.ocrText}
+//                 </pre>
+//               </div>
+//             )}
+//             {showRawText && traveller.back?.ocrText && (
+//               <div className="mt-2">
+//                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Back (address comes from here)</p>
+//                 <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+//                   {traveller.back.ocrText}
+//                 </pre>
+//               </div>
+//             )}
+//           </div>
+//         )}
 
-//       {/* Basic identity fields */}
-//       <div className="grid md:grid-cols-4 gap-4 mb-4">
-//         <div>
-//           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Title</label>
-//           <select
-//             value={traveller.title}
-//             onChange={(e) => handleTravellerChange(index, "title", e.target.value)}
-//             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//           >
-//             <option>Mr</option>
-//             <option>Mrs</option>
-//             <option>Ms</option>
-//           </select>
-//         </div>
-//         <div>
-//           <label className="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
-//           <input
-//             type="text"
-//             value={traveller.firstName}
-//             onChange={(e) => handleTravellerChange(index, "firstName", e.target.value)}
-//             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//           />
-//         </div>
-//         <div>
-//           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
-//           <input
-//             type="text"
-//             value={traveller.lastName}
-//             onChange={(e) => handleTravellerChange(index, "lastName", e.target.value)}
-//             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//           />
-//         </div>
-//         <div>
-//           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Age</label>
-//           <input
-//             type="number"
-//             value={traveller.age}
-//             onChange={(e) => handleTravellerChange(index, "age", e.target.value)}
-//             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//           />
-//         </div>
-//       </div>
-
-//       <div className="grid md:grid-cols-2 gap-4 mb-4">
-//         <div>
-//           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender</label>
-//           <select
-//             value={traveller.gender}
-//             onChange={(e) => handleTravellerChange(index, "gender", e.target.value)}
-//             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//           >
-//             <option>Male</option>
-//             <option>Female</option>
-//             <option>Other</option>
-//           </select>
-//         </div>
-//         <div>
-//           <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sharing Type</label>
-//           <select
-//             value={traveller.sharingType}
-//             onChange={(e) => handleTravellerChange(index, "sharingType", e.target.value)}
-//             className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//           >
-//             <option value="">Select Sharing</option>
-//             {Number(traveller.age) >= 11 ? (
-//               <>
-//                 <option value="double">Double Sharing</option>
-//                 <option value="triple">Triple Sharing</option>
-//               </>
-//             ) : Number(traveller.age) >= 6 && Number(traveller.age) <= 10 ? (
-//               <>
-//                 <option value="withBerth">Child with Berth</option>
-//                 <option value="withoutBerth">Child without Berth</option>
-//               </>
-//             ) : null}
-//           </select>
-//         </div>
-//       </div>
-
-//       {/* Mobile Number / Address — MAIN TRAVELLER ONLY. Only the main
-//           traveller's phone/address are used anywhere (as the booking's
-//           contact number / billing address) — co-travellers don't need
-//           these fields at all. */}
-//       {isMain && (
-//         <div className="space-y-4">
+//         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
 //           <div>
-//             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
-//               <Phone className="w-3.5 h-3.5 text-indigo-500" /> Mobile Number
-//             </label>
+//             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Title</label>
+//             <select
+//               value={traveller.title}
+//               onChange={(e) => handleTravellerChange(index, "title", e.target.value)}
+//               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//             >
+//               <option>Mr</option>
+//               <option>Mrs</option>
+//               <option>Ms</option>
+//             </select>
+//           </div>
+//           <div>
+//             <label className="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
 //             <input
-//               type="tel"
-//               value={traveller.phone}
-//               onChange={(e) => handleTravellerChange(index, "phone", e.target.value)}
-//               placeholder="e.g. 9876543210"
+//               type="text"
+//               value={traveller.firstName}
+//               onChange={(e) => handleTravellerChange(index, "firstName", e.target.value)}
 //               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
 //             />
 //           </div>
-
-//           {/* Address — split into the fields below (OCR fills them, admin
-//               can correct each one on its own instead of editing one long
-//               blob). `address` (the one combined line) is still kept
-//               alongside, in sync, for older code that still reads it. */}
 //           <div>
-//             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
-//               <Home className="w-3.5 h-3.5 text-indigo-500" /> Address
-//             </label>
-//             <div className="grid sm:grid-cols-2 gap-3">
-//               <input
-//                 type="text"
-//                 value={traveller.addressLine1}
-//                 onChange={(e) => handleTravellerChange(index, "addressLine1", e.target.value)}
-//                 placeholder="Address Line 1"
-//                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//               />
-//               <input
-//                 type="text"
-//                 value={traveller.addressLine2}
-//                 onChange={(e) => handleTravellerChange(index, "addressLine2", e.target.value)}
-//                 placeholder="Address Line 2"
-//                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//               />
-//               <input
-//                 type="text"
-//                 value={traveller.city}
-//                 onChange={(e) => handleTravellerChange(index, "city", e.target.value)}
-//                 placeholder="City"
-//                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//               />
-//               <input
-//                 type="text"
-//                 value={traveller.state}
-//                 onChange={(e) => handleTravellerChange(index, "state", e.target.value)}
-//                 placeholder="State"
-//                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//               />
-//               <input
-//                 type="text"
-//                 value={traveller.pincode}
-//                 onChange={(e) => handleTravellerChange(index, "pincode", e.target.value)}
-//                 placeholder="Pincode"
-//                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-//               />
-//               <input
-//                 type="text"
-//                 value="India"
-//                 readOnly
-//                 disabled
-//                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm text-gray-500 cursor-not-allowed"
-//               />
-//             </div>
+//             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
+//             <input
+//               type="text"
+//               value={traveller.lastName}
+//               onChange={(e) => handleTravellerChange(index, "lastName", e.target.value)}
+//               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//             />
+//           </div>
+//           <div>
+//             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Age</label>
+//             <input
+//               type="number"
+//               value={traveller.age}
+//               onChange={(e) => handleTravellerChange(index, "age", e.target.value)}
+//               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//             />
 //           </div>
 //         </div>
-//       )}
+
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+//           <div>
+//             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender</label>
+//             <select
+//               value={traveller.gender}
+//               onChange={(e) => handleTravellerChange(index, "gender", e.target.value)}
+//               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//             >
+//               <option>Male</option>
+//               <option>Female</option>
+//               <option>Other</option>
+//             </select>
+//           </div>
+//           <div>
+//             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sharing Type</label>
+//             <select
+//               value={traveller.sharingType}
+//               onChange={(e) => handleTravellerChange(index, "sharingType", e.target.value)}
+//               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//             >
+//               <option value="">Select Sharing</option>
+//               {Number(traveller.age) >= 11 ? (
+//                 <>
+//                   <option value="double">Double Sharing</option>
+//                   <option value="triple">Triple Sharing</option>
+//                 </>
+//               ) : Number(traveller.age) >= 6 && Number(traveller.age) <= 10 ? (
+//                 <>
+//                   <option value="withBerth">Child with Berth</option>
+//                   <option value="withoutBerth">Child without Berth</option>
+//                 </>
+//               ) : null}
+//             </select>
+//           </div>
+//         </div>
+
+//         {/* Mobile / Address — main traveller only. */}
+//         {isMain && (
+//           <div className="space-y-4">
+//             <div>
+//               <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
+//                 <Phone className="w-3.5 h-3.5 text-indigo-500" /> Mobile Number
+//               </label>
+//               <input
+//                 type="tel"
+//                 value={traveller.phone}
+//                 onChange={(e) => handleTravellerChange(index, "phone", e.target.value)}
+//                 placeholder="e.g. 9876543210"
+//                 className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//               />
+//             </div>
+
+//             <div>
+//               <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
+//                 <Home className="w-3.5 h-3.5 text-indigo-500" /> Address
+//               </label>
+//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+//                 <input
+//                   type="text"
+//                   value={traveller.addressLine1}
+//                   onChange={(e) => handleTravellerChange(index, "addressLine1", e.target.value)}
+//                   placeholder="Address Line 1"
+//                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//                 />
+//                 <input
+//                   type="text"
+//                   value={traveller.addressLine2}
+//                   onChange={(e) => handleTravellerChange(index, "addressLine2", e.target.value)}
+//                   placeholder="Address Line 2"
+//                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//                 />
+//                 <input
+//                   type="text"
+//                   value={traveller.city}
+//                   onChange={(e) => handleTravellerChange(index, "city", e.target.value)}
+//                   placeholder="City"
+//                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//                 />
+//                 <input
+//                   type="text"
+//                   value={traveller.state}
+//                   onChange={(e) => handleTravellerChange(index, "state", e.target.value)}
+//                   placeholder="State"
+//                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//                 />
+//                 <input
+//                   type="text"
+//                   value={traveller.pincode}
+//                   onChange={(e) => handleTravellerChange(index, "pincode", e.target.value)}
+//                   placeholder="Pincode"
+//                   className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//                 />
+//                 <input
+//                   type="text"
+//                   value="India"
+//                   readOnly
+//                   disabled
+//                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm text-gray-500 cursor-not-allowed"
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//         )}
+//       </div>
 //     </div>
-//   </div>
 //   );
 // };
 
-// // ───────────────────────── All Bookings tab ─────────────────────────
-// // Everything saved from Tab 1 (one card per groupId): view Aadhaar +
-// // advance screenshot, upload Balance/Partial Balance (repeatable), add
-// // more co-travellers (Aadhaar front only — saved to the server right
-// // away, unlike Tab 1 where it waits for Save), and either "Create
-// // Booking" (navigates to the existing, untouched CreateBooking.jsx) or,
-// // once a tnr has been linked, "Raise Manage Booking" per co-traveller.
+// // ───────────── All Bookings tab ─────────────
 // const PAYMENT_TYPES = [
 //   { type: "advance", label: "Advance" },
 //   { type: "balance", label: "Balance" },
@@ -4287,17 +4093,15 @@
 // ];
 
 // const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, deleteGroupPayment, refresh }) => {
-//   // queue holds files picked together but not yet uploaded, queueAmounts
-//   // the (optional) amount typed against each one, same index. "Upload All"
-//   // then sends them to the backend ONE AT A TIME in order (not in
-//   // parallel) so each screenshot lands as its own doc — the admin picks
-//   // several together but doesn't have to click Upload once per file.
 //   const [queue, setQueue] = useState([]);
 //   const [queueAmounts, setQueueAmounts] = useState([]);
+//   const [queueRemarks, setQueueRemarks] = useState([]);
 //   const [uploading, setUploading] = useState(false);
 //   const [uploadProgress, setUploadProgress] = useState(null); // { current, total }
 //   const [deletingId, setDeletingId] = useState(null);
 //   const [viewerIndex, setViewerIndex] = useState(null);
+//   // Synchronous double-click guard.
+//   const uploadingRef = useRef(false);
 
 //   const handleDelete = async (docId) => {
 //     if (!window.confirm(`Delete this ${label} screenshot? This can't be undone.`)) return;
@@ -4318,15 +4122,14 @@
 //   const handleRemoveQueued = (idx) => {
 //     setQueue((prev) => prev.filter((_, i) => i !== idx));
 //     setQueueAmounts((prev) => prev.filter((_, i) => i !== idx));
+//     setQueueRemarks((prev) => prev.filter((_, i) => i !== idx));
 //   };
 
-//   const uploadOne = async (file, amount) => {
+//   const uploadOne = async (file, amount, remarks) => {
 //     const formData = new FormData();
 //     formData.append("screenshot", file);
-//     // A genuine walk-in group has a real groupId; a booking merged in
-//     // straight from tourBookingModel only carries a synthetic
-//     // "real-<id>" placeholder (so React has a key) — send its tnr
-//     // instead so the backend can key the upload correctly either way.
+//     // Real walk-in group → groupId; booking merged from tourBookingModel
+//     // ("real-<id>" placeholder) → tnr.
 //     if (groupId && !String(groupId).startsWith("real-")) {
 //       formData.append("groupId", groupId);
 //     } else if (tnr) {
@@ -4334,6 +4137,7 @@
 //     }
 //     formData.append("type", type);
 //     if (amount) formData.append("amount", amount);
+//     if (remarks?.trim()) formData.append("remarks", remarks.trim());
 //     return uploadGroupPayment(formData);
 //   };
 
@@ -4344,12 +4148,14 @@
 //         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
 //       }
 //     }
+//     if (uploadingRef.current) return;
+//     uploadingRef.current = true;
 //     setUploading(true);
 //     let successCount = 0;
 //     for (let i = 0; i < queue.length; i++) {
 //       setUploadProgress({ current: i + 1, total: queue.length });
 //       try {
-//         const result = await uploadOne(queue[i], queueAmounts[i]);
+//         const result = await uploadOne(queue[i], queueAmounts[i], queueRemarks[i]);
 //         if (result?.success) successCount += 1;
 //       } catch (err) {
 //         console.error("uploadGroupPayment error:", err);
@@ -4359,6 +4165,8 @@
 //     setUploadProgress(null);
 //     setQueue([]);
 //     setQueueAmounts([]);
+//     setQueueRemarks([]);
+//     uploadingRef.current = false;
 //     if (successCount > 0) {
 //       toast.success(`${successCount} ${label} screenshot${successCount > 1 ? "s" : ""} uploaded`);
 //     }
@@ -4369,7 +4177,7 @@
 //   };
 
 //   return (
-//     <div className="p-4 rounded-xl border border-[#DEE2E8] bg-[#F7F8FA]/60">
+//     <div className="min-w-0 w-full p-3 sm:p-4 rounded-xl border border-[#DEE2E8] bg-[#F7F8FA]/60">
 //       <h5 className="flex items-center gap-1.5 font-bold text-gray-700 text-sm mb-2.5">
 //         <FileImage className="w-4 h-4" /> {label}
 //       </h5>
@@ -4381,9 +4189,6 @@
 //               key={item._id || i}
 //               className="relative flex items-start gap-1 text-xs font-semibold text-[#235F47] bg-[#EDF6F1] border border-[#B6DFC8] rounded-lg pl-2.5 pr-1.5 py-1.5 hover:bg-[#D7EEE0]"
 //             >
-//               {/* Opens the one-at-a-time viewer instead of a raw new-tab
-//                   link, so several screenshots can be stepped through
-//                   (Prev/Next) without leaving the page. */}
 //               <button
 //                 type="button"
 //                 onClick={() => setViewerIndex(i)}
@@ -4404,6 +4209,9 @@
 //                       minute: "2-digit",
 //                     })}
 //                   </span>
+//                 )}
+//                 {item.remarks && (
+//                   <span className="font-normal text-[#2E7D5E] italic">{item.remarks}</span>
 //                 )}
 //               </button>
 //               {item._id && deleteGroupPayment && (
@@ -4436,10 +4244,21 @@
 //       {queue.length > 0 && (
 //         <div className="flex flex-col gap-1.5 mb-2">
 //           {queue.map((f, i) => (
-//             <div key={i} className="flex items-center gap-1.5">
-//               <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white border border-[#DEE2E8] rounded-lg px-2.5 py-2 truncate">
-//                 <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-//                 {f.name}
+//             <div key={i} className="flex flex-col gap-1.5 p-2 bg-white border border-[#DEE2E8] rounded-lg">
+//               <div className="flex items-center gap-1.5">
+//                 <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-1 py-1">
+//                   <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+//                   <span className="truncate">{f.name}</span>
+//                 </div>
+//                 <button
+//                   type="button"
+//                   onClick={() => handleRemoveQueued(i)}
+//                   disabled={uploading}
+//                   title="Remove from queue"
+//                   className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-[#B23B3B] hover:bg-[#FBEEEE] disabled:opacity-40 transition-colors"
+//                 >
+//                   <X className="w-3.5 h-3.5" />
+//                 </button>
 //               </div>
 //               <input
 //                 type="number"
@@ -4449,17 +4268,22 @@
 //                   setQueueAmounts((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
 //                 }
 //                 disabled={uploading}
-//                 className="w-28 shrink-0 px-2 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
+//                 className="w-full px-2.5 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
 //               />
-//               <button
-//                 type="button"
-//                 onClick={() => handleRemoveQueued(i)}
+//               <input
+//                 type="text"
+//                 placeholder="Bank (e.g. SBI)"
+//                 value={queueRemarks[i] || ""}
+//                 onChange={(e) =>
+//                   setQueueRemarks((prev) => {
+//                     const next = [...prev];
+//                     next[i] = e.target.value;
+//                     return next;
+//                   })
+//                 }
 //                 disabled={uploading}
-//                 title="Remove from queue"
-//                 className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-[#B23B3B] hover:bg-[#FBEEEE] disabled:opacity-40 transition-colors"
-//               >
-//                 <X className="w-3.5 h-3.5" />
-//               </button>
+//                 className="w-full px-2.5 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
+//               />
 //             </div>
 //           ))}
 //         </div>
@@ -4478,6 +4302,7 @@
 //             if (!files.length) return;
 //             setQueue((prev) => [...prev, ...files]);
 //             setQueueAmounts((prev) => [...prev, ...files.map(() => "")]);
+//             setQueueRemarks((prev) => [...prev, ...files.map(() => "")]);
 //             e.target.value = "";
 //           }}
 //         />
@@ -4499,9 +4324,6 @@
 //   );
 // };
 
-// // Friendly labels for the raw sharingType values stored on each traveller
-// // (set in TravellerCard's Sharing Type dropdown) — shown as a small badge
-// // next to Main Traveller / each Co-Traveller instead of the raw code.
 // const SHARING_LABELS = {
 //   double: "Double Sharing",
 //   triple: "Triple Sharing",
@@ -4509,18 +4331,10 @@
 //   withoutBerth: "Child w/o Berth",
 // };
 
-// // Inline edit form for a Main Traveller or Co-Traveller already captured
-// // on the All Bookings page — fixing OCR mistakes after the fact, not a
-// // new extraction (addCoTraveller's OCR-only rule is untouched). Shared by
-// // both so the two stay visually/behaviourally identical; `accent` just
-// // swaps the color so it still reads as "this card" vs "that card".
+// // Inline edit form for an already-captured traveller.
 // const TravellerEditForm = ({ draft, setDraft, onSave, onCancel, saving, accent = "indigo" }) => {
 //   if (!draft) return null;
 //   const update = (field, value) => setDraft((prev) => ({ ...prev, [field]: value }));
-//   // Address Line1/2/City/State/Pincode each update their own field AND keep
-//   // the one combined `address` line in sync (same reasoning as the Save
-//   // Booking form's handleTravellerChange) — older code and the All
-//   // Bookings view still read `address` as one line.
 //   const updateAddressField = (field, value) =>
 //     setDraft((prev) => {
 //       const next = { ...prev, [field]: value };
@@ -4533,7 +4347,7 @@
 //   const btn = accent === "purple" ? "bg-[#B07D2B] hover:bg-[#8C6220]" : "bg-[#2A5490] hover:bg-[#1F3F6E]";
 //   return (
 //     <div className={`rounded-xl border-2 p-3 sm:p-4 ${ring}`}>
-//       <div className="grid sm:grid-cols-4 gap-3">
+//       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
 //         <div>
 //           <label className="block text-xs font-medium text-gray-600">Title</label>
 //           <select
@@ -4574,7 +4388,7 @@
 //           />
 //         </div>
 //       </div>
-//       <div className="grid sm:grid-cols-4 gap-3 mt-3">
+//       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-3">
 //         <div>
 //           <label className="block text-xs font-medium text-gray-600">Gender</label>
 //           <select
@@ -4613,7 +4427,7 @@
 //       </div>
 //       <div className="mt-3">
 //         <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
-//         <div className="grid sm:grid-cols-3 gap-3">
+//         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 //           <input
 //             type="text"
 //             value={draft.addressLine1 || ""}
@@ -4702,9 +4516,7 @@
 //   const [ctFile, setCtFile] = useState(null);
 //   const [ctExtracting, setCtExtracting] = useState(false);
 //   const [ctSaving, setCtSaving] = useState(false);
-//   // Holds the OCR'd + editable fields between "Extract Aadhaar" and "Add
-//   // Co-Traveller" — same two-step shape as the main booking form's
-//   // TravellerCard, instead of extracting and saving in one blind click.
+//   const ctSavingRef = useRef(false); // synchronous double-click guard
 //   const [ctDraft, setCtDraft] = useState(null);
 //   const ctInputRef = useRef(null);
 //   const [showCtRawText, setShowCtRawText] = useState(false);
@@ -4712,27 +4524,14 @@
 //   const [linkingTnr, setLinkingTnr] = useState(false);
 //   const [showTnrInput, setShowTnrInput] = useState(false);
 
-//   // "Same guest, different TNR" linking — e.g. a booking under
-//   // "Vishvanathan" and another under "Jeyandhi" turn out to be the same
-//   // real guest. Purely a cross-reference between two tnr'd bookings; see
-//   // aadhaarModel's type:"guestLink" docs / linkGuestTnr/unlinkGuestTnr.
-//   // Picked from a checkbox dropdown of every other booking (TNR + main
-//   // traveller name) instead of typing a TNR by hand.
 //   const [guestSearch, setGuestSearch] = useState("");
 //   const [selectedGuestTnrs, setSelectedGuestTnrs] = useState([]);
 //   const [showGuestInput, setShowGuestInput] = useState(false);
 //   const [linkingGuest, setLinkingGuest] = useState(false);
 //   const [unlinkingGuest, setUnlinkingGuest] = useState(false);
 
-//   // Edit/Delete for Main Traveller & Co-Travellers — only meaningful
-//   // BEFORE this booking has a real tnr (the backend enforces this too,
-//   // but hiding the buttons once booking.tnr exists keeps the admin from
-//   // hitting a wall they don't understand). `editingId` holds the
-//   // aadhaarModel doc _id currently being edited (main or a co-traveller —
-//   // both are "aadhaarFront" docs, same shape), `editDraft` its editable
-//   // field copy, `deletingId` the one mid-delete (disables its buttons so
-//   // a double-click can't fire two deletes).
 //   const [editingId, setEditingId] = useState(null);
+//   const [editingDocId, setEditingDocId] = useState(null);
 //   const [editDraft, setEditDraft] = useState(null);
 //   const [savingEdit, setSavingEdit] = useState(false);
 //   const [deletingId, setDeletingId] = useState(null);
@@ -4740,6 +4539,7 @@
 
 //   const startEdit = (traveller) => {
 //     setEditingId(traveller._id);
+//     setEditingDocId(traveller.aadhaarDocId || traveller._id);
 //     setEditDraft({
 //       title: traveller.title || "",
 //       firstName: traveller.firstName || "",
@@ -4758,13 +4558,14 @@
 //   };
 //   const cancelEdit = () => {
 //     setEditingId(null);
+//     setEditingDocId(null);
 //     setEditDraft(null);
 //   };
 //   const saveEdit = async () => {
 //     if (!editingId || !editDraft) return;
 //     setSavingEdit(true);
 //     try {
-//       const result = await editAadhaarTraveller(editingId, editDraft);
+//       const result = await editAadhaarTraveller(editingDocId || editingId, editDraft);
 //       if (result?.success) {
 //         toast.success("Traveller updated");
 //         cancelEdit();
@@ -4775,36 +4576,27 @@
 //     }
 //   };
 //   const handleDeleteTraveller = async (traveller, isMain) => {
+//     const travellerName =
+//       [traveller.title, traveller.firstName, traveller.lastName].filter(Boolean).join(" ") || "this co-traveller";
 //     const confirmMsg = isMain
 //       ? "Delete the Aadhaar FILES (front/back image or PDF) for every traveller in this booking (main + co-travellers)? The already-extracted details (Name, Age, Gender, Address, Aadhaar Number) are kept — only the uploaded files are removed from storage. This cannot be undone."
-//       : `Delete ${[traveller.title, traveller.firstName, traveller.lastName].filter(Boolean).join(" ") || "this co-traveller"}'s Aadhaar FILE? Their extracted details stay — only the uploaded file is removed.`;
+//       : `Remove ${travellerName} from this booking? This cannot be undone.`;
 //     if (!window.confirm(confirmMsg)) return;
 //     setDeletingId(traveller._id);
 //     try {
-//       const result = await deleteAadhaarTraveller(traveller._id);
+//       const result = await deleteAadhaarTraveller(traveller.aadhaarDocId || traveller._id);
 //       if (result?.success) {
-//         toast.success(isMain ? "Aadhaar files deleted for this booking" : "Co-traveller's Aadhaar file removed");
+//         toast.success(
+//           isMain
+//             ? "Aadhaar files deleted for this booking"
+//             : result.removedTraveller
+//               ? "Co-traveller removed from this booking"
+//               : "Co-traveller's Aadhaar file removed",
+//         );
 //         refresh();
 //       }
 //     } finally {
 //       setDeletingId(null);
-//     }
-//   };
-
-//   // Single "Delete Aadhaar Files" button for the card header — wipes just
-//   // the uploaded Aadhaar images/PDFs (main + every co-traveller) for this
-//   // booking, whether it's still a draft or already has a tnr. The
-//   // extracted data and the booking itself are NEVER touched by this; it
-//   // just reuses the same deleteAadhaarTraveller flow the per-traveller
-//   // delete above already calls, so no separate route is needed.
-//   const [deletingBooking, setDeletingBooking] = useState(false);
-//   const handleDeleteBookingCard = async () => {
-//     if (!booking.main) return;
-//     setDeletingBooking(true);
-//     try {
-//       await handleDeleteTraveller(booking.main, true);
-//     } finally {
-//       setDeletingBooking(false);
 //     }
 //   };
 
@@ -4813,10 +4605,6 @@
 //     .join(" ") || "Unnamed traveller";
 //   const travellerCount = 1 + (booking.coTravellers?.length || 0);
 
-//   // Candidate bookings for the "Link as same guest" dropdown — every OTHER
-//   // tnr'd booking in this tour, minus ones already in this booking's own
-//   // guest group, with each one's main-traveller name for display, filtered
-//   // by whatever the admin has typed in the search box.
 //   const guestCandidates = (allBookings || [])
 //     .filter((b) => b.tnr && b.tnr !== booking.tnr)
 //     .filter((b) => !(booking.guestGroup?.otherTnrs || []).includes(b.tnr))
@@ -4836,24 +4624,14 @@
 //     );
 //   };
 
-//   // Download a ZIP of Aadhaar images for the travellers CURRENTLY on this
-//   // booking — i.e. the "active" ones. A traveller removed via Delete/Remove
-//   // above is already gone from booking.main/booking.coTravellers by the time
-//   // this reads them (the backend doc is deleted), so this naturally only
-//   // ever includes active travellers; nothing extra to filter out.
 //   const safeFileName = (name) =>
 //     (name || "traveller").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "traveller";
 //   const extFromUrl = (url) => {
 //     const match = url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
 //     return match ? match[1] : "jpg";
 //   };
+//   // ZIP of Aadhaar images of this booking's active (not approved-cancelled) travellers.
 //   const handleDownloadZip = async () => {
-//     // booking.main.cancelled / booking.coTravellers[].cancelled come from
-//     // the real tourBookingModel record once this booking's tnr is linked
-//     // (see getAadhaarBookings on the backend) — true for an APPROVED
-//     // cancellation only. A pending cancellation request, or one the admin
-//     // rejected, leaves this false and the traveller stays in the zip. No
-//     // tnr yet → nothing was there to check, so nobody is marked cancelled.
 //     const entries = [];
 //     if (booking.main?.front?.url && !booking.main?.cancelled) {
 //       entries.push({ name: `Main - ${mainName} - Front`, url: booking.main.front.url });
@@ -4921,10 +4699,7 @@
 //     }
 //   };
 
-//   // Step 1 of 2 — OCR the chosen file, but don't save yet. Lands the read
-//   // into an editable draft (title/name/age/gender/sharing) just like the
-//   // main booking form's TravellerCard, instead of the old one-click
-//   // "choose file → immediately saved, no chance to check or fix it first".
+//   // Step 1 of 2 — OCR into an editable draft (not saved yet).
 //   const handleExtractCt = async () => {
 //     if (!ctFile) return toast.error("Choose the co-traveller's Aadhaar front image first");
 //     setCtExtracting(true);
@@ -4932,7 +4707,6 @@
 //       const formData = new FormData();
 //       formData.append("front", ctFile);
 //       const ocrResult = await extractAadhaar(formData);
-//       console.log("[AddCoTraveller] OCR result:", ocrResult);
 //       if (!ocrResult?.success) {
 //         if (ocrResult === undefined) {
 //           toast.error("Aadhaar read failed — no response from server. Check your connection and try again.");
@@ -4941,7 +4715,6 @@
 //       }
 //       if (!ocrResult.front?.url) {
 //         toast.error("Aadhaar was read but the image didn't upload — please try again.");
-//         console.error("[AddCoTraveller] OCR succeeded but front.url missing:", ocrResult);
 //         return;
 //       }
 
@@ -4974,8 +4747,6 @@
 //     }
 //   };
 
-//   // Same cross mark, one place, as TravellerCard above — clears the chosen
-//   // file before extraction, or the whole extracted draft after it.
 //   const clearCtFile = () => {
 //     if (ctInputRef.current) ctInputRef.current.value = "";
 //     setCtFile(null);
@@ -5000,13 +4771,18 @@
 //     });
 //   };
 
-//   // Step 2 of 2 — save the (possibly hand-corrected) draft.
+//   // Step 2 of 2 — save the draft. For a real booking ("real-<id>") this
+//   // sends tnr; the backend keeps it pending (NOT in Tour Bookings) until
+//   // Raise Manage Booking is approved.
 //   const handleAddCoTraveller = async () => {
 //     if (!ctDraft?.front?.url) return toast.error("Extract the co-traveller's Aadhaar first");
+//     if (ctSavingRef.current) return;
+//     ctSavingRef.current = true;
 //     setCtSaving(true);
 //     try {
+//       const isRealBooking = String(booking.groupId || "").startsWith("real-");
 //       const addResult = await addCoTravellerApi({
-//         groupId: booking.groupId,
+//         ...(isRealBooking ? { tnr: booking.tnr } : { groupId: booking.groupId }),
 //         title: ctDraft.title,
 //         firstName: ctDraft.firstName,
 //         lastName: ctDraft.lastName,
@@ -5023,19 +4799,23 @@
 //         pincode: ctDraft.pincode,
 //         front: ctDraft.front,
 //       });
-//       console.log("[AddCoTraveller] addCoTraveller result:", addResult);
 //       if (!addResult?.success) {
 //         toast.error(addResult?.message || "Could not save the co-traveller — please try again.");
 //         return;
 //       }
 
-//       toast.success("Co-traveller added");
+//       toast.success(
+//         booking.tnr
+//           ? "Co-traveller added — click Raise Manage Booking to add them to the booking"
+//           : "Co-traveller added",
+//       );
 //       clearCtFile();
 //       refresh();
 //     } catch (err) {
 //       console.error("addCoTraveller error:", err);
 //       toast.error("Something went wrong adding this co-traveller. Check the console for details.");
 //     } finally {
+//       ctSavingRef.current = false;
 //       setCtSaving(false);
 //     }
 //   };
@@ -5061,10 +4841,6 @@
 //     if (selectedGuestTnrs.length === 0) return toast.error("Select at least one booking to link");
 //     setLinkingGuest(true);
 //     try {
-//       // linkGuestTnr pairs one TNR at a time, but it always merges into
-//       // whatever group either side already belongs to — so linking each
-//       // checked booking to this one, one by one, still lands every
-//       // checked booking in the SAME single group as this booking.
 //       let okCount = 0;
 //       for (const tnr of selectedGuestTnrs) {
 //         const result = await linkGuestTnr(booking.tnr, tnr);
@@ -5112,7 +4888,7 @@
 //           lastName: traveller.lastName,
 //           age: traveller.age,
 //           gender: traveller.gender,
-//           aadhaarId: traveller._id || null,
+//           aadhaarId: traveller.aadhaarDocId || traveller._id || null,
 //           isCoTraveller: true,
 //           addedBy: "admin",
 //           addedPostBooking: true,
@@ -5121,24 +4897,20 @@
 //     });
 //   };
 
-//   // The card's left-edge "spine" reads this booking's payment state at a
-//   // glance across a long list, before anyone expands it — same three
-//   // states as the badge inside (see the Payments section below): paid in
-//   // full, balance still due, or not priceable yet / no tnr.
 //   const spineColor = booking.paymentSummary?.fullyPaid
 //     ? "border-l-[#2E7D5E]"
 //     : booking.paymentSummary
 //       ? "border-l-[#B8641F]"
 //       : "border-l-[#C3D4E8]";
+//   const avatarGradient = booking.paymentSummary?.fullyPaid
+//     ? "from-emerald-600 to-emerald-500 shadow-emerald-200"
+//     : booking.paymentSummary
+//       ? "from-amber-600 to-amber-500 shadow-amber-200"
+//       : "from-[#2A5490] to-sky-500 shadow-sky-200";
 
 //   return (
-//     <div className={`rounded-2xl border border-[#DEE2E8] border-l-4 ${spineColor} shadow-sm overflow-hidden bg-white transition-colors`}>
-//       <div className="w-full flex items-center justify-between gap-3 px-5 py-4 bg-[#F5F6F8] hover:bg-[#EEF0F3] transition-colors">
-//         {/* A real <button> here would nest CopyTnrButton's own <button>
-//             inside it — invalid HTML ("<button> cannot contain a nested
-//             <button>", console warns and browsers mangle the DOM to
-//             recover) — so this is a div acting as the toggle, with the
-//             same keyboard behavior a button would give for free. */}
+//     <div className={`rounded-2xl border border-[#DEE2E8] border-l-4 ${spineColor} shadow-sm hover:shadow-md transition-shadow overflow-hidden bg-white`}>
+//       <div className="w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 px-3.5 sm:px-5 py-3.5 sm:py-4 bg-gradient-to-r from-[#F5F6F8] to-[#F8FAFC] hover:from-[#EEF0F3] hover:to-[#EEF3FA] transition-colors">
 //         <div
 //           role="button"
 //           tabIndex={0}
@@ -5149,37 +4921,38 @@
 //               onToggle();
 //             }
 //           }}
-//           className="flex-1 min-w-0 flex items-center gap-3 text-left cursor-pointer"
+//           className="flex-1 min-w-0 flex items-center gap-2.5 sm:gap-3 text-left cursor-pointer"
 //         >
-//           <div className="w-10 h-10 shrink-0 rounded-xl bg-[#2A5490] text-white flex items-center justify-center">
-//             <IdCard className="w-5 h-5" />
+//           <div className={`w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-br ${avatarGradient} text-white flex items-center justify-center shadow-sm`}>
+//             <IdCard className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
 //           </div>
 //           <div className="min-w-0">
 //             <p className="font-bold text-[#1C2733] truncate">{mainName}</p>
-//             <p className="text-xs text-gray-500 truncate">
-//               {booking.tourTitle || "Tour"} · {travellerCount} traveller{travellerCount !== 1 ? "s" : ""}
+//             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+//               <span className="truncate max-w-full">
+//                 {booking.tourTitle || "Tour"} · {travellerCount} traveller{travellerCount !== 1 ? "s" : ""}
+//               </span>
 //               {booking.tnr && (
-//                 <span className="ml-2 inline-flex items-center gap-1 text-[#1F3F6E] font-bold font-mono tracking-wide">
-//                   <Ticket className="w-3 h-3" /> {booking.tnr}
+//                 <span className="inline-flex items-center gap-1 text-[#1F3F6E] font-bold font-mono tracking-wide">
+//                   <Ticket className="w-3 h-3 shrink-0" /> {booking.tnr}
 //                   <CopyTnrButton tnr={booking.tnr} />
 //                 </span>
 //               )}
 //               {booking.tnr && (
 //                 <span
-//                   className={`ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-//                     booking.createdBy === "user" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-//                   }`}
+//                   className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${booking.createdBy === "user" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+//                     }`}
 //                 >
 //                   ● {booking.createdBy === "user" ? "USER" : "ADMIN"}
 //                 </span>
 //               )}
 //               {booking.raisedBy?.name && (
-//                 <span className="ml-2 inline-flex items-center gap-1 text-emerald-700 font-semibold">
-//                   <UserCheck className="w-3 h-3" /> Raised by {booking.raisedBy.name}
+//                 <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+//                   <UserCheck className="w-3 h-3 shrink-0" /> Raised by {booking.raisedBy.name}
 //                   {booking.raisedBy.employeeId ? ` (${booking.raisedBy.employeeId})` : ""}
 //                 </span>
 //               )}
-//             </p>
+//             </div>
 //           </div>
 //         </div>
 //         <div className="flex items-center gap-2 shrink-0">
@@ -5187,19 +4960,10 @@
 //             onClick={(e) => { e.stopPropagation(); handleDownloadZip(); }}
 //             disabled={downloadingZip}
 //             title="Download Aadhaar images of this booking's current travellers as a ZIP"
-//             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#C3D4E8] bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+//             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-[#C3D4E8] bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 //           >
 //             {downloadingZip ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-//             {downloadingZip ? "Zipping..." : "Aadhaar ZIP"}
-//           </button>
-//           <button
-//             onClick={(e) => { e.stopPropagation(); handleDeleteBookingCard(); }}
-//             disabled={deletingBooking || deletingId === booking.main?._id}
-//             title="Delete the uploaded Aadhaar files for this booking (keeps the extracted Name/Age/Gender/Address/Aadhaar Number — does not delete the booking)"
-//             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-300 bg-white text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-//           >
-//             <Trash2 className="w-3.5 h-3.5" />
-//             {deletingBooking || deletingId === booking.main?._id ? "Deleting..." : "Delete Aadhaar Files"}
+//             <span className="hidden sm:inline">{downloadingZip ? "Zipping..." : "Aadhaar ZIP"}</span>
 //           </button>
 //           <button onClick={onToggle} className="shrink-0 p-1">
 //             {expanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -5209,9 +4973,7 @@
 
 //       {expanded && (
 //         <div className="p-5 sm:p-6 border-t-2 border-dashed border-[#DEE2E8] space-y-6">
-//           {/* "Same guest, different TNR" — e.g. Vishvanathan's booking and
-//               Jeyandhi's booking turn out to be the same real guest. Only
-//               meaningful once this booking has a real tnr. */}
+//           {/* Same guest, different TNR */}
 //           {booking.tnr && (
 //             <div className="rounded-xl border border-[#F5E6C8] bg-[#FBF4E7]/50 p-3">
 //               {booking.guestGroup ? (
@@ -5221,9 +4983,6 @@
 //                   </p>
 //                   <div className="flex flex-wrap gap-1.5">
 //                     {booking.guestGroup.otherTnrs.map((t) => {
-//                       // guestGroup only carries the raw TNRs — look up each
-//                       // one's main traveller name from the tour's booking
-//                       // list (same data the link-picker's dropdown uses).
 //                       const matched = (allBookings || []).find((b) => b.tnr === t);
 //                       const matchedName = matched
 //                         ? [matched.main?.title, matched.main?.firstName, matched.main?.lastName]
@@ -5331,22 +5090,23 @@
 //           {/* Booking notes — reference only */}
 //           {booking.bookingNotes && (
 //             <div className="text-xs text-gray-500 bg-[#F7F8FA] rounded-xl p-3 border border-[#E7EAEF] space-y-1.5">
-//               <div>
-//                 {booking.bookingNotes.packageType && <span className="mr-3"><b>Package:</b> {booking.bookingNotes.packageType}</span>}
-//                 {booking.bookingNotes.boardingPoint && <span className="mr-3"><b>Boarding:</b> {booking.bookingNotes.boardingPoint}</span>}
-//                 {booking.bookingNotes.deboardingPoint && <span className="mr-3"><b>Deboarding:</b> {booking.bookingNotes.deboardingPoint}</span>}
+//               <div className="flex flex-col gap-1">
+//                 {booking.bookingNotes.packageType && <span><b>Package:</b> {booking.bookingNotes.packageType}</span>}
+//                 {booking.bookingNotes.boardingPoint && <span><b>Boarding:</b> {booking.bookingNotes.boardingPoint}</span>}
+//                 {booking.bookingNotes.deboardingPoint && <span><b>Deboarding:</b> {booking.bookingNotes.deboardingPoint}</span>}
 //                 {booking.bookingNotes.remarks && <span><b>Remarks:</b> {booking.bookingNotes.remarks}</span>}
 //               </div>
-//               {/* Train/flight-wise add-ons — shown per leg, not as one bulk
-//                   "Add-ons: X, Y" line. Falls back to the old flat string for
-//                   bookings saved before addonsDetail existed. */}
 //               {booking.bookingNotes.addonsDetail?.length > 0 ? (
-//                 <div className="flex flex-wrap gap-1.5 pt-0.5">
+//                 <div className="flex flex-col gap-1.5 pt-1">
 //                   {booking.bookingNotes.addonsDetail.map((a, i) => (
-//                     <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#DCE6F2] text-[#17314F] font-medium">
-//                       <Train className="w-3 h-3" /> {a.label ? `${a.label}: ` : ""}{a.name}
-//                       {a.amount > 0 && <span className="text-[#2A5490]">(₹{a.amount})</span>}
-//                     </span>
+//                     <div
+//                       key={i}
+//                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#DCE6F2] text-[#17314F] font-medium"
+//                     >
+//                       <Train className="w-3.5 h-3.5 shrink-0" />
+//                       <span className="flex-1 min-w-0 truncate">{a.label ? `${a.label}: ` : ""}{a.name}</span>
+//                       {a.amount > 0 && <span className="shrink-0 text-[#2A5490] font-semibold">₹{a.amount}</span>}
+//                     </div>
 //                   ))}
 //                 </div>
 //               ) : (
@@ -5370,12 +5130,12 @@
 //                 accent="indigo"
 //               />
 //             ) : (
-//               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 bg-[#EEF3FA]/60 border border-[#DCE6F2] rounded-xl p-3">
+//               <div className="flex flex-col items-start gap-1.5 text-sm text-gray-600 bg-[#EEF3FA]/60 border border-[#DCE6F2] rounded-xl p-3">
 //                 <span className="font-semibold text-gray-800">{mainName}</span>
 //                 <CancelStatusBadge status={booking.main?.cancelStatus} />
-//                 <span>Age {booking.main?.age || "—"}</span>
-//                 <span>{booking.main?.gender}</span>
-//                 <span>{booking.main?.phone}</span>
+//                 <span>Age: {booking.main?.age || "—"}</span>
+//                 <span>Gender: {booking.main?.gender || "—"}</span>
+//                 <span>Mobile: {booking.main?.phone || "—"}</span>
 //                 {booking.main?.sharingType && (
 //                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#DCE6F2] text-[#1F3F6E] font-semibold text-xs">
 //                     {SHARING_LABELS[booking.main.sharingType] || booking.main.sharingType}
@@ -5392,9 +5152,7 @@
 //                     <Home className="w-3.5 h-3.5 text-[#3A6698] shrink-0" /> {booking.main.address}
 //                   </span>
 //                 )}
-//                 {/* Edit/Delete only make sense before a real tnr exists —
-//                     once the booking is live, changes go through Raise
-//                     Manage Booking instead (backend enforces this too). */}
+//                 {/* Edit/Delete only before a real tnr exists. */}
 //                 {!booking.tnr && booking.main?._id && (
 //                   <div className="w-full flex items-center gap-2 pt-1">
 //                     <button
@@ -5414,37 +5172,27 @@
 //                 )}
 //               </div>
 //             )}
-//             {/* Missing Aadhaar on a REAL booking (tnr already exists) —
-//                 mainly the online/admin bookings now merged into this tab
-//                 straight from tourBookingModel, which never went through
-//                 this page's own OCR capture at all. Same upload UI/logic
-//                 as the User Bookings tab's per-traveller row, reused here
-//                 via the shared uploadUserTravellerAadhaar endpoint.
-//                 Hidden for "cancelled" AND "rejected" — no point asking
-//                 the admin to chase down Aadhaar for someone who isn't
-//                 travelling any more (or whose cancellation was turned
-//                 down and needs re-raising, not an Aadhaar upload). Only
-//                 shown for an active traveller or one with a cancellation
-//                 request still pending. */}
+//             {/* Missing Aadhaar on a real booking — upload row (hidden for
+//                 cancelled/rejected travellers). */}
 //             {booking.tnr && booking.main?._id && !booking.main?.front?.url && uploadUserTravellerAadhaar &&
 //               booking.main?.cancelStatus !== "cancelled" && booking.main?.cancelStatus !== "rejected" && (
-//               <TravellerAadhaarRow
-//                 traveller={{
-//                   _id: booking.main._id,
-//                   title: booking.main.title,
-//                   firstName: booking.main.firstName,
-//                   lastName: booking.main.lastName,
-//                   age: booking.main.age,
-//                   gender: booking.main.gender,
-//                   isCoTraveller: false,
-//                   hasAadhaar: false,
-//                 }}
-//                 tnr={booking.tnr}
-//                 extractAadhaar={extractAadhaar}
-//                 uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-//                 onSaved={refresh}
-//               />
-//             )}
+//                 <TravellerAadhaarRow
+//                   traveller={{
+//                     _id: booking.main._id,
+//                     title: booking.main.title,
+//                     firstName: booking.main.firstName,
+//                     lastName: booking.main.lastName,
+//                     age: booking.main.age,
+//                     gender: booking.main.gender,
+//                     isCoTraveller: false,
+//                     hasAadhaar: false,
+//                   }}
+//                   tnr={booking.tnr}
+//                   extractAadhaar={extractAadhaar}
+//                   uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+//                   onSaved={refresh}
+//                 />
+//               )}
 //           </div>
 
 //           {/* Co-travellers */}
@@ -5471,89 +5219,89 @@
 //                   }
 //                   return (
 //                     <React.Fragment key={ct._id || i}>
-//                     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 bg-[#FBF4E7]/60 border border-[#F5E6C8] rounded-xl p-3">
-//                       <div className="flex flex-wrap items-center gap-3">
-//                         <span className="font-semibold text-gray-800">{ctName}</span>
-//                         <CancelStatusBadge status={ct.cancelStatus} />
-//                         <span>Age {ct.age || "—"}</span>
-//                         <span>{ct.gender || "—"}</span>
-//                         {ct.sharingType && (
-//                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F5E6C8] text-[#8C6220] font-semibold text-xs">
-//                             {SHARING_LABELS[ct.sharingType] || ct.sharingType}
+//                       <div className="flex flex-col gap-3 text-sm text-gray-600 bg-[#FBF4E7]/60 border border-[#F5E6C8] rounded-xl p-3">
+//                         <div className="flex flex-col items-start gap-1.5">
+//                           <span className="font-semibold text-gray-800">{ctName}</span>
+//                           <CancelStatusBadge status={ct.cancelStatus} />
+//                           <span>Age: {ct.age || "—"}</span>
+//                           <span>Gender: {ct.gender || "—"}</span>
+//                           {ct.sharingType && (
+//                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F5E6C8] text-[#8C6220] font-semibold text-xs">
+//                               {SHARING_LABELS[ct.sharingType] || ct.sharingType}
+//                             </span>
+//                           )}
+//                           {ct.url && (
+//                             <a href={ct.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Front</a>
+//                           )}
+//                           {ct.back?.url && (
+//                             <a href={ct.back.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Back</a>
+//                           )}
+//                         </div>
+//                         {/* Before a tnr exists → Edit/Remove.
+//                             After a tnr exists, for a co-traveller added later
+//                             (postBooking) → Edit/Remove + Raise Manage Booking,
+//                             UNTIL Manage Booking is approved and they're in
+//                             Tour Bookings (ct.inRealBooking) → then only the
+//                             "Added to booking" badge. Rejected → not in Tour
+//                             Bookings → buttons visible again. Same for ADMIN
+//                             and USER bookings. */}
+//                         {(!booking.tnr || ct.postBooking) && !ct.inRealBooking && (
+//                           <div className="flex flex-wrap items-center gap-2">
+//                             <button
+//                               onClick={() => startEdit(ct)}
+//                               className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#DCB86D] hover:bg-[#F5E6C8] text-[#8C6220] rounded-lg text-xs font-semibold transition-colors"
+//                             >
+//                               <Pencil className="w-3 h-3" /> Edit
+//                             </button>
+//                             <button
+//                               onClick={() => handleDeleteTraveller(ct, false)}
+//                               disabled={deletingId === ct._id}
+//                               className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#D99999] hover:bg-[#FBEEEE] text-[#A33333] rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+//                             >
+//                               <Trash2 className="w-3 h-3" /> {deletingId === ct._id ? "Removing..." : "Remove"}
+//                             </button>
+//                             {booking.tnr && ct.postBooking && (
+//                               <button
+//                                 onClick={() => handleRaiseManageBooking(ct)}
+//                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#B07D2B] hover:bg-[#8C6220] text-white rounded-lg text-xs font-bold transition-colors"
+//                               >
+//                                 Raise Manage Booking <ArrowRight className="w-3.5 h-3.5" />
+//                               </button>
+//                             )}
+//                           </div>
+//                         )}
+//                         {booking.tnr && ct.postBooking && ct.inRealBooking && (
+//                           <span className="inline-flex w-fit items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EDF6F1] border border-[#B6DFC8] text-[#235F47] text-xs font-bold">
+//                             <CheckCircle2 className="w-3.5 h-3.5" /> Added to booking
 //                           </span>
 //                         )}
-//                         {ct.url && (
-//                           <a href={ct.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Front</a>
-//                         )}
-//                         {ct.back?.url && (
-//                           <a href={ct.back.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Back</a>
-//                         )}
 //                       </div>
-//                       {/* Before a real tnr exists: Edit/Delete, same as the
-//                           Main Traveller above. Once a tnr exists: only a
-//                           traveller added AFTER the booking already had a
-//                           tnr (postBooking) gets "Raise Manage Booking" —
-//                           someone who was part of the ORIGINAL booking gets
-//                           no button here at all (editing them isn't this
-//                           page's job once the real booking exists). */}
-//                       {!booking.tnr ? (
-//                         <div className="flex items-center gap-2">
-//                           <button
-//                             onClick={() => startEdit(ct)}
-//                             className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#DCB86D] hover:bg-[#F5E6C8] text-[#8C6220] rounded-lg text-xs font-semibold transition-colors"
-//                           >
-//                             <Pencil className="w-3 h-3" /> Edit
-//                           </button>
-//                           <button
-//                             onClick={() => handleDeleteTraveller(ct, false)}
-//                             disabled={deletingId === ct._id}
-//                             className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#D99999] hover:bg-[#FBEEEE] text-[#A33333] rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
-//                           >
-//                             <Trash2 className="w-3 h-3" /> {deletingId === ct._id ? "Removing..." : "Remove"}
-//                           </button>
-//                         </div>
-//                       ) : ct.postBooking ? (
-//                         <button
-//                           onClick={() => handleRaiseManageBooking(ct)}
-//                           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#B07D2B] hover:bg-[#8C6220] text-white rounded-lg text-xs font-bold transition-colors"
-//                         >
-//                           Raise Manage Booking <ArrowRight className="w-3.5 h-3.5" />
-//                         </button>
-//                       ) : null}
-//                     </div>
-//                     {/* Same "missing Aadhaar on a real booking" upload row
-//                         as the Main Traveller above — mostly fires for the
-//                         online/admin bookings merged in straight from
-//                         tourBookingModel, which never had a chance to
-//                         capture this co-traveller's Aadhaar here. */}
-//                     {booking.tnr && ct._id && !ct.url && uploadUserTravellerAadhaar &&
-//                       ct.cancelStatus !== "cancelled" && ct.cancelStatus !== "rejected" && (
-//                       <TravellerAadhaarRow
-//                         traveller={{
-//                           _id: ct._id,
-//                           title: ct.title,
-//                           firstName: ct.firstName,
-//                           lastName: ct.lastName,
-//                           age: ct.age,
-//                           gender: ct.gender,
-//                           isCoTraveller: true,
-//                           hasAadhaar: false,
-//                         }}
-//                         tnr={booking.tnr}
-//                         extractAadhaar={extractAadhaar}
-//                         uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-//                         onSaved={refresh}
-//                       />
-//                     )}
+//                       {booking.tnr && ct._id && !ct.url && uploadUserTravellerAadhaar &&
+//                         ct.cancelStatus !== "cancelled" && ct.cancelStatus !== "rejected" && (
+//                           <TravellerAadhaarRow
+//                             traveller={{
+//                               _id: ct._id,
+//                               title: ct.title,
+//                               firstName: ct.firstName,
+//                               lastName: ct.lastName,
+//                               age: ct.age,
+//                               gender: ct.gender,
+//                               isCoTraveller: true,
+//                               hasAadhaar: false,
+//                             }}
+//                             tnr={booking.tnr}
+//                             extractAadhaar={extractAadhaar}
+//                             uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+//                             onSaved={refresh}
+//                           />
+//                         )}
 //                     </React.Fragment>
 //                   );
 //                 })}
 //               </div>
 //             )}
 
-//             {/* Add co-traveller — same two-step OCR-then-edit card as the
-//                 main booking form (extract first, check/fix the fields,
-//                 then save), not a bare file input + button. */}
+//             {/* Add co-traveller — OCR first, verify, then save. */}
 //             <div className="p-4 sm:p-5 rounded-xl border-2 border-dashed border-[#DCB86D] bg-[#FBF4E7]/30">
 //               <p className="text-xs font-bold text-gray-600 mb-3">Add Co-Traveller (via Aadhaar)</p>
 //               <div className="flex flex-wrap items-end gap-3">
@@ -5570,9 +5318,6 @@
 //                       }}
 //                       className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#F5E6C8] file:text-[#8C6220] hover:file:bg-[#EAD29C]"
 //                     />
-//                     {/* Same persistent cross mark pattern as TravellerCard —
-//                         stays put whether a file is just chosen or already
-//                         extracted, never hides after Extract. */}
 //                     {(ctFile || ctDraft) && (
 //                       <button
 //                         type="button"
@@ -5604,7 +5349,7 @@
 
 //               {ctDraft && (
 //                 <>
-//                   <div className="grid sm:grid-cols-4 gap-3 mt-4">
+//                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4">
 //                     <div>
 //                       <label className="block text-xs font-medium text-gray-600">Title</label>
 //                       <select
@@ -5645,7 +5390,7 @@
 //                       />
 //                     </div>
 //                   </div>
-//                   <div className="grid sm:grid-cols-2 gap-3 mt-3">
+//                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
 //                     <div>
 //                       <label className="block text-xs font-medium text-gray-600">Gender</label>
 //                       <select
@@ -5680,10 +5425,6 @@
 //                       </select>
 //                     </div>
 //                   </div>
-//                   {/* If the name/age came out wrong (like the garbled read
-//                       this was added for), this shows exactly what
-//                       Tesseract actually saw on the card — no console
-//                       needed to report it back. */}
 //                   {ctDraft.front?.ocrText && (
 //                     <button
 //                       type="button"
@@ -5717,21 +5458,8 @@
 //               <h4 className="flex items-center gap-2 font-bold text-gray-800 text-sm">
 //                 <IndianRupee className="w-4 h-4 text-[#2E7D5E]" /> Payment Screenshots
 //               </h4>
-//               {/* Advance + Balance + Partial vs this booking's real package
-//                   amount (computePackageAmount on the backend — age-bracket
-//                   + sharingType slabs off the tour's live pricing, same
-//                   formula adminAddBooking uses, + addons). null means the
-//                   backend couldn't price it (e.g. an older booking saved
-//                   before packageKind existed) — show nothing rather than a
-//                   guess. Once fully covered, show ONLY the status badge, no
-//                   running number — remaining balance keeps moving up/down
-//                   as screenshots are added/removed until then. */}
 //               {booking.paymentSummary && (
 //                 booking.paymentSummary.fullyPaid ? (
-//                   // The one deliberately bolder moment on this card — styled
-//                   // like an ink stamp on a ticket (dashed double ring, slight
-//                   // tilt) rather than another flat pill, since "cleared in
-//                   // full" is the single most important fact on this section.
 //                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#235F47] bg-[#EDF6F1] border-2 border-dashed border-[#2E7D5E] rounded-full px-3.5 py-1 -rotate-2 shadow-sm">
 //                     <CheckCircle2 className="w-3.5 h-3.5" /> Balance Fully Paid
 //                   </span>
@@ -5745,11 +5473,8 @@
 //                 )
 //               )}
 //             </div>
-//             <div className="grid md:grid-cols-3 gap-3">
+//             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 //               {PAYMENT_TYPES.map(({ type, label }) => {
-//                 // advance used to be capped at one screenshot (only the
-//                 // latest was ever shown) — it's an array now, same as
-//                 // balance/partial, so as many can be uploaded as needed.
 //                 const items = booking.payments[type] || [];
 //                 return (
 //                   <PaymentSlot
@@ -5777,11 +5502,6 @@
 //               >
 //                 Create Booking <ArrowRight className="w-4 h-4" />
 //               </button>
-//               {/* Once Create Booking is finished and a real tnr exists for
-//                   this phone number + tour, the next Refresh (or re-opening
-//                   this tab) picks it up on its own — no paste needed. This
-//                   is only a fallback for when that auto-match can't find it
-//                   (e.g. the contact number was changed on Create Booking). */}
 //               <p className="text-center text-[11px] text-gray-400 mt-2">
 //                 TNR links automatically once the booking is created — hit Refresh above after creating it.
 //               </p>
@@ -5820,12 +5540,12 @@
 //   );
 // };
 
-// const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi, uploadGroupPayment, deleteGroupPayment, uploadUserTravellerAadhaar, linkGroupTnr, editAadhaarTraveller, deleteAadhaarTraveller, linkGuestTnr, unlinkGuestTnr, deleteBookingByTnr, exportActiveTravellersPdfData, navigate, tourId, tourTitle }) => {
+// const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi, uploadGroupPayment, deleteGroupPayment, uploadUserTravellerAadhaar, linkGroupTnr, editAadhaarTraveller, deleteAadhaarTraveller, linkGuestTnr, unlinkGuestTnr, deleteBookingByTnr, navigate, tourId, tourTitle }) => {
 //   const [bookings, setBookings] = useState([]);
 //   const [loading, setLoading] = useState(true);
 //   const [expanded, setExpanded] = useState({});
 //   const [downloadingAllZip, setDownloadingAllZip] = useState(false);
-//   const [exportingPdf, setExportingPdf] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState("");
 
 //   const fetchBookings = async () => {
 //     setLoading(true);
@@ -5839,9 +5559,6 @@
 //     }
 //   };
 
-//   // Tour-wise — this tab always shows only the currently selected tour's
-//   // bookings (same tour picked at the top of the page, shared with the
-//   // Save Booking tab). Re-fetches whenever the admin switches tours.
 //   useEffect(() => {
 //     fetchBookings();
 //     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5882,9 +5599,6 @@
 //       state: {
 //         tourId: booking.tourId,
 //         travellers: finalTravellers,
-//         // advance is an array now (can have more than one screenshot) —
-//         // Create Booking only ever shows ONE advance proof, so hand it
-//         // the most recent upload.
 //         paymentScreenshots: booking.payments?.advance?.length
 //           ? {
 //             advance: {
@@ -5894,12 +5608,6 @@
 //           }
 //           : {},
 //         contactMobile: mainT?.phone || "",
-//         // Combined string kept for back-compat with anything still reading
-//         // it, PLUS the already-split components (OCR splits these out —
-//         // see splitAddressComponents in aadhaarController.js) so
-//         // CreateBooking.jsx's Billing Address can fill Address Line 1/2,
-//         // City, State and Pincode into their own separate boxes instead of
-//         // cramming the whole address into one line.
 //         contactAddress: mainT?.address || "",
 //         contactAddressLine1: mainT?.addressLine1 || "",
 //         contactAddressLine2: mainT?.addressLine2 || "",
@@ -5907,35 +5615,35 @@
 //         contactState: mainT?.state || "",
 //         contactPincode: mainT?.pincode || "",
 //         groupId: booking.groupId,
-//         // Boarding/deboarding point and addon notes captured during Aadhaar
-//         // Upload (free-text strings, e.g. "MAS - CHENNAI") — CreateBooking.jsx
-//         // matches the boarding/deboarding strings against the real tour's
-//         // boardingPoints/deboardingPoints by stationCode to auto-select them.
-//         // addonsDetail has no addonId (it was flattened for display only),
-//         // so it's shown there as a read-only reminder, not auto-selected.
 //         bookingNotes: booking.bookingNotes || null,
 //       },
 //     });
 //   };
 
-//   // This tab is only ever rendered once a tour is selected (the parent
-//   // page gates it on tourId), so filtering is just belt-and-braces here.
 //   const visibleBookings = tourId
 //     ? bookings.filter((b) => String(b.tourId || "") === String(tourId))
 //     : bookings;
 
-//   // Whole-tour Aadhaar ZIP — ALL images go flat into one single zip (no
-//   // per-booking sub-folders), with the booking's name/tnr baked into each
-//   // filename so files stay identifiable without needing folders.
-//   // Only ever pulls from visibleBookings' live data, so — same as the
-//   // per-booking download — a removed/deleted traveller is already gone
-//   // from the data and never ends up in the zip; nothing extra to filter.
+//   const bookingMatchesSearch = (b, q) => {
+//     const names = [b.main, ...(b.coTravellers || [])]
+//       .map((t) => [t?.title, t?.firstName, t?.lastName].filter(Boolean).join(" "))
+//       .join(" ");
+//     const haystack = [names, b.tnr, b.main?.phone, b.main?.aadhaarNumber].filter(Boolean).join(" ").toLowerCase();
+//     return haystack.includes(q);
+//   };
+//   const searchedBookings = (() => {
+//     const q = searchQuery.trim().toLowerCase();
+//     if (!q) return visibleBookings;
+//     return visibleBookings.filter((b) => bookingMatchesSearch(b, q));
+//   })();
+
 //   const tourZipSafeName = (name) =>
 //     (name || "file").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "file";
 //   const tourZipExtFromUrl = (url) => {
 //     const match = url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
 //     return match ? match[1] : "jpg";
 //   };
+//   // Whole-tour Aadhaar ZIP — flat, booking name/tnr baked into each filename.
 //   const handleDownloadAllZip = async () => {
 //     if (visibleBookings.length === 0) {
 //       toast.error("No bookings to download for this tour");
@@ -5952,8 +5660,6 @@
 //           const mainName = [booking.main?.title, booking.main?.firstName, booking.main?.lastName]
 //             .filter(Boolean)
 //             .join(" ") || `Booking ${bIdx + 1}`;
-//           // Every file carries the booking prefix (index + name + tnr) in
-//           // its own filename instead of a sub-folder, so the zip stays flat.
 //           const bookingPrefix = `${bIdx + 1}. ${tourZipSafeName(mainName)}${booking.tnr ? `_${booking.tnr}` : ""}`;
 
 //           const entries = [];
@@ -5981,7 +5687,6 @@
 //                 const res = await fetch(entry.url);
 //                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 //                 const blob = await res.blob();
-//                 // Flat: file goes straight into the zip root, not a folder.
 //                 zip.file(`${tourZipSafeName(entry.name)}.${tourZipExtFromUrl(entry.url)}`, blob);
 //                 fetchedCount += 1;
 //               } catch (err) {
@@ -6018,107 +5723,113 @@
 //     }
 //   };
 
-//   // "Export Active Travellers PDF" — one PDF covering every NON-cancelled
-//   // traveller across this tour's bookings that already have a real tnr
-//   // (a draft that hasn't been turned into a real booking yet has no
-//   // cancellation concept at all, so there's nothing to exclude for it —
-//   // it just isn't part of this export until "Create Booking" gives it a
-//   // tnr). The Aadhaar number is fetched purely to go into the PDF — it is
-//   // never shown anywhere on this page.
-//   const handleExportActiveTravellersPdf = async () => {
-//     const tnrs = visibleBookings.map((b) => b.tnr).filter(Boolean);
-//     if (tnrs.length === 0) {
-//       toast.error("No bookings with a TNR yet to export");
+//   // Deletes Aadhaar FILES (never extracted data) for every booking in this
+//   // tour — main traveller's aadhaarDocId clears the whole booking.
+//   const [deletingAllAadhaar, setDeletingAllAadhaar] = useState(false);
+//   const handleDeleteAllAadhaar = async () => {
+//     const mainDocIds = visibleBookings.map((b) => b.main?.aadhaarDocId).filter(Boolean);
+//     if (mainDocIds.length === 0) {
+//       toast.error("No bookings with Aadhaar to delete for this tour");
 //       return;
 //     }
-//     setExportingPdf(true);
+//     if (
+//       !window.confirm(
+//         `Delete the Aadhaar FILES for ALL ${mainDocIds.length} booking(s) in this tour? Extracted details (Name/Age/Gender/Address/Aadhaar Number) are kept — only the uploaded files are removed from storage. This cannot be undone.`,
+//       )
+//     ) {
+//       return;
+//     }
+//     setDeletingAllAadhaar(true);
 //     try {
-//       const result = await exportActiveTravellersPdfData(tnrs);
-//       if (!result?.success) return;
-
-//       const travellers = result.travellers || [];
-//       if (travellers.length === 0) {
-//         toast.error("No active travellers found to export");
-//         return;
+//       let okCount = 0;
+//       for (const docId of mainDocIds) {
+//         try {
+//           const result = await deleteAadhaarTraveller(docId);
+//           if (result?.success) okCount += 1;
+//         } catch (err) {
+//           console.error(`handleDeleteAllAadhaar: failed for docId ${docId}:`, err);
+//         }
 //       }
-
-//       const { jsPDF } = await import("jspdf");
-//       const autoTable = (await import("jspdf-autotable")).default;
-
-//       const doc = new jsPDF();
-//       doc.setFontSize(14);
-//       doc.text("Active Travellers", 14, 15);
-//       doc.setFontSize(9);
-//       doc.text(
-//         `${tourTitle || "Tour"} — generated ${new Date().toLocaleDateString("en-IN")} — ${travellers.length} traveller(s)`,
-//         14,
-//         21,
+//       toast.success(
+//         okCount === mainDocIds.length
+//           ? "Aadhaar files deleted for all bookings"
+//           : `Aadhaar files deleted for ${okCount}/${mainDocIds.length} booking(s) — check console for the rest`,
 //       );
-
-//       autoTable(doc, {
-//         startY: 26,
-//         head: [["#", "Name", "Age", "Gender", "Aadhaar Number"]],
-//         body: travellers.map((t, i) => [
-//           i + 1,
-//           t.name,
-//           t.age ?? "",
-//           t.gender || "",
-//           t.aadhaarNumber,
-//         ]),
-//         styles: { fontSize: 9 },
-//         headStyles: { fillColor: [31, 63, 110] },
-//       });
-
-//       doc.save(`active-travellers-${tourZipSafeName(tourTitle || "tour")}.pdf`);
-//       toast.success("PDF downloaded");
-//     } catch (err) {
-//       console.error("handleExportActiveTravellersPdf error:", err);
-//       toast.error(
-//         "Could not generate the PDF — run: npm install jspdf jspdf-autotable",
-//       );
+//       fetchBookings();
 //     } finally {
-//       setExportingPdf(false);
+//       setDeletingAllAadhaar(false);
 //     }
 //   };
 
 //   return (
 //     <div className="mb-8">
-//       <div className="flex items-center justify-between flex-wrap gap-3 mb-5 pb-4 border-b-2 border-dashed border-[#DEE2E8]">
-//         <div className="flex items-center gap-2.5">
-//           <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full bg-[#1C2733] text-white text-sm font-bold font-mono">
+//       <div className="mb-5 pb-4 border-b-2 border-dashed border-[#DEE2E8] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+//         <div className="flex items-center justify-between lg:justify-start gap-2.5 min-w-0 lg:flex-1">
+//           <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full bg-gradient-to-br from-indigo-600 to-sky-500 text-white text-sm font-bold font-mono shadow-sm shadow-indigo-200 shrink-0">
 //             {visibleBookings.length}
 //           </span>
-//           <p className="text-sm text-[#1C2733]">
+//           <p className="text-sm text-[#1C2733] min-w-0 lg:truncate">
 //             booking{visibleBookings.length !== 1 ? "s" : ""}
 //             {tourTitle ? <span className="text-gray-500"> for {tourTitle}</span> : ""}
 //           </p>
-//         </div>
-//         <div className="flex items-center gap-3">
-//           <button
-//             onClick={handleExportActiveTravellersPdf}
-//             disabled={exportingPdf || visibleBookings.length === 0}
-//             title="PDF of Name/Age/Gender/Aadhaar Number for every non-cancelled traveller in this tour"
-//             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#C3D4E8] bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-//           >
-//             {exportingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-//             {exportingPdf ? "Preparing PDF..." : "Export Active Travellers PDF"}
-//           </button>
-//           <button
-//             onClick={handleDownloadAllZip}
-//             disabled={downloadingAllZip || visibleBookings.length === 0}
-//             title="Download Aadhaar images of every booking in this tour as one ZIP"
-//             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#C3D4E8] bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-//           >
-//             {downloadingAllZip ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-//             {downloadingAllZip ? "Zipping..." : "Download All (Tour) ZIP"}
-//           </button>
 //           <button
 //             onClick={fetchBookings}
-//             className="flex items-center gap-1.5 text-xs font-semibold text-[#2A5490] hover:text-[#17314F]"
+//             title="Refresh"
+//             className="lg:hidden shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
 //           >
-//             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+//             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
 //           </button>
 //         </div>
+//         <div className="flex items-center gap-2 sm:gap-3">
+//           <div className="flex flex-col sm:flex-row w-full lg:w-fit rounded-xl border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 shadow-sm overflow-hidden">
+//             <button
+//               onClick={handleDeleteAllAadhaar}
+//               disabled={deletingAllAadhaar || visibleBookings.length === 0}
+//               title="Delete the uploaded Aadhaar files for EVERY booking in this tour (keeps the extracted Name/Age/Gender/Address/Aadhaar Number — does not delete any booking)"
+//               className="sm:flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 bg-white text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+//             >
+//               {deletingAllAadhaar ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 shrink-0" />}
+//               <span className="whitespace-nowrap">{deletingAllAadhaar ? "Deleting..." : "Delete All Aadhaar"}</span>
+//             </button>
+//             <button
+//               onClick={handleDownloadAllZip}
+//               disabled={downloadingAllZip || visibleBookings.length === 0}
+//               title="Download Aadhaar images of every booking in this tour as one ZIP"
+//               className="sm:flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+//             >
+//               {downloadingAllZip ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
+//               <span className="whitespace-nowrap">{downloadingAllZip ? "Zipping..." : "Download All (Tour) ZIP"}</span>
+//             </button>
+//           </div>
+//           <button
+//             onClick={fetchBookings}
+//             title="Refresh"
+//             className="hidden lg:flex shrink-0 items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
+//           >
+//             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="relative mb-5">
+//         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+//         <input
+//           type="text"
+//           value={searchQuery}
+//           onChange={(e) => setSearchQuery(e.target.value)}
+//           placeholder="Filter by name, mobile, TNR or Aadhaar number (optional)"
+//           className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+//         />
+//         {searchQuery && (
+//           <button
+//             type="button"
+//             onClick={() => setSearchQuery("")}
+//             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+//             title="Clear"
+//           >
+//             <XCircle className="w-4 h-4" />
+//           </button>
+//         )}
 //       </div>
 
 //       {loading ? (
@@ -6127,9 +5838,11 @@
 //         </div>
 //       ) : visibleBookings.length === 0 ? (
 //         <div className="text-center py-16 text-gray-400 text-sm rounded-2xl border-2 border-dashed border-[#DEE2E8]">No bookings saved for this tour yet.</div>
+//       ) : searchedBookings.length === 0 ? (
+//         <div className="text-center py-16 text-gray-400 text-sm rounded-2xl border-2 border-dashed border-[#DEE2E8]">No booking matches "{searchQuery}".</div>
 //       ) : (
 //         <div className="space-y-4">
-//           {visibleBookings.map((booking) => (
+//           {searchedBookings.map((booking) => (
 //             <BookingCard
 //               key={booking.groupId}
 //               booking={booking}
@@ -6181,48 +5894,32 @@
 //     uploadUserTravellerAadhaar,
 //     uploadUserBookingPayment,
 //     deleteBookingByTnr,
-//     exportActiveTravellersPdfData,
 //   } = useContext(TourContext);
 
 //   const [saving, setSaving] = useState(false);
+//   const savingRef = useRef(false); // synchronous double-click guard
 
-//   // Three tabs on this one page: "save" = capture a new walk-in booking,
-//   // "all" = everything saved so far (balance/partial upload, add more
-//   // co-travellers, Create Booking → tnr → Raise Manage Booking), "user" =
-//   // find a real online booking (by tour + email) the guest already made on
-//   // the website themselves, and attach Aadhaar/payment proof to it.
+//   // "save" = new walk-in booking, "all" = All Bookings, "user" = User Bookings.
 //   const [activeTab, setActiveTab] = useState("save");
 
 //   const [tourId, setTourId] = useState("");
 //   const [tourInfo, setTourInfo] = useState(null);
 
-//   // ───────────── Booking-wide fields (apply to every traveller) ─────────────
-//   // Fetched from the selected tour's own data (tourInfo), not typed.
 //   const [packageSelection, setPackageSelection] = useState({ type: "main", variantIndex: null });
 //   const [boardingPoint, setBoardingPoint] = useState(null);
 //   const [deboardingPoint, setDeboardingPoint] = useState(null);
-//   const [selectedAddons, setSelectedAddons] = useState([]); // train/flight-wise, same shape as CreateBooking.jsx
+//   const [selectedAddons, setSelectedAddons] = useState([]);
 //   const [remarks, setRemarks] = useState("");
-//   // Who's actually saving this booking — picked from the Staff-Profile
-//   // directory, so "Raised by" on the All Bookings card shows a real name
-//   // instead of the generic uploadedBy:"admin" tag.
 //   const [raisedByStaffId, setRaisedByStaffId] = useState("");
 
-//   // Single main traveller only — co-traveller add, Partial/Balance
-//   // screenshot upload, and finalizing the booking with a TNR all happen
-//   // later, from the All Bookings page, not here.
 //   const [travellers, setTravellers] = useState([blankTraveller(true)]);
 
 //   const [paymentScreenshots, setPaymentScreenshots] = useState({});
-//   // { [type]: { current, total } | undefined } — sequential upload progress.
 //   const [paymentLoading, setPaymentLoading] = useState({});
-//   // { [type]: File[] } — files picked together but not yet uploaded.
+//   const paymentUploadingRef = useRef({});
 //   const [paymentFiles, setPaymentFiles] = useState({});
-//   // { [type]: string[] } — optional amount typed against each queued file,
-//   // same index as paymentFiles[type].
 //   const [paymentAmounts, setPaymentAmounts] = useState({});
-//   // { [type]: index | null } — which uploaded screenshot (if any) is open
-//   // in the one-at-a-time viewer for that payment type.
+//   const [paymentRemarks, setPaymentRemarks] = useState({});
 //   const [paymentViewerIndex, setPaymentViewerIndex] = useState({});
 
 //   useEffect(() => {
@@ -6242,7 +5939,6 @@
 //     setTourInfo(tourList.find((t) => t._id === tourId) || null);
 //   }, [tourId, tourList]);
 
-//   // Reset booking-wide fields whenever the tour changes.
 //   useEffect(() => {
 //     setPackageSelection({ type: "main", variantIndex: null });
 //     setBoardingPoint(null);
@@ -6251,15 +5947,12 @@
 //     setRemarks("");
 //   }, [tourId]);
 
-//   // Reset boarding/deboarding/addons whenever the package selection changes
-//   // (different package = different boarding/deboarding/train/flight list).
 //   useEffect(() => {
 //     setBoardingPoint(null);
 //     setDeboardingPoint(null);
 //     setSelectedAddons([]);
 //   }, [packageSelection.type, packageSelection.variantIndex]);
 
-//   // ───────────────────────── Traveller (person-level) fields ─────────────────────────
 //   const handleTravellerChange = (index, field, value) => {
 //     const updated = [...travellers];
 //     const t = { ...updated[index] };
@@ -6285,10 +5978,6 @@
 
 //     t[field] = value;
 
-//     // Keep the one combined `address` line in sync whenever any of the
-//     // split fields is edited by hand — older code (and the All Bookings
-//     // view) still reads `address` as one line, so it shouldn't go stale
-//     // the moment the admin corrects, say, just the Pincode box.
 //     if (["addressLine1", "addressLine2", "city", "state", "pincode"].includes(field)) {
 //       t.address = [t.addressLine1, t.addressLine2, t.city, t.state, t.pincode]
 //         .filter(Boolean)
@@ -6299,13 +5988,6 @@
 //     setTravellers(updated);
 //   };
 
-//   // ───────────────────────── Co-travellers (Tab 1) ─────────────────────────
-//   // No cap — add as many co-travellers as the booking needs. Each
-//   // co-traveller is Aadhaar FRONT side only (TravellerCard already skips
-//   // the back-side input whenever isMain is false). These stay local state
-//   // here and are only persisted when "Save Booking" is pressed, same as
-//   // the main traveller — unlike Tab 2, where Add Co-Traveller saves
-//   // straight to the server because that booking already exists.
 //   const addCoTraveller = () => {
 //     setTravellers((prev) => [...prev, blankTraveller(false)]);
 //   };
@@ -6337,13 +6019,7 @@
 //       if (t._backFile) formData.append("back", t._backFile);
 
 //       const result = await extractAadhaar(formData);
-//       // Shows exactly what Tesseract actually read off this image — if
-//       // the name/age come out wrong, this is what to send back so the
-//       // text-parsing regex (not the image-quality preprocessing) can be
-//       // fixed for that specific case.
-//       console.log("[ExtractAadhaar] raw OCR text:", result.front?.ocrText);
-//       console.log("[ExtractAadhaar] parsed:", result.parsed);
-//       if (!result.success) {
+//       if (!result?.success) {
 //         handleTravellerChange(index, "ocrLoading", false);
 //         return;
 //       }
@@ -6353,17 +6029,11 @@
 //       const updated = [...travellers];
 //       updated[index] = {
 //         ...updated[index],
-//         // Title follows whatever gender OCR actually read — was always
-//         // hardcoded to "Mr" before, even for a card OCR correctly read as
-//         // Female.
 //         title: readGender === "Female" ? "Mrs" : "Mr",
 //         firstName: p.firstName || "",
 //         lastName: p.lastName || "",
 //         age: p.age || "",
 //         gender: readGender,
-//         // Keep whatever the admin already typed if OCR couldn't read a
-//         // phone/address this time (some Aadhaar cards don't print a
-//         // mobile number at all, and address OCR isn't always clean).
 //         phone: p.phone || updated[index].phone || "",
 //         address: p.address || updated[index].address || "",
 //         addressLine1: p.addressLine1 || updated[index].addressLine1 || "",
@@ -6378,9 +6048,6 @@
 //         _backFile: null,
 //       };
 //       setTravellers(updated);
-//       // Phone/address only matter for the MAIN traveller (index 0) — that
-//       // toast would be noise for a co-traveller, who has no phone/address
-//       // fields on this card at all.
 //       if (index === 0 && (!p.phone || !p.address)) {
 //         toast.info(
 //           `Traveller ${index + 1}'s Aadhaar read. ${!p.phone ? "Mobile number" : "Address"}${!p.phone && !p.address ? " & address" : ""} couldn't be read — please fill it in.`,
@@ -6394,10 +6061,6 @@
 //     }
 //   };
 
-//   // Wrong Aadhaar uploaded for this traveller — clear the read image(s)
-//   // and whatever identity fields OCR filled in, so the admin can redo it
-//   // with the right photo instead of being stuck with a bad read until
-//   // Save. Local state only (nothing's been persisted yet on Tab 1).
 //   const clearTravellerAadhaar = (index) => {
 //     const updated = [...travellers];
 //     updated[index] = {
@@ -6412,35 +6075,29 @@
 //       back: null,
 //       _frontFile: null,
 //       _backFile: null,
-//       // Main traveller's phone/address are typed/used elsewhere — only
-//       // clear them for a co-traveller, who has no such fields anyway.
 //       ...(index !== 0 ? { phone: "", address: "" } : {}),
 //     };
 //     setTravellers(updated);
 //     toast.info(`Traveller ${index + 1}'s Aadhaar cleared — upload the correct image and extract again.`);
 //   };
 
-//   // ───────────────────────── Payment screenshots ─────────────────────────
-//   // Only Advance is collected here. Balance/Partial Balance come later
-//   // (often ~30 days after), once the booking has a TNR — that happens
-//   // from the All Bookings page, not here.
+//   // Only Advance is collected here.
 //   const paymentSlots = [
 //     { type: "advance", label: "Advance Payment", cardClass: "bg-indigo-50 border-indigo-200" },
 //   ];
 
-//   // paymentFiles[type] can hold several screenshots picked together, but
-//   // they're still sent to the backend ONE AT A TIME, in order — a single
-//   // "Upload All" click walks the whole queue sequentially (not in
-//   // parallel) instead of requiring a click per file.
 //   const handlePaymentUpload = async (type) => {
 //     const queue = paymentFiles[type] || [];
 //     const amounts = paymentAmounts[type] || [];
+//     const remarksQueue = paymentRemarks[type] || [];
 //     if (queue.length === 0) return toast.error(`Select at least one ${type} screenshot first`);
 //     for (let i = 0; i < amounts.length; i++) {
 //       if (amounts[i] && Number(amounts[i]) <= 0) {
 //         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
 //       }
 //     }
+//     if (paymentUploadingRef.current[type]) return;
+//     paymentUploadingRef.current[type] = true;
 
 //     let successCount = 0;
 //     for (let i = 0; i < queue.length; i++) {
@@ -6455,7 +6112,10 @@
 //           successCount += 1;
 //           setPaymentScreenshots((prev) => ({
 //             ...prev,
-//             [type]: [...(prev[type] || []), { url: result.url, amount: result.amount }],
+//             [type]: [
+//               ...(prev[type] || []),
+//               { url: result.url, amount: result.amount, remarks: (remarksQueue[i] || "").trim() },
+//             ],
 //           }));
 //         }
 //       } catch (err) {
@@ -6465,6 +6125,8 @@
 //     setPaymentLoading((prev) => ({ ...prev, [type]: false }));
 //     setPaymentFiles((prev) => ({ ...prev, [type]: [] }));
 //     setPaymentAmounts((prev) => ({ ...prev, [type]: [] }));
+//     setPaymentRemarks((prev) => ({ ...prev, [type]: [] }));
+//     paymentUploadingRef.current[type] = false;
 //     if (successCount > 0) {
 //       toast.success(`${successCount} ${type} screenshot${successCount > 1 ? "s" : ""} uploaded`);
 //     }
@@ -6473,26 +6135,13 @@
 //     }
 //   };
 
-//   // ───────────────────────── Save booking ─────────────────────────
-//   // Persists this capture (tour, booking-wide details, main traveller,
-//   // advance screenshot) straight into aadhaarModel — Aadhaar front/back,
-//   // paymentAdvance and bookingNotes docs, all tied by one groupId. No
-//   // navigation to CreateBooking.jsx: this page's job ends at Save.
-//   // Co-traveller add, Partial/Balance screenshot upload and finalizing
-//   // the booking (with a real TNR, via CreateBooking.jsx) happen afterwards
-//   // from the All Bookings page.
 //   const handleSaveBooking = async () => {
-//     // Every OTHER "required" gate was removed on request (no tour, no
-//     // name, no Aadhaar front/back, no Raised By, no co-traveller
-//     // completeness) — this is now the ONE field this form still blocks
-//     // Save Booking on: at least one Advance Payment screenshot must be
-//     // attached before a booking can be created at all. Everything else
-//     // still only fails later, with a toast pulled straight from the
-//     // server's own error message (saveAadhaarUpload's try/catch below
-//     // already surfaces whatever message the API sends back).
+//     // The ONE hard requirement: at least one Advance Payment screenshot.
 //     if (!(paymentScreenshots.advance || []).length) {
 //       return toast.error("Attach the Advance Payment screenshot before creating this booking");
 //     }
+//     if (savingRef.current) return;
+//     savingRef.current = true;
 //     const mainTraveller = travellers[0];
 
 //     const coTravellerRows = travellers.slice(1);
@@ -6509,15 +6158,12 @@
 //       : "";
 //     const addonsStr = selectedAddons.map((a) => a.name).join(", ");
 //     const raisedByStaff = (staffList || []).find((s) => s._id === raisedByStaffId);
-//     // Train/flight-wise breakdown — kept structured (not flattened into one
-//     // string) so the All Bookings card can show exactly which leg each
-//     // add-on belongs to instead of one bulk "Add-ons: X, Y" line.
 //     const addonsDetail = selectedAddons.map((a) => ({
 //       label: a.trainName
 //         ? `${a.trainName} (${a.trainNo})${a.tripType ? ` - ${a.tripType}` : ""}`
 //         : a.flightNo
-//         ? `${a.airline || "Flight"} ${a.flightNo}${a.tripType ? ` - ${a.tripType}` : ""}`
-//         : "",
+//           ? `${a.airline || "Flight"} ${a.flightNo}${a.tripType ? ` - ${a.tripType}` : ""}`
+//           : "",
 //       name: a.name,
 //       amount: a.amount || 0,
 //     }));
@@ -6527,10 +6173,6 @@
 //       const result = await saveAadhaarUpload({
 //         tourId,
 //         packageType: packageTypeStr,
-//         // Machine-readable pair alongside the display string above — lets
-//         // the backend look up this exact package's real price later (see
-//         // computePackageAmount in aadhaarController.js) to show the
-//         // Advance+Balance+Partial-vs-package-amount status on this card.
 //         packageKind: packageSelection.type,
 //         variantPackageIndex: packageSelection.type === "variant" ? packageSelection.variantIndex : null,
 //         boardingPoint: boardingPointStr,
@@ -6575,11 +6217,8 @@
 //           city: t.city,
 //           state: t.state,
 //           pincode: t.pincode,
-//           front: t.front, // front side only
+//           front: t.front,
 //         })),
-//         // Plural now — the admin can attach more than one Advance
-//         // screenshot before saving (see the one-at-a-time upload queue
-//         // above), so every one of them gets saved against this booking.
 //         advanceScreenshots: paymentScreenshots.advance || [],
 //       });
 
@@ -6587,333 +6226,364 @@
 
 //       toast.success("Booking saved. Find it on the All Bookings page.");
 
-//       // Reset the form for the next walk-in booking.
 //       setTourId("");
 //       setTourInfo(null);
 //       setTravellers([blankTraveller(true)]);
 //       setPaymentScreenshots({});
 //       setPaymentFiles({});
 //       setPaymentAmounts({});
+//       setPaymentRemarks({});
 //     } catch (err) {
 //       console.error("handleSaveBooking error:", err);
 //       toast.error("Could not save this booking. Please try again.");
 //     } finally {
+//       savingRef.current = false;
 //       setSaving(false);
 //     }
 //   };
 
 //   return (
-//     <div className="min-h-screen bg-gray-50/60 py-6 px-4">
-//       <div className="max-w-5xl mx-auto bg-white shadow-xl rounded-3xl border border-gray-100 p-6 sm:p-8">
-//         <ToastContainer position="top-right" autoClose={4000} />
+//     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-slate-50 to-sky-50 py-4 px-2.5 sm:py-8 sm:px-4">
+//       <div className="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-indigo-300/30 blur-3xl" />
+//       <div className="pointer-events-none absolute top-1/3 -right-24 w-80 h-80 rounded-full bg-sky-300/30 blur-3xl" />
+//       <div className="pointer-events-none absolute bottom-0 left-1/4 w-72 h-72 rounded-full bg-purple-200/30 blur-3xl" />
 
-//         <div className="flex items-center gap-4 border-b border-gray-100 pb-6 mb-6">
-//           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-indigo-200">
-//             <UserPlus className="w-7 h-7" />
-//           </div>
-//           <div>
-//             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 leading-tight">Aadhaar Upload</h1>
-//             <p className="text-sm text-gray-500 mt-0.5">Walk-in bookings, read straight off the Aadhaar card</p>
-//           </div>
-//         </div>
+//       <div className="relative max-w-5xl mx-auto bg-white/90 backdrop-blur-sm shadow-2xl shadow-indigo-200/50 rounded-2xl sm:rounded-[2rem] border border-white ring-1 ring-indigo-100 overflow-hidden">
+//         <div className="h-1.5 sm:h-2 bg-gradient-to-r from-indigo-600 via-violet-500 to-sky-500" />
 
-//         {/* Tour comes FIRST — everything below (Save Booking AND All
-//               Bookings) is scoped to this one tour. Switching tours clears
-//               the Save Booking draft; All Bookings re-fetches for the new
-//               tour automatically. */}
-//         <div className="mb-6">
-//           <label className="block text-sm font-semibold text-gray-700 mb-2">Select Tour *</label>
-//           <select
-//             value={tourId}
-//             onChange={(e) => setTourId(e.target.value)}
-//             className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-base transition-all"
-//           >
-//             <option value="">-- Select a tour --</option>
-//             {tourList?.map((t) => (
-//               <option key={t._id} value={t._id}>
-//                 {t.title}
-//               </option>
-//             ))}
-//           </select>
-//         </div>
+//         <div className="p-3.5 sm:p-6 md:p-8">
+//           <ToastContainer position="top-right" autoClose={4000} />
 
-//         {/* Two-tab pill header */}
-//         <div className="flex gap-2 p-1.5 bg-gray-100 rounded-2xl mb-8 w-full sm:w-fit">
-//           <button
-//             onClick={() => setActiveTab("save")}
-//             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none ${
-//               activeTab === "save" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-//             }`}
-//           >
-//             <UserPlus className="w-4 h-4" /> Save Booking
-//           </button>
-//           <button
-//             onClick={() => setActiveTab("all")}
-//             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none ${
-//               activeTab === "all" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-//             }`}
-//           >
-//             <BookOpenCheck className="w-4 h-4" /> All Bookings
-//           </button>
-//           <button
-//             onClick={() => setActiveTab("user")}
-//             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none ${
-//               activeTab === "user" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-//             }`}
-//           >
-//             <Search className="w-4 h-4" /> User Bookings
-//           </button>
-//         </div>
-
-//         {!tourId && (
-//           <div className="text-center py-16 text-gray-400 text-sm">Select a tour above to continue.</div>
-//         )}
-
-//         {tourId && activeTab === "all" && (
-//           <AllBookingsTab
-//             getAadhaarBookings={getAadhaarBookings}
-//             extractAadhaar={extractAadhaar}
-//             addCoTravellerApi={addCoTravellerApi}
-//             uploadGroupPayment={uploadGroupPayment}
-//             deleteGroupPayment={deleteGroupPayment}
-//             uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-//             linkGroupTnr={linkGroupTnr}
-//             editAadhaarTraveller={editAadhaarTraveller}
-//             deleteAadhaarTraveller={deleteAadhaarTraveller}
-//             linkGuestTnr={linkGuestTnr}
-//             unlinkGuestTnr={unlinkGuestTnr}
-//             deleteBookingByTnr={deleteBookingByTnr}
-//             exportActiveTravellersPdfData={exportActiveTravellersPdfData}
-//             navigate={navigate}
-//             tourId={tourId}
-//             tourTitle={tourInfo?.title}
-//           />
-//         )}
-
-//         {tourId && activeTab === "user" && (
-//           <UserBookingsTab
-//             tourId={tourId}
-//             searchUserBookings={searchUserBookings}
-//             uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-//             uploadUserBookingPayment={uploadUserBookingPayment}
-//             deleteGroupPayment={deleteGroupPayment}
-//             extractAadhaar={extractAadhaar}
-//           />
-//         )}
-
-//         {tourId && activeTab === "save" && (
-//           <>
-//         {tourInfo && (
-//           <>
-//             <BookingWideSection
-//               tourInfo={tourInfo}
-//               packageSelection={packageSelection}
-//               setPackageSelection={setPackageSelection}
-//               boardingPoint={boardingPoint}
-//               setBoardingPoint={setBoardingPoint}
-//               deboardingPoint={deboardingPoint}
-//               setDeboardingPoint={setDeboardingPoint}
-//               selectedAddons={selectedAddons}
-//               setSelectedAddons={setSelectedAddons}
-//               remarks={remarks}
-//               setRemarks={setRemarks}
-//               staffList={staffList}
-//               raisedByStaffId={raisedByStaffId}
-//               setRaisedByStaffId={setRaisedByStaffId}
-//             />
-
-//             <TravellerCard
-//               traveller={travellers[0]}
-//               index={0}
-//               isMain={true}
-//               setTravellerFrontFile={setTravellerFrontFile}
-//               setTravellerBackFile={setTravellerBackFile}
-//               extractTravellerAadhaar={extractTravellerAadhaar}
-//               clearTravellerAadhaar={clearTravellerAadhaar}
-//               handleTravellerChange={handleTravellerChange}
-//             />
-
-//             {/* Co-travellers — up to 9 more, Aadhaar front side only.
-//                   Added here and saved together with the main traveller
-//                   when "Save Booking" is pressed. */}
-//             {travellers.slice(1).map((t, i) => (
-//               <TravellerCard
-//                 key={i + 1}
-//                 traveller={t}
-//                 index={i + 1}
-//                 isMain={false}
-//                 removeCoTraveller={removeCoTraveller}
-//                 setTravellerFrontFile={setTravellerFrontFile}
-//                 setTravellerBackFile={setTravellerBackFile}
-//                 extractTravellerAadhaar={extractTravellerAadhaar}
-//                 clearTravellerAadhaar={clearTravellerAadhaar}
-//                 handleTravellerChange={handleTravellerChange}
-//               />
-//             ))}
-
-//             <button
-//               onClick={addCoTraveller}
-//               className="w-full flex items-center justify-center gap-2 px-5 py-3 mb-8 border-2 border-dashed border-indigo-300 text-indigo-700 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-all"
-//             >
-//               <PlusCircle className="w-4.5 h-4.5" />
-//               Add Co-Traveller
-//             </button>
-
-//             {/* Payment screenshot — Advance only. Balance / Partial
-//                   Balance come later from the All Bookings page once a
-//                   TNR exists. */}
-//               <div className="mb-8">
-//                 <h3 className="flex items-center gap-2 font-bold text-gray-800 text-lg mb-4">
-//                   <IndianRupee className="w-6 h-6 text-indigo-600" /> Advance Payment Screenshot <span className="text-red-500">*</span>
-//                   <span className="text-xs font-normal text-gray-400">
-//                     (required to create this booking — OCR tries to read the amount automatically, type it in only if OCR misses)
-//                   </span>
-//                 </h3>
-//                 <div className="grid md:grid-cols-3 gap-4">
-//                   {paymentSlots.map(({ type, label, cardClass }) => {
-//                     const uploaded = paymentScreenshots[type] || [];
-//                     const queue = paymentFiles[type] || [];
-//                     const amounts = paymentAmounts[type] || [];
-//                     const progress = paymentLoading[type];
-//                     return (
-//                       <div
-//                         key={type}
-//                         className={`p-5 rounded-2xl border shadow-sm ${uploaded.length > 0 ? "bg-green-50 border-green-300" : `${cardClass} border`}`}
-//                       >
-//                         <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3">
-//                           <FileImage className="w-5 h-5" /> {label}
-//                         </h4>
-
-//                         {uploaded.length > 0 && (
-//                           <div className="flex flex-col gap-1 mb-3">
-//                             {uploaded.map((u, i) => (
-//                               <button
-//                                 type="button"
-//                                 key={i}
-//                                 onClick={() =>
-//                                   setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))
-//                                 }
-//                                 className="flex items-center gap-2 text-sm text-green-700 font-medium hover:underline text-left"
-//                               >
-//                                 <CheckCircle2 className="w-4 h-4 shrink-0" /> #{i + 1}
-//                                 {u.amount ? ` — ₹${u.amount}` : " — amount not entered"}
-//                               </button>
-//                             ))}
-//                           </div>
-//                         )}
-//                         <ScreenshotViewer
-//                           items={uploaded}
-//                           index={paymentViewerIndex[type] ?? null}
-//                           onClose={() => setPaymentViewerIndex((prev) => ({ ...prev, [type]: null }))}
-//                           onNav={(i) => setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))}
-//                         />
-
-//                         {/* Pick several screenshots together — they still
-//                             go to the backend one at a time (sequentially),
-//                             but a single "Upload All" click walks the whole
-//                             queue instead of needing a click per file. */}
-//                         {queue.length > 0 && (
-//                           <div className="flex flex-col gap-1.5 mb-2.5">
-//                             {queue.map((f, i) => (
-//                               <div key={i} className="flex items-center gap-1.5">
-//                                 <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2.5 py-2 truncate">
-//                                   <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-//                                   {f.name}
-//                                 </div>
-//                                 <input
-//                                   type="number"
-//                                   placeholder="₹ (optional — OCR tries first)"
-//                                   value={amounts[i] || ""}
-//                                   onChange={(e) =>
-//                                     setPaymentAmounts((prev) => ({
-//                                       ...prev,
-//                                       [type]: (prev[type] || []).map((a, idx) => (idx === i ? e.target.value : a)),
-//                                     }))
-//                                   }
-//                                   disabled={!!progress}
-//                                   className="w-24 shrink-0 px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
-//                                 />
-//                                 <button
-//                                   type="button"
-//                                   onClick={() => {
-//                                     setPaymentFiles((prev) => ({
-//                                       ...prev,
-//                                       [type]: (prev[type] || []).filter((_, idx) => idx !== i),
-//                                     }));
-//                                     setPaymentAmounts((prev) => ({
-//                                       ...prev,
-//                                       [type]: (prev[type] || []).filter((_, idx) => idx !== i),
-//                                     }));
-//                                   }}
-//                                   disabled={!!progress}
-//                                   title="Remove from queue"
-//                                   className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors"
-//                                 >
-//                                   <X className="w-3.5 h-3.5" />
-//                                 </button>
-//                               </div>
-//                             ))}
-//                           </div>
-//                         )}
-
-//                         <label className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg px-3 py-3 mb-2.5 cursor-pointer hover:border-indigo-400">
-//                           <Upload className="w-3.5 h-3.5" />
-//                           {queue.length > 0 ? "Add more screenshot(s)" : "Choose screenshot(s)"}
-//                           <input
-//                             type="file"
-//                             accept="image/*,application/pdf"
-//                             multiple
-//                             className="hidden"
-//                             onChange={(e) => {
-//                               const files = Array.from(e.target.files || []);
-//                               if (!files.length) return;
-//                               setPaymentFiles((prev) => ({ ...prev, [type]: [...(prev[type] || []), ...files] }));
-//                               setPaymentAmounts((prev) => ({
-//                                 ...prev,
-//                                 [type]: [...(prev[type] || []), ...files.map(() => "")],
-//                               }));
-//                               e.target.value = "";
-//                             }}
-//                           />
-//                         </label>
-
-//                         {queue.length > 0 && (
-//                           <button
-//                             onClick={() => handlePaymentUpload(type)}
-//                             disabled={!!progress}
-//                             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-semibold transition-colors"
-//                           >
-//                             {progress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-//                             {progress
-//                               ? `Uploading ${progress.current} of ${progress.total}...`
-//                               : `Upload ${queue.length > 1 ? `All (${queue.length})` : ""}`}
-//                           </button>
-//                         )}
-//                       </div>
-//                     );
-//                   })}
-//                 </div>
+//           <div className="flex items-center gap-3 sm:gap-4 border-b border-gray-100 pb-4 sm:pb-6 mb-4 sm:mb-6">
+//             <div className="relative shrink-0">
+//               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 blur-md opacity-40" />
+//               <div className="relative w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-sky-500 text-white flex items-center justify-center shadow-lg shadow-indigo-300/60 ring-2 ring-white">
+//                 <UserPlus className="w-5.5 h-5.5 sm:w-7 sm:h-7" />
 //               </div>
+//             </div>
+//             <div className="min-w-0">
+//               <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight truncate bg-gradient-to-r from-indigo-700 via-indigo-600 to-sky-600 bg-clip-text text-transparent">
+//                 Aadhaar Upload
+//               </h1>
+//               <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Walk-in bookings, read straight off the Aadhaar card</p>
+//             </div>
+//           </div>
 
-//               <button
-//                 onClick={handleSaveBooking}
-//                 disabled={saving}
-//                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-700 to-indigo-600 hover:from-indigo-800 hover:to-indigo-700 disabled:opacity-60 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all"
+//           <div className="mb-5 sm:mb-6">
+//             <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+//               <MapPin className="w-4 h-4 text-indigo-500" /> Select Tour *
+//             </label>
+//             <div className="relative">
+//               <select
+//                 value={tourId}
+//                 onChange={(e) => setTourId(e.target.value)}
+//                 className="w-full appearance-none pl-3.5 sm:pl-4 pr-10 sm:pr-11 py-3 sm:py-3.5 bg-gradient-to-br from-indigo-50/70 to-white border-2 border-indigo-100 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm sm:text-base font-semibold text-gray-800 truncate transition-all cursor-pointer"
 //               >
-//                 {saving ? (
-//                   <>
-//                     <Loader2 className="w-5 h-5 animate-spin" /> Saving...
-//                   </>
-//                 ) : (
-//                   <>
-//                     Save Booking <ArrowRight className="w-5 h-5" />
-//                   </>
-//                 )}
-//               </button>
-//           </>
-//         )}
-//           </>
-//         )}
+//                 <option value="">-- Select a tour --</option>
+//                 {tourList?.map((t) => (
+//                   <option key={t._id} value={t._id}>
+//                     {t.title}
+//                   </option>
+//                 ))}
+//               </select>
+//               <ChevronDown className="pointer-events-none absolute right-3.5 sm:right-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-indigo-400" />
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-3 sm:flex sm:flex-row gap-1.5 sm:gap-2 p-1.5 bg-gradient-to-br from-gray-100 to-indigo-50/60 rounded-2xl mb-6 sm:mb-8 w-full sm:w-fit ring-1 ring-black/5">
+//             <button
+//               onClick={() => setActiveTab("save")}
+//               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "save"
+//                 ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+//                 : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+//                 }`}
+//             >
+//               <UserPlus className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>Save Booking</span>
+//             </button>
+//             <button
+//               onClick={() => setActiveTab("all")}
+//               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "all"
+//                 ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+//                 : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+//                 }`}
+//             >
+//               <BookOpenCheck className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>All Bookings</span>
+//             </button>
+//             <button
+//               onClick={() => setActiveTab("user")}
+//               className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "user"
+//                 ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+//                 : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+//                 }`}
+//             >
+//               <Search className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>User Bookings</span>
+//             </button>
+//           </div>
+
+//           {!tourId && (
+//             <div className="text-center py-16 text-gray-400 text-sm">Select a tour above to continue.</div>
+//           )}
+
+//           {tourId && activeTab === "all" && (
+//             <AllBookingsTab
+//               getAadhaarBookings={getAadhaarBookings}
+//               extractAadhaar={extractAadhaar}
+//               addCoTravellerApi={addCoTravellerApi}
+//               uploadGroupPayment={uploadGroupPayment}
+//               deleteGroupPayment={deleteGroupPayment}
+//               uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+//               linkGroupTnr={linkGroupTnr}
+//               editAadhaarTraveller={editAadhaarTraveller}
+//               deleteAadhaarTraveller={deleteAadhaarTraveller}
+//               linkGuestTnr={linkGuestTnr}
+//               unlinkGuestTnr={unlinkGuestTnr}
+//               deleteBookingByTnr={deleteBookingByTnr}
+//               navigate={navigate}
+//               tourId={tourId}
+//               tourTitle={tourInfo?.title}
+//             />
+//           )}
+
+//           {tourId && activeTab === "user" && (
+//             <UserBookingsTab
+//               tourId={tourId}
+//               searchUserBookings={searchUserBookings}
+//               uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+//               uploadUserBookingPayment={uploadUserBookingPayment}
+//               deleteGroupPayment={deleteGroupPayment}
+//               extractAadhaar={extractAadhaar}
+//             />
+//           )}
+
+//           {tourId && activeTab === "save" && (
+//             <>
+//               {tourInfo && (
+//                 <>
+//                   <BookingWideSection
+//                     tourInfo={tourInfo}
+//                     packageSelection={packageSelection}
+//                     setPackageSelection={setPackageSelection}
+//                     boardingPoint={boardingPoint}
+//                     setBoardingPoint={setBoardingPoint}
+//                     deboardingPoint={deboardingPoint}
+//                     setDeboardingPoint={setDeboardingPoint}
+//                     selectedAddons={selectedAddons}
+//                     setSelectedAddons={setSelectedAddons}
+//                     remarks={remarks}
+//                     setRemarks={setRemarks}
+//                     staffList={staffList}
+//                     raisedByStaffId={raisedByStaffId}
+//                     setRaisedByStaffId={setRaisedByStaffId}
+//                   />
+
+//                   <TravellerCard
+//                     traveller={travellers[0]}
+//                     index={0}
+//                     isMain={true}
+//                     setTravellerFrontFile={setTravellerFrontFile}
+//                     setTravellerBackFile={setTravellerBackFile}
+//                     extractTravellerAadhaar={extractTravellerAadhaar}
+//                     clearTravellerAadhaar={clearTravellerAadhaar}
+//                     handleTravellerChange={handleTravellerChange}
+//                   />
+
+//                   {travellers.slice(1).map((t, i) => (
+//                     <TravellerCard
+//                       key={i + 1}
+//                       traveller={t}
+//                       index={i + 1}
+//                       isMain={false}
+//                       removeCoTraveller={removeCoTraveller}
+//                       setTravellerFrontFile={setTravellerFrontFile}
+//                       setTravellerBackFile={setTravellerBackFile}
+//                       extractTravellerAadhaar={extractTravellerAadhaar}
+//                       clearTravellerAadhaar={clearTravellerAadhaar}
+//                       handleTravellerChange={handleTravellerChange}
+//                     />
+//                   ))}
+
+//                   <button
+//                     onClick={addCoTraveller}
+//                     className="w-full flex items-center justify-center gap-2 px-5 py-3 mb-8 border-2 border-dashed border-indigo-300 text-indigo-700 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-all"
+//                   >
+//                     <PlusCircle className="w-4.5 h-4.5" />
+//                     Add Co-Traveller
+//                   </button>
+
+//                   <div className="mb-8">
+//                     <h3 className="flex items-center gap-2 font-bold text-gray-800 text-lg mb-4">
+//                       <IndianRupee className="w-6 h-6 text-indigo-600" /> Advance Payment Screenshot <span className="text-red-500">*</span>
+//                       <span className="text-xs font-normal text-gray-400">
+//                         (required to create this booking — OCR tries to read the amount automatically, type it in only if OCR misses)
+//                       </span>
+//                     </h3>
+//                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//                       {paymentSlots.map(({ type, label, cardClass }) => {
+//                         const uploaded = paymentScreenshots[type] || [];
+//                         const queue = paymentFiles[type] || [];
+//                         const amounts = paymentAmounts[type] || [];
+//                         const remarksQueue = paymentRemarks[type] || [];
+//                         const progress = paymentLoading[type];
+//                         return (
+//                           <div
+//                             key={type}
+//                             className={`min-w-0 w-full p-4 sm:p-5 rounded-2xl border shadow-sm ${uploaded.length > 0 ? "bg-green-50 border-green-300" : `${cardClass} border`}`}
+//                           >
+//                             <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3">
+//                               <FileImage className="w-5 h-5" /> {label}
+//                             </h4>
+
+//                             {uploaded.length > 0 && (
+//                               <div className="flex flex-col gap-1 mb-3">
+//                                 {uploaded.map((u, i) => (
+//                                   <button
+//                                     type="button"
+//                                     key={i}
+//                                     onClick={() =>
+//                                       setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))
+//                                     }
+//                                     className="flex items-center gap-2 text-sm text-green-700 font-medium hover:underline text-left"
+//                                   >
+//                                     <CheckCircle2 className="w-4 h-4 shrink-0" /> #{i + 1}
+//                                     {u.amount ? ` — ₹${u.amount}` : " — amount not entered"}
+//                                     {u.remarks ? ` — ${u.remarks}` : ""}
+//                                   </button>
+//                                 ))}
+//                               </div>
+//                             )}
+//                             <ScreenshotViewer
+//                               items={uploaded}
+//                               index={paymentViewerIndex[type] ?? null}
+//                               onClose={() => setPaymentViewerIndex((prev) => ({ ...prev, [type]: null }))}
+//                               onNav={(i) => setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))}
+//                             />
+
+//                             {queue.length > 0 && (
+//                               <div className="flex flex-col gap-1.5 mb-2.5">
+//                                 {queue.map((f, i) => (
+//                                   <div key={i} className="flex flex-col gap-1.5 p-2 bg-white border border-gray-200 rounded-lg">
+//                                     <div className="flex items-center gap-1.5">
+//                                       <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-1 py-1">
+//                                         <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+//                                         <span className="truncate">{f.name}</span>
+//                                       </div>
+//                                       <button
+//                                         type="button"
+//                                         onClick={() => {
+//                                           setPaymentFiles((prev) => ({
+//                                             ...prev,
+//                                             [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+//                                           }));
+//                                           setPaymentAmounts((prev) => ({
+//                                             ...prev,
+//                                             [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+//                                           }));
+//                                           setPaymentRemarks((prev) => ({
+//                                             ...prev,
+//                                             [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+//                                           }));
+//                                         }}
+//                                         disabled={!!progress}
+//                                         title="Remove from queue"
+//                                         className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors"
+//                                       >
+//                                         <X className="w-3.5 h-3.5" />
+//                                       </button>
+//                                     </div>
+//                                     <input
+//                                       type="number"
+//                                       placeholder="₹ (optional — OCR tries first)"
+//                                       value={amounts[i] || ""}
+//                                       onChange={(e) =>
+//                                         setPaymentAmounts((prev) => ({
+//                                           ...prev,
+//                                           [type]: (prev[type] || []).map((a, idx) => (idx === i ? e.target.value : a)),
+//                                         }))
+//                                       }
+//                                       disabled={!!progress}
+//                                       className="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+//                                     />
+//                                     <input
+//                                       type="text"
+//                                       placeholder="Bank (e.g. SBI)"
+//                                       value={remarksQueue[i] || ""}
+//                                       onChange={(e) =>
+//                                         setPaymentRemarks((prev) => ({
+//                                           ...prev,
+//                                           [type]: (prev[type] || []).map((r, idx) => (idx === i ? e.target.value : r)),
+//                                         }))
+//                                       }
+//                                       disabled={!!progress}
+//                                       className="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+//                                     />
+//                                   </div>
+//                                 ))}
+//                               </div>
+//                             )}
+
+//                             <label className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg px-3 py-3 mb-2.5 cursor-pointer hover:border-indigo-400">
+//                               <Upload className="w-3.5 h-3.5" />
+//                               {queue.length > 0 ? "Add more screenshot(s)" : "Choose screenshot(s)"}
+//                               <input
+//                                 type="file"
+//                                 accept="image/*,application/pdf"
+//                                 multiple
+//                                 className="hidden"
+//                                 onChange={(e) => {
+//                                   const files = Array.from(e.target.files || []);
+//                                   if (!files.length) return;
+//                                   setPaymentFiles((prev) => ({ ...prev, [type]: [...(prev[type] || []), ...files] }));
+//                                   setPaymentAmounts((prev) => ({
+//                                     ...prev,
+//                                     [type]: [...(prev[type] || []), ...files.map(() => "")],
+//                                   }));
+//                                   setPaymentRemarks((prev) => ({
+//                                     ...prev,
+//                                     [type]: [...(prev[type] || []), ...files.map(() => "")],
+//                                   }));
+//                                   e.target.value = "";
+//                                 }}
+//                               />
+//                             </label>
+
+//                             {queue.length > 0 && (
+//                               <button
+//                                 onClick={() => handlePaymentUpload(type)}
+//                                 disabled={!!progress}
+//                                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-semibold transition-colors"
+//                               >
+//                                 {progress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+//                                 {progress
+//                                   ? `Uploading ${progress.current} of ${progress.total}...`
+//                                   : `Upload ${queue.length > 1 ? `All (${queue.length})` : ""}`}
+//                               </button>
+//                             )}
+//                           </div>
+//                         );
+//                       })}
+//                     </div>
+//                   </div>
+
+//                   <button
+//                     onClick={handleSaveBooking}
+//                     disabled={saving}
+//                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-700 to-indigo-600 hover:from-indigo-800 hover:to-indigo-700 disabled:opacity-60 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all"
+//                   >
+//                     {saving ? (
+//                       <>
+//                         <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+//                       </>
+//                     ) : (
+//                       <>
+//                         Save Booking <ArrowRight className="w-5 h-5" />
+//                       </>
+//                     )}
+//                   </button>
+//                 </>
+//               )}
+//             </>
+//           )}
+//         </div>
 //       </div>
 //     </div>
 //   );
@@ -6944,6 +6614,7 @@ import {
   NotebookPen,
   ArrowRight,
   Users,
+  Clock,
   IdCard,
   PlusCircle,
   ChevronDown,
@@ -6966,12 +6637,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Small copy-to-clipboard icon for a TNR shown next to it anywhere on this
-// page — the admin reads a lot of TNRs off this page to paste elsewhere
-// (WhatsApp, search boxes, etc.), so a click-to-copy beats select-and-copy
-// by hand every time. stopPropagation matters here: every place this sits
-// is itself inside a bigger clickable row (expand/collapse), so without it
-// a copy click would also toggle that row.
+// Click-to-copy TNR. stopPropagation so it never toggles the parent row.
 const CopyTnrButton = ({ tnr, className = "" }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = async (e) => {
@@ -6997,11 +6663,7 @@ const CopyTnrButton = ({ tnr, className = "" }) => {
   );
 };
 
-// Three-state traveller badge: a pending cancellation request, one the
-// admin rejected (traveller stays active/bookable), or one actually
-// approved/cancelled — backend (getAadhaarBookings) already resolves
-// which of the three a traveller is in, this just renders it. Nothing
-// shown for an active traveller (status is null).
+// Three-state traveller cancellation badge (resolved by the backend).
 const CANCEL_STATUS = {
   request: { label: "Cancellation Requested", className: "bg-amber-100 text-amber-700 border border-amber-200" },
   rejected: { label: "Cancellation Rejected", className: "bg-gray-100 text-gray-600 border border-gray-300" },
@@ -7017,10 +6679,7 @@ const CancelStatusBadge = ({ status }) => {
   );
 };
 
-// One-at-a-time image viewer for a list of payment screenshots — clicking
-// any uploaded item (Advance/Balance/Partial, however many there are)
-// opens this instead of a raw new-tab link, with Prev/Next to step through
-// every screenshot in that list one by one without leaving the page.
+// One-at-a-time payment screenshot viewer with Prev/Next.
 const ScreenshotViewer = ({ items, index, onClose, onNav }) => {
   if (index === null || index === undefined || !items?.[index]) return null;
   const item = items[index];
@@ -7072,9 +6731,7 @@ const ScreenshotViewer = ({ items, index, onClose, onNav }) => {
   );
 };
 
-// stationCode is NOT guaranteed unique within a tour's boardingPoints /
-// deboardingPoints array — match by each point's own _id (same fix as
-// TourBooking.jsx / CreateBooking.jsx).
+// Match boarding/deboarding points by their own _id (stationCode isn't unique).
 const getPointId = (point) => {
   if (!point) return "";
   const raw = point._id;
@@ -7082,10 +6739,7 @@ const getPointId = (point) => {
   return raw !== undefined && raw !== null ? String(raw) : "";
 };
 
-// Traveller shape now holds ONLY person-level fields — identity + sharing +
-// Aadhaar. Package Type, Boarding/Deboarding Point, Add-ons and Remarks are
-// BOOKING-wide (set once, fetched from the selected tour's own data below —
-// not typed free-text).
+// Person-level fields only — package/boarding/addons/remarks are booking-wide.
 const blankTraveller = (isMain) => ({
   title: "Mr",
   firstName: "",
@@ -7093,12 +6747,6 @@ const blankTraveller = (isMain) => ({
   age: "",
   gender: "Male",
   sharingType: "",
-  // Address/Mobile — same fields for main AND co-travellers. OCR fills
-  // these when it can; the admin can always edit/correct them here.
-  // `address` stays as the one combined OCR'd line (kept so older code
-  // paths and the booking card's view mode still have something to show);
-  // the split fields below are what the form itself edits — Country is
-  // always "India" and isn't a stored field, just a fixed label.
   phone: "",
   address: "",
   addressLine1: "",
@@ -7107,27 +6755,17 @@ const blankTraveller = (isMain) => ({
   state: "",
   pincode: "",
   isCoTraveller: !isMain,
-  // Aadhaar OCR
   front: null,
   back: null,
   ocrLoading: false,
   _frontFile: null,
   _backFile: null,
-  source: "aadhaar", // "aadhaar" | "manual" — co-travellers can switch to manual
+  source: "aadhaar", // "aadhaar" | "manual"
 });
 
-// ───────────────────────── Booking-wide section (Package / Boarding / Deboarding / Add-ons / Remarks) ─────────────────────────
-// IMPORTANT: defined OUTSIDE AadhaarUpload (module scope), not as a function
-// created fresh on every render. A component defined INSIDE a parent's
-// render body gets a brand-new identity every re-render, so React unmounts
-// and remounts the whole subtree on every keystroke — every input loses
-// focus and the cursor jumps out after each character. Keeping it at
-// module scope with plain props fixes that.
-//
-// Package Type / Boarding Point / Deboarding Point / Add-ons are now
-// fetched from the selected tour's own data (tourInfo) via dropdowns —
-// not typed free-text — so what the admin picks here actually matches a
-// real package/boarding/deboarding/addon on that tour.
+// ───────────── Booking-wide section ─────────────
+// Module scope (not inside AadhaarUpload) so inputs don't lose focus on
+// every keystroke.
 const BookingWideSection = ({
   tourInfo,
   packageSelection,
@@ -7157,9 +6795,6 @@ const BookingWideSection = ({
     .map((flight, flightIndex) => ({ flight, flightIndex }))
     .filter(({ flight }) => Array.isArray(flight.addons) && flight.addons.length > 0);
 
-  // Train/flight-wise addon selection — SAME pattern CreateBooking.jsx
-  // uses per traveller, promoted to booking-wide here (one selection
-  // applied to the whole booking instead of per traveller).
   const handleAddonChange = (trainIndex, addonId) => {
     const train = trainDetails[trainIndex];
     if (!train) return;
@@ -7231,7 +6866,7 @@ const BookingWideSection = ({
       </div>
 
       <div className="p-5 sm:p-6">
-        <div className="grid md:grid-cols-3 gap-4 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
               <Package className="w-3.5 h-3.5 text-sky-600" /> Package Type
@@ -7364,10 +6999,6 @@ const BookingWideSection = ({
         )}
 
         <div className="mt-5 pt-5 border-t border-sky-200/70">
-          {/* Who's actually saving this booking — picked from the
-              Staff-Profile directory (not typed), so every booking's All
-              Bookings card can show "Raised by: <name>" instead of a
-              generic "admin" tag. Required so it's never silently blank. */}
           <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
             <UserCheck className="w-3.5 h-3.5 text-sky-600" /> Raised By (who is saving this booking?) *
           </label>
@@ -7399,8 +7030,7 @@ const BookingWideSection = ({
   );
 };
 
-// ───────────────────────── Per-person traveller card (identity + sharing + Aadhaar) ─────────────────────────
-// Also module-scope for the same reason as BookingWideSection above.
+// ───────────── Per-person traveller card ─────────────
 const TravellerCard = ({
   traveller,
   index,
@@ -7412,10 +7042,6 @@ const TravellerCard = ({
   clearTravellerAadhaar,
   handleTravellerChange,
 }) => {
-  // Lets the "clear chosen file" buttons below actually reset what the
-  // native <input type="file"> displays (browsers won't blank that text
-  // just because React state changes — the input's own .value has to be
-  // reset directly).
   const frontInputRef = useRef(null);
   const backInputRef = useRef(null);
   const [showRawText, setShowRawText] = useState(false);
@@ -7429,12 +7055,8 @@ const TravellerCard = ({
     setTravellerBackFile(index, null);
   };
 
-  // One cross mark, one place, for the whole lifecycle of this image:
-  // before extraction it just clears the chosen file; after extraction
-  // (traveller.front/back is set) it also wipes the OCR'd result so the
-  // admin can redo it with the right image. Either way the button stays
-  // put next to "Choose File" instead of disappearing after Extract and
-  // reappearing somewhere else.
+  // One cross mark for the whole lifecycle — clears the picker, and the
+  // OCR'd result too if already extracted.
   const clearFront = () => {
     clearChosenFront();
     if (traveller.front) clearTravellerAadhaar(index);
@@ -7445,355 +7067,324 @@ const TravellerCard = ({
   };
 
   return (
-  <div
-    className={`mb-6 rounded-2xl border shadow-sm overflow-hidden ${
-      isMain ? "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/50" : "border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/50"
-    }`}
-  >
     <div
-      className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b bg-white/60 ${
-        isMain ? "border-indigo-200/70" : "border-purple-200/70"
-      }`}
+      className={`mb-6 rounded-2xl border shadow-sm overflow-hidden ${isMain ? "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/50" : "border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/50"
+        }`}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className={`w-10 h-10 rounded-xl text-white flex items-center justify-center shadow-sm ${
-            isMain ? "bg-indigo-600" : "bg-purple-600"
+      <div
+        className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b bg-white/60 ${isMain ? "border-indigo-200/70" : "border-purple-200/70"
           }`}
-        >
-          {isMain ? <IdCard className="w-5 h-5" /> : <Users className="w-5 h-5" />}
-        </div>
-        <div>
-          <p className="font-bold text-gray-800 leading-tight">
-            {isMain ? "Main Traveller" : `Co-Traveller ${index}`}
-          </p>
-          {!isMain && (
-            <p className="text-xs text-gray-500">
-              {traveller.source === "aadhaar" ? "Via Aadhaar OCR" : "Manual entry"}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-10 h-10 rounded-xl text-white flex items-center justify-center shadow-sm ${isMain ? "bg-indigo-600" : "bg-purple-600"
+              }`}
+          >
+            {isMain ? <IdCard className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+          </div>
+          <div>
+            <p className="font-bold text-gray-800 leading-tight">
+              {isMain ? "Main Traveller" : `Co-Traveller ${index}`}
             </p>
-          )}
+            {!isMain && (
+              <p className="text-xs text-gray-500">
+                {traveller.source === "aadhaar" ? "Via Aadhaar OCR" : "Manual entry"}
+              </p>
+            )}
+          </div>
         </div>
+        {!isMain && (
+          <button
+            onClick={() => removeCoTraveller(index)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+            title="Remove co-traveller"
+          >
+            <Trash2 className="w-4.5 h-4.5" />
+          </button>
+        )}
       </div>
-      {!isMain && (
-        <button
-          onClick={() => removeCoTraveller(index)}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
-          title="Remove co-traveller"
-        >
-          <Trash2 className="w-4.5 h-4.5" />
-        </button>
-      )}
-    </div>
 
-    <div className="p-5 sm:p-6">
-      {/* Aadhaar upload — skippable for manual co-travellers */}
-      {traveller.source === "aadhaar" && (
-        <div className="p-4 bg-white rounded-xl border border-dashed border-gray-300 mb-5">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Aadhaar Front {isMain ? "(required)" : ""}
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  ref={frontInputRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setTravellerFrontFile(index, e.target.files?.[0] || null)}
-                  className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
-                />
-                {/* Same cross mark whether a file is just chosen (clears
-                    the picker) or already extracted (also wipes the OCR'd
-                    result) — stays in this one spot either way, never
-                    hides after Extract. */}
-                {(traveller._frontFile || traveller.front) && (
-                  <button
-                    type="button"
-                    onClick={clearFront}
-                    className="shrink-0 text-gray-400 hover:text-red-600"
-                    title={traveller.front ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-            {isMain && (
+      <div className="p-5 sm:p-6">
+        {traveller.source === "aadhaar" && (
+          <div className="p-4 bg-white rounded-xl border border-dashed border-gray-300 mb-5">
+            <div className="flex flex-wrap items-end gap-3">
               <div className="flex-1 min-w-[160px]">
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Back (optional)</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Aadhaar Front {isMain ? "(required)" : ""}
+                </label>
                 <div className="flex items-center gap-2">
                   <input
-                    ref={backInputRef}
+                    ref={frontInputRef}
                     type="file"
                     accept="image/*,application/pdf"
-                    onChange={(e) => setTravellerBackFile(index, e.target.files?.[0] || null)}
+                    onChange={(e) => setTravellerFrontFile(index, e.target.files?.[0] || null)}
                     className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
                   />
-                  {(traveller._backFile || traveller.back) && (
+                  {(traveller._frontFile || traveller.front) && (
                     <button
                       type="button"
-                      onClick={clearBack}
+                      onClick={clearFront}
                       className="shrink-0 text-gray-400 hover:text-red-600"
-                      title={traveller.back ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
+                      title={traveller.front ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
                     >
                       <XCircle className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               </div>
-            )}
-            <button
-              onClick={() => extractTravellerAadhaar(index)}
-              disabled={traveller.ocrLoading || !traveller._frontFile}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-bold text-sm shadow-sm transition-colors"
-            >
-              {traveller.ocrLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Reading...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" /> Extract Aadhaar
-                </>
+              {isMain && (
+                <div className="flex-1 min-w-[160px]">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Back (optional)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={backInputRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => setTravellerBackFile(index, e.target.files?.[0] || null)}
+                      className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
+                    />
+                    {(traveller._backFile || traveller.back) && (
+                      <button
+                        type="button"
+                        onClick={clearBack}
+                        className="shrink-0 text-gray-400 hover:text-red-600"
+                        title={traveller.back ? "Remove this Aadhaar and redo it" : "Clear chosen file"}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
-            </button>
-            {!isMain && (
               <button
-                onClick={() => handleTravellerChange(index, "source", "manual")}
-                className="px-4 py-2.5 text-sm font-semibold text-purple-700 border border-purple-300 rounded-xl hover:bg-purple-50 transition-colors"
+                onClick={() => extractTravellerAadhaar(index)}
+                disabled={traveller.ocrLoading || !traveller._frontFile}
+                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-bold text-sm shadow-sm transition-colors"
               >
-                Switch to Manual
+                {traveller.ocrLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Reading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" /> Extract Aadhaar
+                  </>
+                )}
               </button>
-            )}
-          </div>
-          {traveller.front && (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
-                <CheckCircle2 className="w-4 h-4" />
-                Aadhaar front {traveller.back ? "+ back " : ""}read
-              </span>
-              <a
-                href={traveller.front?.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
-              >
-                View Front
-              </a>
-              {traveller.back && (
+              {!isMain && (
+                <button
+                  onClick={() => handleTravellerChange(index, "source", "manual")}
+                  className="px-4 py-2.5 text-sm font-semibold text-purple-700 border border-purple-300 rounded-xl hover:bg-purple-50 transition-colors"
+                >
+                  Switch to Manual
+                </button>
+              )}
+            </div>
+            {traveller.front && (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Aadhaar front {traveller.back ? "+ back " : ""}read
+                </span>
                 <a
-                  href={traveller.back?.url}
+                  href={traveller.front?.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
                 >
-                  View Back
+                  View Front
                 </a>
-              )}
-              {/* The cross mark next to "Choose File" above already covers
-                  Remove now (it stays in the same place before AND after
-                  extraction) — no separate Remove button here anymore, so
-                  there's only one clear button to look for, not two. */}
-              {/* If the name/age (or address) came out wrong, this shows
-                  exactly what Tesseract actually read off the image — no
-                  need to open the browser console to check. The address
-                  only ever comes off the BACK side, so both are shown
-                  separately, labeled, whenever a back side exists. */}
-              {(traveller.front?.ocrText || traveller.back?.ocrText) && (
-                <button
-                  type="button"
-                  onClick={() => setShowRawText((v) => !v)}
-                  className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600"
-                >
-                  {showRawText ? "Hide" : "Show"} raw text read
-                </button>
-              )}
-            </div>
-          )}
-          {showRawText && traveller.front?.ocrText && (
-            <div className="mt-2">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Front</p>
-              <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
-                {traveller.front.ocrText}
-              </pre>
-            </div>
-          )}
-          {showRawText && traveller.back?.ocrText && (
-            <div className="mt-2">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Back (address comes from here)</p>
-              <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
-                {traveller.back.ocrText}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
+                {traveller.back && (
+                  <a
+                    href={traveller.back?.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+                  >
+                    View Back
+                  </a>
+                )}
+                {(traveller.front?.ocrText || traveller.back?.ocrText) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowRawText((v) => !v)}
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600"
+                  >
+                    {showRawText ? "Hide" : "Show"} raw text read
+                  </button>
+                )}
+              </div>
+            )}
+            {showRawText && traveller.front?.ocrText && (
+              <div className="mt-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Front</p>
+                <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                  {traveller.front.ocrText}
+                </pre>
+              </div>
+            )}
+            {showRawText && traveller.back?.ocrText && (
+              <div className="mt-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Back (address comes from here)</p>
+                <pre className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-[11px] text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                  {traveller.back.ocrText}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Basic identity fields */}
-      <div className="grid md:grid-cols-4 gap-4 mb-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Title</label>
-          <select
-            value={traveller.title}
-            onChange={(e) => handleTravellerChange(index, "title", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-          >
-            <option>Mr</option>
-            <option>Mrs</option>
-            <option>Ms</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
-          <input
-            type="text"
-            value={traveller.firstName}
-            onChange={(e) => handleTravellerChange(index, "firstName", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
-          <input
-            type="text"
-            value={traveller.lastName}
-            onChange={(e) => handleTravellerChange(index, "lastName", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Age</label>
-          <input
-            type="number"
-            value={traveller.age}
-            onChange={(e) => handleTravellerChange(index, "age", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-          />
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender</label>
-          <select
-            value={traveller.gender}
-            onChange={(e) => handleTravellerChange(index, "gender", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-          >
-            <option>Male</option>
-            <option>Female</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sharing Type</label>
-          <select
-            value={traveller.sharingType}
-            onChange={(e) => handleTravellerChange(index, "sharingType", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-          >
-            <option value="">Select Sharing</option>
-            {Number(traveller.age) >= 11 ? (
-              <>
-                <option value="double">Double Sharing</option>
-                <option value="triple">Triple Sharing</option>
-              </>
-            ) : Number(traveller.age) >= 6 && Number(traveller.age) <= 10 ? (
-              <>
-                <option value="withBerth">Child with Berth</option>
-                <option value="withoutBerth">Child without Berth</option>
-              </>
-            ) : null}
-          </select>
-        </div>
-      </div>
-
-      {/* Mobile Number / Address — MAIN TRAVELLER ONLY. Only the main
-          traveller's phone/address are used anywhere (as the booking's
-          contact number / billing address) — co-travellers don't need
-          these fields at all. */}
-      {isMain && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
-              <Phone className="w-3.5 h-3.5 text-indigo-500" /> Mobile Number
-            </label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Title</label>
+            <select
+              value={traveller.title}
+              onChange={(e) => handleTravellerChange(index, "title", e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+            >
+              <option>Mr</option>
+              <option>Mrs</option>
+              <option>Ms</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
             <input
-              type="tel"
-              value={traveller.phone}
-              onChange={(e) => handleTravellerChange(index, "phone", e.target.value)}
-              placeholder="e.g. 9876543210"
+              type="text"
+              value={traveller.firstName}
+              onChange={(e) => handleTravellerChange(index, "firstName", e.target.value)}
               className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
             />
           </div>
-
-          {/* Address — split into the fields below (OCR fills them, admin
-              can correct each one on its own instead of editing one long
-              blob). `address` (the one combined line) is still kept
-              alongside, in sync, for older code that still reads it. */}
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
-              <Home className="w-3.5 h-3.5 text-indigo-500" /> Address
-            </label>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={traveller.addressLine1}
-                onChange={(e) => handleTravellerChange(index, "addressLine1", e.target.value)}
-                placeholder="Address Line 1"
-                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-              />
-              <input
-                type="text"
-                value={traveller.addressLine2}
-                onChange={(e) => handleTravellerChange(index, "addressLine2", e.target.value)}
-                placeholder="Address Line 2"
-                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-              />
-              <input
-                type="text"
-                value={traveller.city}
-                onChange={(e) => handleTravellerChange(index, "city", e.target.value)}
-                placeholder="City"
-                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-              />
-              <input
-                type="text"
-                value={traveller.state}
-                onChange={(e) => handleTravellerChange(index, "state", e.target.value)}
-                placeholder="State"
-                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-              />
-              <input
-                type="text"
-                value={traveller.pincode}
-                onChange={(e) => handleTravellerChange(index, "pincode", e.target.value)}
-                placeholder="Pincode"
-                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
-              />
-              <input
-                type="text"
-                value="India"
-                readOnly
-                disabled
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm text-gray-500 cursor-not-allowed"
-              />
-            </div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
+            <input
+              type="text"
+              value={traveller.lastName}
+              onChange={(e) => handleTravellerChange(index, "lastName", e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Age</label>
+            <input
+              type="number"
+              value={traveller.age}
+              onChange={(e) => handleTravellerChange(index, "age", e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+            />
           </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender</label>
+            <select
+              value={traveller.gender}
+              onChange={(e) => handleTravellerChange(index, "gender", e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+            >
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sharing Type</label>
+            <select
+              value={traveller.sharingType}
+              onChange={(e) => handleTravellerChange(index, "sharingType", e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+            >
+              <option value="">Select Sharing</option>
+              {Number(traveller.age) >= 11 ? (
+                <>
+                  <option value="double">Double Sharing</option>
+                  <option value="triple">Triple Sharing</option>
+                </>
+              ) : Number(traveller.age) >= 6 && Number(traveller.age) <= 10 ? (
+                <>
+                  <option value="withBerth">Child with Berth</option>
+                  <option value="withoutBerth">Child without Berth</option>
+                </>
+              ) : null}
+            </select>
+          </div>
+        </div>
+
+        {/* Mobile / Address — main traveller only. */}
+        {isMain && (
+          <div className="space-y-4">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
+                <Phone className="w-3.5 h-3.5 text-indigo-500" /> Mobile Number
+              </label>
+              <input
+                type="tel"
+                value={traveller.phone}
+                onChange={(e) => handleTravellerChange(index, "phone", e.target.value)}
+                placeholder="e.g. 9876543210"
+                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
+                <Home className="w-3.5 h-3.5 text-indigo-500" /> Address
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={traveller.addressLine1}
+                  onChange={(e) => handleTravellerChange(index, "addressLine1", e.target.value)}
+                  placeholder="Address Line 1"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+                />
+                <input
+                  type="text"
+                  value={traveller.addressLine2}
+                  onChange={(e) => handleTravellerChange(index, "addressLine2", e.target.value)}
+                  placeholder="Address Line 2"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+                />
+                <input
+                  type="text"
+                  value={traveller.city}
+                  onChange={(e) => handleTravellerChange(index, "city", e.target.value)}
+                  placeholder="City"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+                />
+                <input
+                  type="text"
+                  value={traveller.state}
+                  onChange={(e) => handleTravellerChange(index, "state", e.target.value)}
+                  placeholder="State"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+                />
+                <input
+                  type="text"
+                  value={traveller.pincode}
+                  onChange={(e) => handleTravellerChange(index, "pincode", e.target.value)}
+                  placeholder="Pincode"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+                />
+                <input
+                  type="text"
+                  value="India"
+                  readOnly
+                  disabled
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm text-gray-500 cursor-not-allowed"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  </div>
   );
 };
 
-// ───────────────────────── All Bookings tab ─────────────────────────
-// Everything saved from Tab 1 (one card per groupId): view Aadhaar +
-// advance screenshot, upload Balance/Partial Balance (repeatable), add
-// more co-travellers (Aadhaar front only — saved to the server right
-// away, unlike Tab 1 where it waits for Save), and either "Create
-// Booking" (navigates to the existing, untouched CreateBooking.jsx) or,
-// once a tnr has been linked, "Raise Manage Booking" per co-traveller.
+// ───────────── All Bookings tab ─────────────
 const PAYMENT_TYPES = [
   { type: "advance", label: "Advance" },
   { type: "balance", label: "Balance" },
@@ -7801,17 +7392,15 @@ const PAYMENT_TYPES = [
 ];
 
 const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, deleteGroupPayment, refresh }) => {
-  // queue holds files picked together but not yet uploaded, queueAmounts
-  // the (optional) amount typed against each one, same index. "Upload All"
-  // then sends them to the backend ONE AT A TIME in order (not in
-  // parallel) so each screenshot lands as its own doc — the admin picks
-  // several together but doesn't have to click Upload once per file.
   const [queue, setQueue] = useState([]);
   const [queueAmounts, setQueueAmounts] = useState([]);
+  const [queueRemarks, setQueueRemarks] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null); // { current, total }
   const [deletingId, setDeletingId] = useState(null);
   const [viewerIndex, setViewerIndex] = useState(null);
+  // Synchronous double-click guard.
+  const uploadingRef = useRef(false);
 
   const handleDelete = async (docId) => {
     if (!window.confirm(`Delete this ${label} screenshot? This can't be undone.`)) return;
@@ -7832,15 +7421,14 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
   const handleRemoveQueued = (idx) => {
     setQueue((prev) => prev.filter((_, i) => i !== idx));
     setQueueAmounts((prev) => prev.filter((_, i) => i !== idx));
+    setQueueRemarks((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const uploadOne = async (file, amount) => {
+  const uploadOne = async (file, amount, remarks) => {
     const formData = new FormData();
     formData.append("screenshot", file);
-    // A genuine walk-in group has a real groupId; a booking merged in
-    // straight from tourBookingModel only carries a synthetic
-    // "real-<id>" placeholder (so React has a key) — send its tnr
-    // instead so the backend can key the upload correctly either way.
+    // Real walk-in group → groupId; booking merged from tourBookingModel
+    // ("real-<id>" placeholder) → tnr.
     if (groupId && !String(groupId).startsWith("real-")) {
       formData.append("groupId", groupId);
     } else if (tnr) {
@@ -7848,6 +7436,7 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
     }
     formData.append("type", type);
     if (amount) formData.append("amount", amount);
+    if (remarks?.trim()) formData.append("remarks", remarks.trim());
     return uploadGroupPayment(formData);
   };
 
@@ -7858,12 +7447,14 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
       }
     }
+    if (uploadingRef.current) return;
+    uploadingRef.current = true;
     setUploading(true);
     let successCount = 0;
     for (let i = 0; i < queue.length; i++) {
       setUploadProgress({ current: i + 1, total: queue.length });
       try {
-        const result = await uploadOne(queue[i], queueAmounts[i]);
+        const result = await uploadOne(queue[i], queueAmounts[i], queueRemarks[i]);
         if (result?.success) successCount += 1;
       } catch (err) {
         console.error("uploadGroupPayment error:", err);
@@ -7873,6 +7464,8 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
     setUploadProgress(null);
     setQueue([]);
     setQueueAmounts([]);
+    setQueueRemarks([]);
+    uploadingRef.current = false;
     if (successCount > 0) {
       toast.success(`${successCount} ${label} screenshot${successCount > 1 ? "s" : ""} uploaded`);
     }
@@ -7883,7 +7476,7 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
   };
 
   return (
-    <div className="p-4 rounded-xl border border-[#DEE2E8] bg-[#F7F8FA]/60">
+    <div className="min-w-0 w-full p-3 sm:p-4 rounded-xl border border-[#DEE2E8] bg-[#F7F8FA]/60">
       <h5 className="flex items-center gap-1.5 font-bold text-gray-700 text-sm mb-2.5">
         <FileImage className="w-4 h-4" /> {label}
       </h5>
@@ -7895,9 +7488,6 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
               key={item._id || i}
               className="relative flex items-start gap-1 text-xs font-semibold text-[#235F47] bg-[#EDF6F1] border border-[#B6DFC8] rounded-lg pl-2.5 pr-1.5 py-1.5 hover:bg-[#D7EEE0]"
             >
-              {/* Opens the one-at-a-time viewer instead of a raw new-tab
-                  link, so several screenshots can be stepped through
-                  (Prev/Next) without leaving the page. */}
               <button
                 type="button"
                 onClick={() => setViewerIndex(i)}
@@ -7918,6 +7508,9 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
                       minute: "2-digit",
                     })}
                   </span>
+                )}
+                {item.remarks && (
+                  <span className="font-normal text-[#2E7D5E] italic">{item.remarks}</span>
                 )}
               </button>
               {item._id && deleteGroupPayment && (
@@ -7950,10 +7543,21 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
       {queue.length > 0 && (
         <div className="flex flex-col gap-1.5 mb-2">
           {queue.map((f, i) => (
-            <div key={i} className="flex items-center gap-1.5">
-              <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white border border-[#DEE2E8] rounded-lg px-2.5 py-2 truncate">
-                <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                {f.name}
+            <div key={i} className="flex flex-col gap-1.5 p-2 bg-white border border-[#DEE2E8] rounded-lg">
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-1 py-1">
+                  <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                  <span className="truncate">{f.name}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveQueued(i)}
+                  disabled={uploading}
+                  title="Remove from queue"
+                  className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-[#B23B3B] hover:bg-[#FBEEEE] disabled:opacity-40 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
               <input
                 type="number"
@@ -7963,17 +7567,22 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
                   setQueueAmounts((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
                 }
                 disabled={uploading}
-                className="w-20 sm:w-28 shrink-0 px-2 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
+                className="w-full px-2.5 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
               />
-              <button
-                type="button"
-                onClick={() => handleRemoveQueued(i)}
+              <input
+                type="text"
+                placeholder="Bank (e.g. SBI)"
+                value={queueRemarks[i] || ""}
+                onChange={(e) =>
+                  setQueueRemarks((prev) => {
+                    const next = [...prev];
+                    next[i] = e.target.value;
+                    return next;
+                  })
+                }
                 disabled={uploading}
-                title="Remove from queue"
-                className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-[#B23B3B] hover:bg-[#FBEEEE] disabled:opacity-40 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+                className="w-full px-2.5 py-2 bg-white border border-[#DEE2E8] rounded-lg text-xs focus:border-[#5C84B3] focus:ring-2 focus:ring-[#DCE6F2] outline-none transition-all"
+              />
             </div>
           ))}
         </div>
@@ -7992,6 +7601,7 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
             if (!files.length) return;
             setQueue((prev) => [...prev, ...files]);
             setQueueAmounts((prev) => [...prev, ...files.map(() => "")]);
+            setQueueRemarks((prev) => [...prev, ...files.map(() => "")]);
             e.target.value = "";
           }}
         />
@@ -8013,9 +7623,6 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
   );
 };
 
-// Friendly labels for the raw sharingType values stored on each traveller
-// (set in TravellerCard's Sharing Type dropdown) — shown as a small badge
-// next to Main Traveller / each Co-Traveller instead of the raw code.
 const SHARING_LABELS = {
   double: "Double Sharing",
   triple: "Triple Sharing",
@@ -8023,18 +7630,10 @@ const SHARING_LABELS = {
   withoutBerth: "Child w/o Berth",
 };
 
-// Inline edit form for a Main Traveller or Co-Traveller already captured
-// on the All Bookings page — fixing OCR mistakes after the fact, not a
-// new extraction (addCoTraveller's OCR-only rule is untouched). Shared by
-// both so the two stay visually/behaviourally identical; `accent` just
-// swaps the color so it still reads as "this card" vs "that card".
+// Inline edit form for an already-captured traveller.
 const TravellerEditForm = ({ draft, setDraft, onSave, onCancel, saving, accent = "indigo" }) => {
   if (!draft) return null;
   const update = (field, value) => setDraft((prev) => ({ ...prev, [field]: value }));
-  // Address Line1/2/City/State/Pincode each update their own field AND keep
-  // the one combined `address` line in sync (same reasoning as the Save
-  // Booking form's handleTravellerChange) — older code and the All
-  // Bookings view still read `address` as one line.
   const updateAddressField = (field, value) =>
     setDraft((prev) => {
       const next = { ...prev, [field]: value };
@@ -8047,7 +7646,7 @@ const TravellerEditForm = ({ draft, setDraft, onSave, onCancel, saving, accent =
   const btn = accent === "purple" ? "bg-[#B07D2B] hover:bg-[#8C6220]" : "bg-[#2A5490] hover:bg-[#1F3F6E]";
   return (
     <div className={`rounded-xl border-2 p-3 sm:p-4 ${ring}`}>
-      <div className="grid sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600">Title</label>
           <select
@@ -8088,7 +7687,7 @@ const TravellerEditForm = ({ draft, setDraft, onSave, onCancel, saving, accent =
           />
         </div>
       </div>
-      <div className="grid sm:grid-cols-4 gap-3 mt-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-3">
         <div>
           <label className="block text-xs font-medium text-gray-600">Gender</label>
           <select
@@ -8127,7 +7726,7 @@ const TravellerEditForm = ({ draft, setDraft, onSave, onCancel, saving, accent =
       </div>
       <div className="mt-3">
         <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
-        <div className="grid sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <input
             type="text"
             value={draft.addressLine1 || ""}
@@ -8216,9 +7815,7 @@ const BookingCard = ({
   const [ctFile, setCtFile] = useState(null);
   const [ctExtracting, setCtExtracting] = useState(false);
   const [ctSaving, setCtSaving] = useState(false);
-  // Holds the OCR'd + editable fields between "Extract Aadhaar" and "Add
-  // Co-Traveller" — same two-step shape as the main booking form's
-  // TravellerCard, instead of extracting and saving in one blind click.
+  const ctSavingRef = useRef(false); // synchronous double-click guard
   const [ctDraft, setCtDraft] = useState(null);
   const ctInputRef = useRef(null);
   const [showCtRawText, setShowCtRawText] = useState(false);
@@ -8226,27 +7823,14 @@ const BookingCard = ({
   const [linkingTnr, setLinkingTnr] = useState(false);
   const [showTnrInput, setShowTnrInput] = useState(false);
 
-  // "Same guest, different TNR" linking — e.g. a booking under
-  // "Vishvanathan" and another under "Jeyandhi" turn out to be the same
-  // real guest. Purely a cross-reference between two tnr'd bookings; see
-  // aadhaarModel's type:"guestLink" docs / linkGuestTnr/unlinkGuestTnr.
-  // Picked from a checkbox dropdown of every other booking (TNR + main
-  // traveller name) instead of typing a TNR by hand.
   const [guestSearch, setGuestSearch] = useState("");
   const [selectedGuestTnrs, setSelectedGuestTnrs] = useState([]);
   const [showGuestInput, setShowGuestInput] = useState(false);
   const [linkingGuest, setLinkingGuest] = useState(false);
   const [unlinkingGuest, setUnlinkingGuest] = useState(false);
 
-  // Edit/Delete for Main Traveller & Co-Travellers — only meaningful
-  // BEFORE this booking has a real tnr (the backend enforces this too,
-  // but hiding the buttons once booking.tnr exists keeps the admin from
-  // hitting a wall they don't understand). `editingId` holds the
-  // aadhaarModel doc _id currently being edited (main or a co-traveller —
-  // both are "aadhaarFront" docs, same shape), `editDraft` its editable
-  // field copy, `deletingId` the one mid-delete (disables its buttons so
-  // a double-click can't fire two deletes).
   const [editingId, setEditingId] = useState(null);
+  const [editingDocId, setEditingDocId] = useState(null);
   const [editDraft, setEditDraft] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -8254,6 +7838,7 @@ const BookingCard = ({
 
   const startEdit = (traveller) => {
     setEditingId(traveller._id);
+    setEditingDocId(traveller.aadhaarDocId || traveller._id);
     setEditDraft({
       title: traveller.title || "",
       firstName: traveller.firstName || "",
@@ -8272,13 +7857,14 @@ const BookingCard = ({
   };
   const cancelEdit = () => {
     setEditingId(null);
+    setEditingDocId(null);
     setEditDraft(null);
   };
   const saveEdit = async () => {
     if (!editingId || !editDraft) return;
     setSavingEdit(true);
     try {
-      const result = await editAadhaarTraveller(editingId, editDraft);
+      const result = await editAadhaarTraveller(editingDocId || editingId, editDraft);
       if (result?.success) {
         toast.success("Traveller updated");
         cancelEdit();
@@ -8289,15 +7875,23 @@ const BookingCard = ({
     }
   };
   const handleDeleteTraveller = async (traveller, isMain) => {
+    const travellerName =
+      [traveller.title, traveller.firstName, traveller.lastName].filter(Boolean).join(" ") || "this co-traveller";
     const confirmMsg = isMain
       ? "Delete the Aadhaar FILES (front/back image or PDF) for every traveller in this booking (main + co-travellers)? The already-extracted details (Name, Age, Gender, Address, Aadhaar Number) are kept — only the uploaded files are removed from storage. This cannot be undone."
-      : `Delete ${[traveller.title, traveller.firstName, traveller.lastName].filter(Boolean).join(" ") || "this co-traveller"}'s Aadhaar FILE? Their extracted details stay — only the uploaded file is removed.`;
+      : `Remove ${travellerName} from this booking? This cannot be undone.`;
     if (!window.confirm(confirmMsg)) return;
     setDeletingId(traveller._id);
     try {
-      const result = await deleteAadhaarTraveller(traveller._id);
+      const result = await deleteAadhaarTraveller(traveller.aadhaarDocId || traveller._id);
       if (result?.success) {
-        toast.success(isMain ? "Aadhaar files deleted for this booking" : "Co-traveller's Aadhaar file removed");
+        toast.success(
+          isMain
+            ? "Aadhaar files deleted for this booking"
+            : result.removedTraveller
+              ? "Co-traveller removed from this booking"
+              : "Co-traveller's Aadhaar file removed",
+        );
         refresh();
       }
     } finally {
@@ -8305,22 +7899,11 @@ const BookingCard = ({
     }
   };
 
-  // The per-booking "Delete Aadhaar Files" button that used to live here
-  // was removed — deleting is now done tour-wide in one click from the
-  // "Delete All Aadhaar" button at the top of the bookings list instead
-  // of booking-by-booking. Per-traveller delete (main traveller / a
-  // single co-traveller, inside the expanded card below) still uses
-  // handleDeleteTraveller directly.
-
   const mainName = [booking.main?.title, booking.main?.firstName, booking.main?.lastName]
     .filter(Boolean)
     .join(" ") || "Unnamed traveller";
   const travellerCount = 1 + (booking.coTravellers?.length || 0);
 
-  // Candidate bookings for the "Link as same guest" dropdown — every OTHER
-  // tnr'd booking in this tour, minus ones already in this booking's own
-  // guest group, with each one's main-traveller name for display, filtered
-  // by whatever the admin has typed in the search box.
   const guestCandidates = (allBookings || [])
     .filter((b) => b.tnr && b.tnr !== booking.tnr)
     .filter((b) => !(booking.guestGroup?.otherTnrs || []).includes(b.tnr))
@@ -8340,24 +7923,14 @@ const BookingCard = ({
     );
   };
 
-  // Download a ZIP of Aadhaar images for the travellers CURRENTLY on this
-  // booking — i.e. the "active" ones. A traveller removed via Delete/Remove
-  // above is already gone from booking.main/booking.coTravellers by the time
-  // this reads them (the backend doc is deleted), so this naturally only
-  // ever includes active travellers; nothing extra to filter out.
   const safeFileName = (name) =>
     (name || "traveller").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "traveller";
   const extFromUrl = (url) => {
     const match = url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
     return match ? match[1] : "jpg";
   };
+  // ZIP of Aadhaar images of this booking's active (not approved-cancelled) travellers.
   const handleDownloadZip = async () => {
-    // booking.main.cancelled / booking.coTravellers[].cancelled come from
-    // the real tourBookingModel record once this booking's tnr is linked
-    // (see getAadhaarBookings on the backend) — true for an APPROVED
-    // cancellation only. A pending cancellation request, or one the admin
-    // rejected, leaves this false and the traveller stays in the zip. No
-    // tnr yet → nothing was there to check, so nobody is marked cancelled.
     const entries = [];
     if (booking.main?.front?.url && !booking.main?.cancelled) {
       entries.push({ name: `Main - ${mainName} - Front`, url: booking.main.front.url });
@@ -8425,10 +7998,7 @@ const BookingCard = ({
     }
   };
 
-  // Step 1 of 2 — OCR the chosen file, but don't save yet. Lands the read
-  // into an editable draft (title/name/age/gender/sharing) just like the
-  // main booking form's TravellerCard, instead of the old one-click
-  // "choose file → immediately saved, no chance to check or fix it first".
+  // Step 1 of 2 — OCR into an editable draft (not saved yet).
   const handleExtractCt = async () => {
     if (!ctFile) return toast.error("Choose the co-traveller's Aadhaar front image first");
     setCtExtracting(true);
@@ -8436,7 +8006,6 @@ const BookingCard = ({
       const formData = new FormData();
       formData.append("front", ctFile);
       const ocrResult = await extractAadhaar(formData);
-      console.log("[AddCoTraveller] OCR result:", ocrResult);
       if (!ocrResult?.success) {
         if (ocrResult === undefined) {
           toast.error("Aadhaar read failed — no response from server. Check your connection and try again.");
@@ -8445,7 +8014,6 @@ const BookingCard = ({
       }
       if (!ocrResult.front?.url) {
         toast.error("Aadhaar was read but the image didn't upload — please try again.");
-        console.error("[AddCoTraveller] OCR succeeded but front.url missing:", ocrResult);
         return;
       }
 
@@ -8478,8 +8046,6 @@ const BookingCard = ({
     }
   };
 
-  // Same cross mark, one place, as TravellerCard above — clears the chosen
-  // file before extraction, or the whole extracted draft after it.
   const clearCtFile = () => {
     if (ctInputRef.current) ctInputRef.current.value = "";
     setCtFile(null);
@@ -8504,13 +8070,18 @@ const BookingCard = ({
     });
   };
 
-  // Step 2 of 2 — save the (possibly hand-corrected) draft.
+  // Step 2 of 2 — save the draft. For a real booking ("real-<id>") this
+  // sends tnr; the backend keeps it pending (NOT in Tour Bookings) until
+  // Raise Manage Booking is approved.
   const handleAddCoTraveller = async () => {
     if (!ctDraft?.front?.url) return toast.error("Extract the co-traveller's Aadhaar first");
+    if (ctSavingRef.current) return;
+    ctSavingRef.current = true;
     setCtSaving(true);
     try {
+      const isRealBooking = String(booking.groupId || "").startsWith("real-");
       const addResult = await addCoTravellerApi({
-        groupId: booking.groupId,
+        ...(isRealBooking ? { tnr: booking.tnr } : { groupId: booking.groupId }),
         title: ctDraft.title,
         firstName: ctDraft.firstName,
         lastName: ctDraft.lastName,
@@ -8527,19 +8098,23 @@ const BookingCard = ({
         pincode: ctDraft.pincode,
         front: ctDraft.front,
       });
-      console.log("[AddCoTraveller] addCoTraveller result:", addResult);
       if (!addResult?.success) {
         toast.error(addResult?.message || "Could not save the co-traveller — please try again.");
         return;
       }
 
-      toast.success("Co-traveller added");
+      toast.success(
+        booking.tnr
+          ? "Co-traveller added — click Raise Manage Booking to add them to the booking"
+          : "Co-traveller added",
+      );
       clearCtFile();
       refresh();
     } catch (err) {
       console.error("addCoTraveller error:", err);
       toast.error("Something went wrong adding this co-traveller. Check the console for details.");
     } finally {
+      ctSavingRef.current = false;
       setCtSaving(false);
     }
   };
@@ -8565,10 +8140,6 @@ const BookingCard = ({
     if (selectedGuestTnrs.length === 0) return toast.error("Select at least one booking to link");
     setLinkingGuest(true);
     try {
-      // linkGuestTnr pairs one TNR at a time, but it always merges into
-      // whatever group either side already belongs to — so linking each
-      // checked booking to this one, one by one, still lands every
-      // checked booking in the SAME single group as this booking.
       let okCount = 0;
       for (const tnr of selectedGuestTnrs) {
         const result = await linkGuestTnr(booking.tnr, tnr);
@@ -8616,7 +8187,7 @@ const BookingCard = ({
           lastName: traveller.lastName,
           age: traveller.age,
           gender: traveller.gender,
-          aadhaarId: traveller._id || null,
+          aadhaarId: traveller.aadhaarDocId || traveller._id || null,
           isCoTraveller: true,
           addedBy: "admin",
           addedPostBooking: true,
@@ -8625,10 +8196,6 @@ const BookingCard = ({
     });
   };
 
-  // The card's left-edge "spine" reads this booking's payment state at a
-  // glance across a long list, before anyone expands it — same three
-  // states as the badge inside (see the Payments section below): paid in
-  // full, balance still due, or not priceable yet / no tnr.
   const spineColor = booking.paymentSummary?.fullyPaid
     ? "border-l-[#2E7D5E]"
     : booking.paymentSummary
@@ -8643,11 +8210,6 @@ const BookingCard = ({
   return (
     <div className={`rounded-2xl border border-[#DEE2E8] border-l-4 ${spineColor} shadow-sm hover:shadow-md transition-shadow overflow-hidden bg-white`}>
       <div className="w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 px-3.5 sm:px-5 py-3.5 sm:py-4 bg-gradient-to-r from-[#F5F6F8] to-[#F8FAFC] hover:from-[#EEF0F3] hover:to-[#EEF3FA] transition-colors">
-        {/* A real <button> here would nest CopyTnrButton's own <button>
-            inside it — invalid HTML ("<button> cannot contain a nested
-            <button>", console warns and browsers mangle the DOM to
-            recover) — so this is a div acting as the toggle, with the
-            same keyboard behavior a button would give for free. */}
         <div
           role="button"
           tabIndex={0}
@@ -8665,17 +8227,23 @@ const BookingCard = ({
           </div>
           <div className="min-w-0">
             <p className="font-bold text-[#1C2733] truncate">{mainName}</p>
-            {/* Was one <p className="truncate"> holding the tour/traveller
-                count, TNR, USER/ADMIN badge AND "Raised by" all on one
-                line — on a phone-width card that line truncated almost
-                immediately, silently hiding the TNR and badge rather than
-                just the tour title. Now a wrapping flex row instead, so on
-                narrow screens these drop onto their own line(s) and stay
-                readable instead of disappearing. */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
               <span className="truncate max-w-full">
                 {booking.tourTitle || "Tour"} · {travellerCount} traveller{travellerCount !== 1 ? "s" : ""}
               </span>
+              {booking.createdAt && (
+                <span className="inline-flex items-center gap-1 shrink-0">
+                  <Clock className="w-3 h-3 shrink-0" />
+                  {new Date(booking.createdAt).toLocaleString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}
+                </span>
+              )}
               {booking.tnr && (
                 <span className="inline-flex items-center gap-1 text-[#1F3F6E] font-bold font-mono tracking-wide">
                   <Ticket className="w-3 h-3 shrink-0" /> {booking.tnr}
@@ -8684,9 +8252,8 @@ const BookingCard = ({
               )}
               {booking.tnr && (
                 <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                    booking.createdBy === "user" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-                  }`}
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${booking.createdBy === "user" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                    }`}
                 >
                   ● {booking.createdBy === "user" ? "USER" : "ADMIN"}
                 </span>
@@ -8718,9 +8285,7 @@ const BookingCard = ({
 
       {expanded && (
         <div className="p-5 sm:p-6 border-t-2 border-dashed border-[#DEE2E8] space-y-6">
-          {/* "Same guest, different TNR" — e.g. Vishvanathan's booking and
-              Jeyandhi's booking turn out to be the same real guest. Only
-              meaningful once this booking has a real tnr. */}
+          {/* Same guest, different TNR */}
           {booking.tnr && (
             <div className="rounded-xl border border-[#F5E6C8] bg-[#FBF4E7]/50 p-3">
               {booking.guestGroup ? (
@@ -8730,9 +8295,6 @@ const BookingCard = ({
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {booking.guestGroup.otherTnrs.map((t) => {
-                      // guestGroup only carries the raw TNRs — look up each
-                      // one's main traveller name from the tour's booking
-                      // list (same data the link-picker's dropdown uses).
                       const matched = (allBookings || []).find((b) => b.tnr === t);
                       const matchedName = matched
                         ? [matched.main?.title, matched.main?.firstName, matched.main?.lastName]
@@ -8840,22 +8402,23 @@ const BookingCard = ({
           {/* Booking notes — reference only */}
           {booking.bookingNotes && (
             <div className="text-xs text-gray-500 bg-[#F7F8FA] rounded-xl p-3 border border-[#E7EAEF] space-y-1.5">
-              <div>
-                {booking.bookingNotes.packageType && <span className="mr-3"><b>Package:</b> {booking.bookingNotes.packageType}</span>}
-                {booking.bookingNotes.boardingPoint && <span className="mr-3"><b>Boarding:</b> {booking.bookingNotes.boardingPoint}</span>}
-                {booking.bookingNotes.deboardingPoint && <span className="mr-3"><b>Deboarding:</b> {booking.bookingNotes.deboardingPoint}</span>}
+              <div className="flex flex-col gap-1">
+                {booking.bookingNotes.packageType && <span><b>Package:</b> {booking.bookingNotes.packageType}</span>}
+                {booking.bookingNotes.boardingPoint && <span><b>Boarding:</b> {booking.bookingNotes.boardingPoint}</span>}
+                {booking.bookingNotes.deboardingPoint && <span><b>Deboarding:</b> {booking.bookingNotes.deboardingPoint}</span>}
                 {booking.bookingNotes.remarks && <span><b>Remarks:</b> {booking.bookingNotes.remarks}</span>}
               </div>
-              {/* Train/flight-wise add-ons — shown per leg, not as one bulk
-                  "Add-ons: X, Y" line. Falls back to the old flat string for
-                  bookings saved before addonsDetail existed. */}
               {booking.bookingNotes.addonsDetail?.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                <div className="flex flex-col gap-1.5 pt-1">
                   {booking.bookingNotes.addonsDetail.map((a, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#DCE6F2] text-[#17314F] font-medium">
-                      <Train className="w-3 h-3" /> {a.label ? `${a.label}: ` : ""}{a.name}
-                      {a.amount > 0 && <span className="text-[#2A5490]">(₹{a.amount})</span>}
-                    </span>
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#DCE6F2] text-[#17314F] font-medium"
+                    >
+                      <Train className="w-3.5 h-3.5 shrink-0" />
+                      <span className="flex-1 min-w-0 truncate">{a.label ? `${a.label}: ` : ""}{a.name}</span>
+                      {a.amount > 0 && <span className="shrink-0 text-[#2A5490] font-semibold">₹{a.amount}</span>}
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -8879,12 +8442,12 @@ const BookingCard = ({
                 accent="indigo"
               />
             ) : (
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 bg-[#EEF3FA]/60 border border-[#DCE6F2] rounded-xl p-3">
+              <div className="flex flex-col items-start gap-1.5 text-sm text-gray-600 bg-[#EEF3FA]/60 border border-[#DCE6F2] rounded-xl p-3">
                 <span className="font-semibold text-gray-800">{mainName}</span>
                 <CancelStatusBadge status={booking.main?.cancelStatus} />
-                <span>Age {booking.main?.age || "—"}</span>
-                <span>{booking.main?.gender}</span>
-                <span>{booking.main?.phone}</span>
+                <span>Age: {booking.main?.age || "—"}</span>
+                <span>Gender: {booking.main?.gender || "—"}</span>
+                <span>Mobile: {booking.main?.phone || "—"}</span>
                 {booking.main?.sharingType && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#DCE6F2] text-[#1F3F6E] font-semibold text-xs">
                     {SHARING_LABELS[booking.main.sharingType] || booking.main.sharingType}
@@ -8901,9 +8464,7 @@ const BookingCard = ({
                     <Home className="w-3.5 h-3.5 text-[#3A6698] shrink-0" /> {booking.main.address}
                   </span>
                 )}
-                {/* Edit/Delete only make sense before a real tnr exists —
-                    once the booking is live, changes go through Raise
-                    Manage Booking instead (backend enforces this too). */}
+                {/* Edit/Delete only before a real tnr exists. */}
                 {!booking.tnr && booking.main?._id && (
                   <div className="w-full flex items-center gap-2 pt-1">
                     <button
@@ -8923,37 +8484,27 @@ const BookingCard = ({
                 )}
               </div>
             )}
-            {/* Missing Aadhaar on a REAL booking (tnr already exists) —
-                mainly the online/admin bookings now merged into this tab
-                straight from tourBookingModel, which never went through
-                this page's own OCR capture at all. Same upload UI/logic
-                as the User Bookings tab's per-traveller row, reused here
-                via the shared uploadUserTravellerAadhaar endpoint.
-                Hidden for "cancelled" AND "rejected" — no point asking
-                the admin to chase down Aadhaar for someone who isn't
-                travelling any more (or whose cancellation was turned
-                down and needs re-raising, not an Aadhaar upload). Only
-                shown for an active traveller or one with a cancellation
-                request still pending. */}
+            {/* Missing Aadhaar on a real booking — upload row (hidden for
+                cancelled/rejected travellers). */}
             {booking.tnr && booking.main?._id && !booking.main?.front?.url && uploadUserTravellerAadhaar &&
               booking.main?.cancelStatus !== "cancelled" && booking.main?.cancelStatus !== "rejected" && (
-              <TravellerAadhaarRow
-                traveller={{
-                  _id: booking.main._id,
-                  title: booking.main.title,
-                  firstName: booking.main.firstName,
-                  lastName: booking.main.lastName,
-                  age: booking.main.age,
-                  gender: booking.main.gender,
-                  isCoTraveller: false,
-                  hasAadhaar: false,
-                }}
-                tnr={booking.tnr}
-                extractAadhaar={extractAadhaar}
-                uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-                onSaved={refresh}
-              />
-            )}
+                <TravellerAadhaarRow
+                  traveller={{
+                    _id: booking.main._id,
+                    title: booking.main.title,
+                    firstName: booking.main.firstName,
+                    lastName: booking.main.lastName,
+                    age: booking.main.age,
+                    gender: booking.main.gender,
+                    isCoTraveller: false,
+                    hasAadhaar: false,
+                  }}
+                  tnr={booking.tnr}
+                  extractAadhaar={extractAadhaar}
+                  uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+                  onSaved={refresh}
+                />
+              )}
           </div>
 
           {/* Co-travellers */}
@@ -8980,89 +8531,89 @@ const BookingCard = ({
                   }
                   return (
                     <React.Fragment key={ct._id || i}>
-                    <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 bg-[#FBF4E7]/60 border border-[#F5E6C8] rounded-xl p-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="font-semibold text-gray-800">{ctName}</span>
-                        <CancelStatusBadge status={ct.cancelStatus} />
-                        <span>Age {ct.age || "—"}</span>
-                        <span>{ct.gender || "—"}</span>
-                        {ct.sharingType && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F5E6C8] text-[#8C6220] font-semibold text-xs">
-                            {SHARING_LABELS[ct.sharingType] || ct.sharingType}
+                      <div className="flex flex-col gap-3 text-sm text-gray-600 bg-[#FBF4E7]/60 border border-[#F5E6C8] rounded-xl p-3">
+                        <div className="flex flex-col items-start gap-1.5">
+                          <span className="font-semibold text-gray-800">{ctName}</span>
+                          <CancelStatusBadge status={ct.cancelStatus} />
+                          <span>Age: {ct.age || "—"}</span>
+                          <span>Gender: {ct.gender || "—"}</span>
+                          {ct.sharingType && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F5E6C8] text-[#8C6220] font-semibold text-xs">
+                              {SHARING_LABELS[ct.sharingType] || ct.sharingType}
+                            </span>
+                          )}
+                          {ct.url && (
+                            <a href={ct.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Front</a>
+                          )}
+                          {ct.back?.url && (
+                            <a href={ct.back.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Back</a>
+                          )}
+                        </div>
+                        {/* Before a tnr exists → Edit/Remove.
+                            After a tnr exists, for a co-traveller added later
+                            (postBooking) → Edit/Remove + Raise Manage Booking,
+                            UNTIL Manage Booking is approved and they're in
+                            Tour Bookings (ct.inRealBooking) → then only the
+                            "Added to booking" badge. Rejected → not in Tour
+                            Bookings → buttons visible again. Same for ADMIN
+                            and USER bookings. */}
+                        {(!booking.tnr || ct.postBooking) && !ct.inRealBooking && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              onClick={() => startEdit(ct)}
+                              className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#DCB86D] hover:bg-[#F5E6C8] text-[#8C6220] rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              <Pencil className="w-3 h-3" /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTraveller(ct, false)}
+                              disabled={deletingId === ct._id}
+                              className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#D99999] hover:bg-[#FBEEEE] text-[#A33333] rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3 h-3" /> {deletingId === ct._id ? "Removing..." : "Remove"}
+                            </button>
+                            {booking.tnr && ct.postBooking && (
+                              <button
+                                onClick={() => handleRaiseManageBooking(ct)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#B07D2B] hover:bg-[#8C6220] text-white rounded-lg text-xs font-bold transition-colors"
+                              >
+                                Raise Manage Booking <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {booking.tnr && ct.postBooking && ct.inRealBooking && (
+                          <span className="inline-flex w-fit items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EDF6F1] border border-[#B6DFC8] text-[#235F47] text-xs font-bold">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Added to booking
                           </span>
                         )}
-                        {ct.url && (
-                          <a href={ct.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Front</a>
-                        )}
-                        {ct.back?.url && (
-                          <a href={ct.back.url} target="_blank" rel="noopener noreferrer" className="text-[#2A5490] font-semibold underline">View Back</a>
-                        )}
                       </div>
-                      {/* Before a real tnr exists: Edit/Delete, same as the
-                          Main Traveller above. Once a tnr exists: only a
-                          traveller added AFTER the booking already had a
-                          tnr (postBooking) gets "Raise Manage Booking" —
-                          someone who was part of the ORIGINAL booking gets
-                          no button here at all (editing them isn't this
-                          page's job once the real booking exists). */}
-                      {!booking.tnr ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => startEdit(ct)}
-                            className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#DCB86D] hover:bg-[#F5E6C8] text-[#8C6220] rounded-lg text-xs font-semibold transition-colors"
-                          >
-                            <Pencil className="w-3 h-3" /> Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTraveller(ct, false)}
-                            disabled={deletingId === ct._id}
-                            className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#D99999] hover:bg-[#FBEEEE] text-[#A33333] rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
-                          >
-                            <Trash2 className="w-3 h-3" /> {deletingId === ct._id ? "Removing..." : "Remove"}
-                          </button>
-                        </div>
-                      ) : ct.postBooking ? (
-                        <button
-                          onClick={() => handleRaiseManageBooking(ct)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#B07D2B] hover:bg-[#8C6220] text-white rounded-lg text-xs font-bold transition-colors"
-                        >
-                          Raise Manage Booking <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      ) : null}
-                    </div>
-                    {/* Same "missing Aadhaar on a real booking" upload row
-                        as the Main Traveller above — mostly fires for the
-                        online/admin bookings merged in straight from
-                        tourBookingModel, which never had a chance to
-                        capture this co-traveller's Aadhaar here. */}
-                    {booking.tnr && ct._id && !ct.url && uploadUserTravellerAadhaar &&
-                      ct.cancelStatus !== "cancelled" && ct.cancelStatus !== "rejected" && (
-                      <TravellerAadhaarRow
-                        traveller={{
-                          _id: ct._id,
-                          title: ct.title,
-                          firstName: ct.firstName,
-                          lastName: ct.lastName,
-                          age: ct.age,
-                          gender: ct.gender,
-                          isCoTraveller: true,
-                          hasAadhaar: false,
-                        }}
-                        tnr={booking.tnr}
-                        extractAadhaar={extractAadhaar}
-                        uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-                        onSaved={refresh}
-                      />
-                    )}
+                      {booking.tnr && ct._id && !ct.url && uploadUserTravellerAadhaar &&
+                        ct.cancelStatus !== "cancelled" && ct.cancelStatus !== "rejected" && (
+                          <TravellerAadhaarRow
+                            traveller={{
+                              _id: ct._id,
+                              title: ct.title,
+                              firstName: ct.firstName,
+                              lastName: ct.lastName,
+                              age: ct.age,
+                              gender: ct.gender,
+                              isCoTraveller: true,
+                              hasAadhaar: false,
+                            }}
+                            tnr={booking.tnr}
+                            extractAadhaar={extractAadhaar}
+                            uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+                            onSaved={refresh}
+                          />
+                        )}
                     </React.Fragment>
                   );
                 })}
               </div>
             )}
 
-            {/* Add co-traveller — same two-step OCR-then-edit card as the
-                main booking form (extract first, check/fix the fields,
-                then save), not a bare file input + button. */}
+            {/* Add co-traveller — OCR first, verify, then save. */}
             <div className="p-4 sm:p-5 rounded-xl border-2 border-dashed border-[#DCB86D] bg-[#FBF4E7]/30">
               <p className="text-xs font-bold text-gray-600 mb-3">Add Co-Traveller (via Aadhaar)</p>
               <div className="flex flex-wrap items-end gap-3">
@@ -9079,9 +8630,6 @@ const BookingCard = ({
                       }}
                       className="flex-1 min-w-0 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#F5E6C8] file:text-[#8C6220] hover:file:bg-[#EAD29C]"
                     />
-                    {/* Same persistent cross mark pattern as TravellerCard —
-                        stays put whether a file is just chosen or already
-                        extracted, never hides after Extract. */}
                     {(ctFile || ctDraft) && (
                       <button
                         type="button"
@@ -9113,7 +8661,7 @@ const BookingCard = ({
 
               {ctDraft && (
                 <>
-                  <div className="grid sm:grid-cols-4 gap-3 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-600">Title</label>
                       <select
@@ -9154,7 +8702,7 @@ const BookingCard = ({
                       />
                     </div>
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-3 mt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-600">Gender</label>
                       <select
@@ -9189,10 +8737,6 @@ const BookingCard = ({
                       </select>
                     </div>
                   </div>
-                  {/* If the name/age came out wrong (like the garbled read
-                      this was added for), this shows exactly what
-                      Tesseract actually saw on the card — no console
-                      needed to report it back. */}
                   {ctDraft.front?.ocrText && (
                     <button
                       type="button"
@@ -9226,21 +8770,8 @@ const BookingCard = ({
               <h4 className="flex items-center gap-2 font-bold text-gray-800 text-sm">
                 <IndianRupee className="w-4 h-4 text-[#2E7D5E]" /> Payment Screenshots
               </h4>
-              {/* Advance + Balance + Partial vs this booking's real package
-                  amount (computePackageAmount on the backend — age-bracket
-                  + sharingType slabs off the tour's live pricing, same
-                  formula adminAddBooking uses, + addons). null means the
-                  backend couldn't price it (e.g. an older booking saved
-                  before packageKind existed) — show nothing rather than a
-                  guess. Once fully covered, show ONLY the status badge, no
-                  running number — remaining balance keeps moving up/down
-                  as screenshots are added/removed until then. */}
               {booking.paymentSummary && (
                 booking.paymentSummary.fullyPaid ? (
-                  // The one deliberately bolder moment on this card — styled
-                  // like an ink stamp on a ticket (dashed double ring, slight
-                  // tilt) rather than another flat pill, since "cleared in
-                  // full" is the single most important fact on this section.
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#235F47] bg-[#EDF6F1] border-2 border-dashed border-[#2E7D5E] rounded-full px-3.5 py-1 -rotate-2 shadow-sm">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Balance Fully Paid
                   </span>
@@ -9254,11 +8785,8 @@ const BookingCard = ({
                 )
               )}
             </div>
-            <div className="grid md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {PAYMENT_TYPES.map(({ type, label }) => {
-                // advance used to be capped at one screenshot (only the
-                // latest was ever shown) — it's an array now, same as
-                // balance/partial, so as many can be uploaded as needed.
                 const items = booking.payments[type] || [];
                 return (
                   <PaymentSlot
@@ -9286,11 +8814,6 @@ const BookingCard = ({
               >
                 Create Booking <ArrowRight className="w-4 h-4" />
               </button>
-              {/* Once Create Booking is finished and a real tnr exists for
-                  this phone number + tour, the next Refresh (or re-opening
-                  this tab) picks it up on its own — no paste needed. This
-                  is only a fallback for when that auto-match can't find it
-                  (e.g. the contact number was changed on Create Booking). */}
               <p className="text-center text-[11px] text-gray-400 mt-2">
                 TNR links automatically once the booking is created — hit Refresh above after creating it.
               </p>
@@ -9334,6 +8857,7 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState({});
   const [downloadingAllZip, setDownloadingAllZip] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -9347,9 +8871,6 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
     }
   };
 
-  // Tour-wise — this tab always shows only the currently selected tour's
-  // bookings (same tour picked at the top of the page, shared with the
-  // Save Booking tab). Re-fetches whenever the admin switches tours.
   useEffect(() => {
     fetchBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -9390,9 +8911,6 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
       state: {
         tourId: booking.tourId,
         travellers: finalTravellers,
-        // advance is an array now (can have more than one screenshot) —
-        // Create Booking only ever shows ONE advance proof, so hand it
-        // the most recent upload.
         paymentScreenshots: booking.payments?.advance?.length
           ? {
             advance: {
@@ -9402,12 +8920,6 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
           }
           : {},
         contactMobile: mainT?.phone || "",
-        // Combined string kept for back-compat with anything still reading
-        // it, PLUS the already-split components (OCR splits these out —
-        // see splitAddressComponents in aadhaarController.js) so
-        // CreateBooking.jsx's Billing Address can fill Address Line 1/2,
-        // City, State and Pincode into their own separate boxes instead of
-        // cramming the whole address into one line.
         contactAddress: mainT?.address || "",
         contactAddressLine1: mainT?.addressLine1 || "",
         contactAddressLine2: mainT?.addressLine2 || "",
@@ -9415,35 +8927,35 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
         contactState: mainT?.state || "",
         contactPincode: mainT?.pincode || "",
         groupId: booking.groupId,
-        // Boarding/deboarding point and addon notes captured during Aadhaar
-        // Upload (free-text strings, e.g. "MAS - CHENNAI") — CreateBooking.jsx
-        // matches the boarding/deboarding strings against the real tour's
-        // boardingPoints/deboardingPoints by stationCode to auto-select them.
-        // addonsDetail has no addonId (it was flattened for display only),
-        // so it's shown there as a read-only reminder, not auto-selected.
         bookingNotes: booking.bookingNotes || null,
       },
     });
   };
 
-  // This tab is only ever rendered once a tour is selected (the parent
-  // page gates it on tourId), so filtering is just belt-and-braces here.
   const visibleBookings = tourId
     ? bookings.filter((b) => String(b.tourId || "") === String(tourId))
     : bookings;
 
-  // Whole-tour Aadhaar ZIP — ALL images go flat into one single zip (no
-  // per-booking sub-folders), with the booking's name/tnr baked into each
-  // filename so files stay identifiable without needing folders.
-  // Only ever pulls from visibleBookings' live data, so — same as the
-  // per-booking download — a removed/deleted traveller is already gone
-  // from the data and never ends up in the zip; nothing extra to filter.
+  const bookingMatchesSearch = (b, q) => {
+    const names = [b.main, ...(b.coTravellers || [])]
+      .map((t) => [t?.title, t?.firstName, t?.lastName].filter(Boolean).join(" "))
+      .join(" ");
+    const haystack = [names, b.tnr, b.main?.phone, b.main?.aadhaarNumber].filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(q);
+  };
+  const searchedBookings = (() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return visibleBookings;
+    return visibleBookings.filter((b) => bookingMatchesSearch(b, q));
+  })();
+
   const tourZipSafeName = (name) =>
     (name || "file").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "file";
   const tourZipExtFromUrl = (url) => {
     const match = url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/);
     return match ? match[1] : "jpg";
   };
+  // Whole-tour Aadhaar ZIP — flat, booking name/tnr baked into each filename.
   const handleDownloadAllZip = async () => {
     if (visibleBookings.length === 0) {
       toast.error("No bookings to download for this tour");
@@ -9460,8 +8972,6 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
           const mainName = [booking.main?.title, booking.main?.firstName, booking.main?.lastName]
             .filter(Boolean)
             .join(" ") || `Booking ${bIdx + 1}`;
-          // Every file carries the booking prefix (index + name + tnr) in
-          // its own filename instead of a sub-folder, so the zip stays flat.
           const bookingPrefix = `${bIdx + 1}. ${tourZipSafeName(mainName)}${booking.tnr ? `_${booking.tnr}` : ""}`;
 
           const entries = [];
@@ -9489,7 +8999,6 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
                 const res = await fetch(entry.url);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
-                // Flat: file goes straight into the zip root, not a folder.
                 zip.file(`${tourZipSafeName(entry.name)}.${tourZipExtFromUrl(entry.url)}`, blob);
                 fetchedCount += 1;
               } catch (err) {
@@ -9526,27 +9035,10 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
     }
   };
 
-  // "Export Active Travellers PDF" was removed per request — the tour-wide
-  // delete button below (handleDeleteAllAadhaar) replaced the need for a
-  // separate export-before-delete step.
-
-  // Deletes the Aadhaar FILES (front/back image or PDF — never the
-  // extracted Name/Age/Gender/Address/Aadhaar Number data, same rule as
-  // the per-traveller delete) for EVERY booking currently shown for this
-  // tour, in one click, instead of booking-by-booking. Reuses the same
-  // deleteAadhaarTraveller(docId) call the per-traveller delete uses —
-  // passing a booking's MAIN traveller docId already wipes that whole
-  // booking's files (main + every co-traveller) in one call, so this is
-  // just that same call looped across every booking.
+  // Deletes Aadhaar FILES (never extracted data) for every booking in this
+  // tour — main traveller's aadhaarDocId clears the whole booking.
   const [deletingAllAadhaar, setDeletingAllAadhaar] = useState(false);
   const handleDeleteAllAadhaar = async () => {
-    // b.main._id is NOT always an aadhaarModel doc id — for "real" bookings
-    // merged in straight from tourBookingModel (no walk-in aadhaarModel
-    // group), it's that traveller's own tourBookingModel sub-doc _id, a
-    // completely different id namespace. aadhaarDocId is the field the
-    // backend actually set to the real aadhaarModel doc _id in both cases
-    // (see aadhaarController.js's getAadhaarBookings) — that's what
-    // deleteAadhaarTraveller needs, or it 404s with "Traveller not found."
     const mainDocIds = visibleBookings.map((b) => b.main?.aadhaarDocId).filter(Boolean);
     if (mainDocIds.length === 0) {
       toast.error("No bookings with Aadhaar to delete for this tour");
@@ -9583,45 +9075,30 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
 
   return (
     <div className="mb-8">
-      {/* Mobile/tablet (below `sm:`): count + a small round Refresh icon
-          on their own top row, the Delete/Download segmented control full
-          width on its own row underneath — nothing touching the tab bar
-          above or squeezed together.
-          Desktop (`sm:` and up): a single row — count on the left, the
-          segmented control + Refresh icon grouped together on the right,
-          same as the original compact layout. */}
-      <div className="mb-5 pb-4 border-b-2 border-dashed border-[#DEE2E8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center justify-between sm:justify-start gap-2.5">
-          <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full bg-gradient-to-br from-indigo-600 to-sky-500 text-white text-sm font-bold font-mono shadow-sm shadow-indigo-200">
+      <div className="mb-5 pb-4 border-b-2 border-dashed border-[#DEE2E8] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex items-center justify-between lg:justify-start gap-2.5 min-w-0 lg:flex-1">
+          <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full bg-gradient-to-br from-indigo-600 to-sky-500 text-white text-sm font-bold font-mono shadow-sm shadow-indigo-200 shrink-0">
             {visibleBookings.length}
           </span>
-          <p className="text-sm text-[#1C2733]">
+          <p className="text-sm text-[#1C2733] min-w-0 lg:truncate">
             booking{visibleBookings.length !== 1 ? "s" : ""}
             {tourTitle ? <span className="text-gray-500"> for {tourTitle}</span> : ""}
           </p>
-          {/* Refresh sits next to the count on mobile only — on desktop it
-              moves into the right-hand action group below instead. */}
           <button
             onClick={fetchBookings}
             title="Refresh"
-            className="sm:hidden shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
+            className="lg:hidden shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* One joined segmented control instead of two separate floating
-              chips with a gap between them (which read as unrelated/
-              mismatched) — single shared border + rounded corners, a
-              vertical divider between the two halves, each half keeping
-              its own red/blue identity only in its text+icon color. Reads
-              as one deliberate "Aadhaar files" action group. */}
-          <div className="flex w-full sm:w-fit rounded-xl border border-gray-200 divide-x divide-gray-200 shadow-sm overflow-hidden">
+          <div className="flex flex-col sm:flex-row w-full lg:w-fit rounded-xl border border-gray-200 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 shadow-sm overflow-hidden">
             <button
               onClick={handleDeleteAllAadhaar}
               disabled={deletingAllAadhaar || visibleBookings.length === 0}
               title="Delete the uploaded Aadhaar files for EVERY booking in this tour (keeps the extracted Name/Age/Gender/Address/Aadhaar Number — does not delete any booking)"
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 bg-white text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="sm:flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 bg-white text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {deletingAllAadhaar ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 shrink-0" />}
               <span className="whitespace-nowrap">{deletingAllAadhaar ? "Deleting..." : "Delete All Aadhaar"}</span>
@@ -9630,7 +9107,7 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
               onClick={handleDownloadAllZip}
               disabled={downloadingAllZip || visibleBookings.length === 0}
               title="Download Aadhaar images of every booking in this tour as one ZIP"
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="sm:flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 bg-white text-[#1F3F6E] text-xs font-semibold hover:bg-[#EEF3FA] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {downloadingAllZip ? <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
               <span className="whitespace-nowrap">{downloadingAllZip ? "Zipping..." : "Download All (Tour) ZIP"}</span>
@@ -9639,11 +9116,32 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
           <button
             onClick={fetchBookings}
             title="Refresh"
-            className="hidden sm:flex shrink-0 items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
+            className="hidden lg:flex shrink-0 items-center justify-center w-8 h-8 rounded-full border border-[#DEE2E8] text-[#2A5490] hover:bg-[#EEF3FA] hover:border-[#C3D4E8] transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
+      </div>
+
+      <div className="relative mb-5">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Filter by name, mobile, TNR or Aadhaar number (optional)"
+          className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm transition-all"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            title="Clear"
+          >
+            <XCircle className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -9652,9 +9150,11 @@ const AllBookingsTab = ({ getAadhaarBookings, extractAadhaar, addCoTravellerApi,
         </div>
       ) : visibleBookings.length === 0 ? (
         <div className="text-center py-16 text-gray-400 text-sm rounded-2xl border-2 border-dashed border-[#DEE2E8]">No bookings saved for this tour yet.</div>
+      ) : searchedBookings.length === 0 ? (
+        <div className="text-center py-16 text-gray-400 text-sm rounded-2xl border-2 border-dashed border-[#DEE2E8]">No booking matches "{searchQuery}".</div>
       ) : (
         <div className="space-y-4">
-          {visibleBookings.map((booking) => (
+          {searchedBookings.map((booking) => (
             <BookingCard
               key={booking.groupId}
               booking={booking}
@@ -9709,44 +9209,29 @@ const AadhaarUpload = () => {
   } = useContext(TourContext);
 
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false); // synchronous double-click guard
 
-  // Three tabs on this one page: "save" = capture a new walk-in booking,
-  // "all" = everything saved so far (balance/partial upload, add more
-  // co-travellers, Create Booking → tnr → Raise Manage Booking), "user" =
-  // find a real online booking (by tour + email) the guest already made on
-  // the website themselves, and attach Aadhaar/payment proof to it.
+  // "save" = new walk-in booking, "all" = All Bookings, "user" = User Bookings.
   const [activeTab, setActiveTab] = useState("save");
 
   const [tourId, setTourId] = useState("");
   const [tourInfo, setTourInfo] = useState(null);
 
-  // ───────────── Booking-wide fields (apply to every traveller) ─────────────
-  // Fetched from the selected tour's own data (tourInfo), not typed.
   const [packageSelection, setPackageSelection] = useState({ type: "main", variantIndex: null });
   const [boardingPoint, setBoardingPoint] = useState(null);
   const [deboardingPoint, setDeboardingPoint] = useState(null);
-  const [selectedAddons, setSelectedAddons] = useState([]); // train/flight-wise, same shape as CreateBooking.jsx
+  const [selectedAddons, setSelectedAddons] = useState([]);
   const [remarks, setRemarks] = useState("");
-  // Who's actually saving this booking — picked from the Staff-Profile
-  // directory, so "Raised by" on the All Bookings card shows a real name
-  // instead of the generic uploadedBy:"admin" tag.
   const [raisedByStaffId, setRaisedByStaffId] = useState("");
 
-  // Single main traveller only — co-traveller add, Partial/Balance
-  // screenshot upload, and finalizing the booking with a TNR all happen
-  // later, from the All Bookings page, not here.
   const [travellers, setTravellers] = useState([blankTraveller(true)]);
 
   const [paymentScreenshots, setPaymentScreenshots] = useState({});
-  // { [type]: { current, total } | undefined } — sequential upload progress.
   const [paymentLoading, setPaymentLoading] = useState({});
-  // { [type]: File[] } — files picked together but not yet uploaded.
+  const paymentUploadingRef = useRef({});
   const [paymentFiles, setPaymentFiles] = useState({});
-  // { [type]: string[] } — optional amount typed against each queued file,
-  // same index as paymentFiles[type].
   const [paymentAmounts, setPaymentAmounts] = useState({});
-  // { [type]: index | null } — which uploaded screenshot (if any) is open
-  // in the one-at-a-time viewer for that payment type.
+  const [paymentRemarks, setPaymentRemarks] = useState({});
   const [paymentViewerIndex, setPaymentViewerIndex] = useState({});
 
   useEffect(() => {
@@ -9766,7 +9251,6 @@ const AadhaarUpload = () => {
     setTourInfo(tourList.find((t) => t._id === tourId) || null);
   }, [tourId, tourList]);
 
-  // Reset booking-wide fields whenever the tour changes.
   useEffect(() => {
     setPackageSelection({ type: "main", variantIndex: null });
     setBoardingPoint(null);
@@ -9775,15 +9259,12 @@ const AadhaarUpload = () => {
     setRemarks("");
   }, [tourId]);
 
-  // Reset boarding/deboarding/addons whenever the package selection changes
-  // (different package = different boarding/deboarding/train/flight list).
   useEffect(() => {
     setBoardingPoint(null);
     setDeboardingPoint(null);
     setSelectedAddons([]);
   }, [packageSelection.type, packageSelection.variantIndex]);
 
-  // ───────────────────────── Traveller (person-level) fields ─────────────────────────
   const handleTravellerChange = (index, field, value) => {
     const updated = [...travellers];
     const t = { ...updated[index] };
@@ -9809,10 +9290,6 @@ const AadhaarUpload = () => {
 
     t[field] = value;
 
-    // Keep the one combined `address` line in sync whenever any of the
-    // split fields is edited by hand — older code (and the All Bookings
-    // view) still reads `address` as one line, so it shouldn't go stale
-    // the moment the admin corrects, say, just the Pincode box.
     if (["addressLine1", "addressLine2", "city", "state", "pincode"].includes(field)) {
       t.address = [t.addressLine1, t.addressLine2, t.city, t.state, t.pincode]
         .filter(Boolean)
@@ -9823,13 +9300,6 @@ const AadhaarUpload = () => {
     setTravellers(updated);
   };
 
-  // ───────────────────────── Co-travellers (Tab 1) ─────────────────────────
-  // No cap — add as many co-travellers as the booking needs. Each
-  // co-traveller is Aadhaar FRONT side only (TravellerCard already skips
-  // the back-side input whenever isMain is false). These stay local state
-  // here and are only persisted when "Save Booking" is pressed, same as
-  // the main traveller — unlike Tab 2, where Add Co-Traveller saves
-  // straight to the server because that booking already exists.
   const addCoTraveller = () => {
     setTravellers((prev) => [...prev, blankTraveller(false)]);
   };
@@ -9861,13 +9331,7 @@ const AadhaarUpload = () => {
       if (t._backFile) formData.append("back", t._backFile);
 
       const result = await extractAadhaar(formData);
-      // Shows exactly what Tesseract actually read off this image — if
-      // the name/age come out wrong, this is what to send back so the
-      // text-parsing regex (not the image-quality preprocessing) can be
-      // fixed for that specific case.
-      console.log("[ExtractAadhaar] raw OCR text:", result.front?.ocrText);
-      console.log("[ExtractAadhaar] parsed:", result.parsed);
-      if (!result.success) {
+      if (!result?.success) {
         handleTravellerChange(index, "ocrLoading", false);
         return;
       }
@@ -9877,17 +9341,11 @@ const AadhaarUpload = () => {
       const updated = [...travellers];
       updated[index] = {
         ...updated[index],
-        // Title follows whatever gender OCR actually read — was always
-        // hardcoded to "Mr" before, even for a card OCR correctly read as
-        // Female.
         title: readGender === "Female" ? "Mrs" : "Mr",
         firstName: p.firstName || "",
         lastName: p.lastName || "",
         age: p.age || "",
         gender: readGender,
-        // Keep whatever the admin already typed if OCR couldn't read a
-        // phone/address this time (some Aadhaar cards don't print a
-        // mobile number at all, and address OCR isn't always clean).
         phone: p.phone || updated[index].phone || "",
         address: p.address || updated[index].address || "",
         addressLine1: p.addressLine1 || updated[index].addressLine1 || "",
@@ -9902,9 +9360,6 @@ const AadhaarUpload = () => {
         _backFile: null,
       };
       setTravellers(updated);
-      // Phone/address only matter for the MAIN traveller (index 0) — that
-      // toast would be noise for a co-traveller, who has no phone/address
-      // fields on this card at all.
       if (index === 0 && (!p.phone || !p.address)) {
         toast.info(
           `Traveller ${index + 1}'s Aadhaar read. ${!p.phone ? "Mobile number" : "Address"}${!p.phone && !p.address ? " & address" : ""} couldn't be read — please fill it in.`,
@@ -9918,10 +9373,6 @@ const AadhaarUpload = () => {
     }
   };
 
-  // Wrong Aadhaar uploaded for this traveller — clear the read image(s)
-  // and whatever identity fields OCR filled in, so the admin can redo it
-  // with the right photo instead of being stuck with a bad read until
-  // Save. Local state only (nothing's been persisted yet on Tab 1).
   const clearTravellerAadhaar = (index) => {
     const updated = [...travellers];
     updated[index] = {
@@ -9936,35 +9387,29 @@ const AadhaarUpload = () => {
       back: null,
       _frontFile: null,
       _backFile: null,
-      // Main traveller's phone/address are typed/used elsewhere — only
-      // clear them for a co-traveller, who has no such fields anyway.
       ...(index !== 0 ? { phone: "", address: "" } : {}),
     };
     setTravellers(updated);
     toast.info(`Traveller ${index + 1}'s Aadhaar cleared — upload the correct image and extract again.`);
   };
 
-  // ───────────────────────── Payment screenshots ─────────────────────────
-  // Only Advance is collected here. Balance/Partial Balance come later
-  // (often ~30 days after), once the booking has a TNR — that happens
-  // from the All Bookings page, not here.
+  // Only Advance is collected here.
   const paymentSlots = [
     { type: "advance", label: "Advance Payment", cardClass: "bg-indigo-50 border-indigo-200" },
   ];
 
-  // paymentFiles[type] can hold several screenshots picked together, but
-  // they're still sent to the backend ONE AT A TIME, in order — a single
-  // "Upload All" click walks the whole queue sequentially (not in
-  // parallel) instead of requiring a click per file.
   const handlePaymentUpload = async (type) => {
     const queue = paymentFiles[type] || [];
     const amounts = paymentAmounts[type] || [];
+    const remarksQueue = paymentRemarks[type] || [];
     if (queue.length === 0) return toast.error(`Select at least one ${type} screenshot first`);
     for (let i = 0; i < amounts.length; i++) {
       if (amounts[i] && Number(amounts[i]) <= 0) {
         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
       }
     }
+    if (paymentUploadingRef.current[type]) return;
+    paymentUploadingRef.current[type] = true;
 
     let successCount = 0;
     for (let i = 0; i < queue.length; i++) {
@@ -9979,7 +9424,10 @@ const AadhaarUpload = () => {
           successCount += 1;
           setPaymentScreenshots((prev) => ({
             ...prev,
-            [type]: [...(prev[type] || []), { url: result.url, amount: result.amount }],
+            [type]: [
+              ...(prev[type] || []),
+              { url: result.url, amount: result.amount, remarks: (remarksQueue[i] || "").trim() },
+            ],
           }));
         }
       } catch (err) {
@@ -9989,6 +9437,8 @@ const AadhaarUpload = () => {
     setPaymentLoading((prev) => ({ ...prev, [type]: false }));
     setPaymentFiles((prev) => ({ ...prev, [type]: [] }));
     setPaymentAmounts((prev) => ({ ...prev, [type]: [] }));
+    setPaymentRemarks((prev) => ({ ...prev, [type]: [] }));
+    paymentUploadingRef.current[type] = false;
     if (successCount > 0) {
       toast.success(`${successCount} ${type} screenshot${successCount > 1 ? "s" : ""} uploaded`);
     }
@@ -9997,26 +9447,13 @@ const AadhaarUpload = () => {
     }
   };
 
-  // ───────────────────────── Save booking ─────────────────────────
-  // Persists this capture (tour, booking-wide details, main traveller,
-  // advance screenshot) straight into aadhaarModel — Aadhaar front/back,
-  // paymentAdvance and bookingNotes docs, all tied by one groupId. No
-  // navigation to CreateBooking.jsx: this page's job ends at Save.
-  // Co-traveller add, Partial/Balance screenshot upload and finalizing
-  // the booking (with a real TNR, via CreateBooking.jsx) happen afterwards
-  // from the All Bookings page.
   const handleSaveBooking = async () => {
-    // Every OTHER "required" gate was removed on request (no tour, no
-    // name, no Aadhaar front/back, no Raised By, no co-traveller
-    // completeness) — this is now the ONE field this form still blocks
-    // Save Booking on: at least one Advance Payment screenshot must be
-    // attached before a booking can be created at all. Everything else
-    // still only fails later, with a toast pulled straight from the
-    // server's own error message (saveAadhaarUpload's try/catch below
-    // already surfaces whatever message the API sends back).
+    // The ONE hard requirement: at least one Advance Payment screenshot.
     if (!(paymentScreenshots.advance || []).length) {
       return toast.error("Attach the Advance Payment screenshot before creating this booking");
     }
+    if (savingRef.current) return;
+    savingRef.current = true;
     const mainTraveller = travellers[0];
 
     const coTravellerRows = travellers.slice(1);
@@ -10033,15 +9470,12 @@ const AadhaarUpload = () => {
       : "";
     const addonsStr = selectedAddons.map((a) => a.name).join(", ");
     const raisedByStaff = (staffList || []).find((s) => s._id === raisedByStaffId);
-    // Train/flight-wise breakdown — kept structured (not flattened into one
-    // string) so the All Bookings card can show exactly which leg each
-    // add-on belongs to instead of one bulk "Add-ons: X, Y" line.
     const addonsDetail = selectedAddons.map((a) => ({
       label: a.trainName
         ? `${a.trainName} (${a.trainNo})${a.tripType ? ` - ${a.tripType}` : ""}`
         : a.flightNo
-        ? `${a.airline || "Flight"} ${a.flightNo}${a.tripType ? ` - ${a.tripType}` : ""}`
-        : "",
+          ? `${a.airline || "Flight"} (${a.flightNo})${a.tripType ? ` - ${a.tripType}` : ""}`
+          : "",
       name: a.name,
       amount: a.amount || 0,
     }));
@@ -10051,10 +9485,6 @@ const AadhaarUpload = () => {
       const result = await saveAadhaarUpload({
         tourId,
         packageType: packageTypeStr,
-        // Machine-readable pair alongside the display string above — lets
-        // the backend look up this exact package's real price later (see
-        // computePackageAmount in aadhaarController.js) to show the
-        // Advance+Balance+Partial-vs-package-amount status on this card.
         packageKind: packageSelection.type,
         variantPackageIndex: packageSelection.type === "variant" ? packageSelection.variantIndex : null,
         boardingPoint: boardingPointStr,
@@ -10099,11 +9529,8 @@ const AadhaarUpload = () => {
           city: t.city,
           state: t.state,
           pincode: t.pincode,
-          front: t.front, // front side only
+          front: t.front,
         })),
-        // Plural now — the admin can attach more than one Advance
-        // screenshot before saving (see the one-at-a-time upload queue
-        // above), so every one of them gets saved against this booking.
         advanceScreenshots: paymentScreenshots.advance || [],
       });
 
@@ -10111,31 +9538,29 @@ const AadhaarUpload = () => {
 
       toast.success("Booking saved. Find it on the All Bookings page.");
 
-      // Reset the form for the next walk-in booking.
       setTourId("");
       setTourInfo(null);
       setTravellers([blankTraveller(true)]);
       setPaymentScreenshots({});
       setPaymentFiles({});
       setPaymentAmounts({});
+      setPaymentRemarks({});
     } catch (err) {
       console.error("handleSaveBooking error:", err);
       toast.error("Could not save this booking. Please try again.");
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-slate-50 to-sky-50 py-4 px-2.5 sm:py-8 sm:px-4">
-      {/* Soft decorative color blobs behind the card — purely cosmetic,
-          pointer-events-none so they never intercept clicks/taps. */}
       <div className="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-indigo-300/30 blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 -right-24 w-80 h-80 rounded-full bg-sky-300/30 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/4 w-72 h-72 rounded-full bg-purple-200/30 blur-3xl" />
 
       <div className="relative max-w-5xl mx-auto bg-white/90 backdrop-blur-sm shadow-2xl shadow-indigo-200/50 rounded-2xl sm:rounded-[2rem] border border-white ring-1 ring-indigo-100 overflow-hidden">
-        {/* Gradient accent strip along the top of the card. */}
         <div className="h-1.5 sm:h-2 bg-gradient-to-r from-indigo-600 via-violet-500 to-sky-500" />
 
         <div className="p-3.5 sm:p-6 md:p-8">
@@ -10156,10 +9581,6 @@ const AadhaarUpload = () => {
             </div>
           </div>
 
-          {/* Tour comes FIRST — everything below (Save Booking AND All
-                Bookings) is scoped to this one tour. Switching tours clears
-                the Save Booking draft; All Bookings re-fetches for the new
-                tour automatically. */}
           <div className="mb-5 sm:mb-6">
             <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
               <MapPin className="w-4 h-4 text-indigo-500" /> Select Tour *
@@ -10168,7 +9589,7 @@ const AadhaarUpload = () => {
               <select
                 value={tourId}
                 onChange={(e) => setTourId(e.target.value)}
-                className="w-full appearance-none px-3.5 sm:px-4 py-3 sm:py-3.5 bg-gradient-to-br from-indigo-50/70 to-white border-2 border-indigo-100 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm sm:text-base font-semibold text-gray-800 transition-all cursor-pointer"
+                className="w-full appearance-none pl-3.5 sm:pl-4 pr-10 sm:pr-11 py-3 sm:py-3.5 bg-gradient-to-br from-indigo-50/70 to-white border-2 border-indigo-100 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none text-sm sm:text-base font-semibold text-gray-800 truncate transition-all cursor-pointer"
               >
                 <option value="">-- Select a tour --</option>
                 {tourList?.map((t) => (
@@ -10177,296 +9598,303 @@ const AadhaarUpload = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-indigo-400" />
+              <ChevronDown className="pointer-events-none absolute right-3.5 sm:right-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-indigo-400" />
             </div>
           </div>
 
-          {/* Three-tab pill header — on very narrow phones the three pills
-              (each with an icon + label) can't all fit at the "save booking"
-              size, so padding/gap/text shrink at the `sm:` breakpoint and
-              below, and the pills are allowed to wrap onto a second row
-              instead of overflowing/squashing illegibly. */}
           <div className="grid grid-cols-3 sm:flex sm:flex-row gap-1.5 sm:gap-2 p-1.5 bg-gradient-to-br from-gray-100 to-indigo-50/60 rounded-2xl mb-6 sm:mb-8 w-full sm:w-fit ring-1 ring-black/5">
             <button
               onClick={() => setActiveTab("save")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${
-                activeTab === "save"
-                  ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
-                  : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
-              }`}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "save"
+                ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+                : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+                }`}
             >
               <UserPlus className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>Save Booking</span>
             </button>
             <button
               onClick={() => setActiveTab("all")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${
-                activeTab === "all"
-                  ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
-                  : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
-              }`}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "all"
+                ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+                : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+                }`}
             >
               <BookOpenCheck className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>All Bookings</span>
             </button>
             <button
               onClick={() => setActiveTab("user")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${
-                activeTab === "user"
-                  ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
-                  : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
-              }`}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-sm leading-tight text-center transition-all sm:flex-none ${activeTab === "user"
+                ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-300/60"
+                : "text-gray-500 hover:text-indigo-600 hover:bg-white/60"
+                }`}
             >
               <Search className="w-[18px] h-[18px] sm:w-4 sm:h-4 shrink-0" /> <span>User Bookings</span>
             </button>
           </div>
 
-        {!tourId && (
-          <div className="text-center py-16 text-gray-400 text-sm">Select a tour above to continue.</div>
-        )}
+          {!tourId && (
+            <div className="text-center py-16 text-gray-400 text-sm">Select a tour above to continue.</div>
+          )}
 
-        {tourId && activeTab === "all" && (
-          <AllBookingsTab
-            getAadhaarBookings={getAadhaarBookings}
-            extractAadhaar={extractAadhaar}
-            addCoTravellerApi={addCoTravellerApi}
-            uploadGroupPayment={uploadGroupPayment}
-            deleteGroupPayment={deleteGroupPayment}
-            uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-            linkGroupTnr={linkGroupTnr}
-            editAadhaarTraveller={editAadhaarTraveller}
-            deleteAadhaarTraveller={deleteAadhaarTraveller}
-            linkGuestTnr={linkGuestTnr}
-            unlinkGuestTnr={unlinkGuestTnr}
-            deleteBookingByTnr={deleteBookingByTnr}
-            navigate={navigate}
-            tourId={tourId}
-            tourTitle={tourInfo?.title}
-          />
-        )}
-
-        {tourId && activeTab === "user" && (
-          <UserBookingsTab
-            tourId={tourId}
-            searchUserBookings={searchUserBookings}
-            uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
-            uploadUserBookingPayment={uploadUserBookingPayment}
-            deleteGroupPayment={deleteGroupPayment}
-            extractAadhaar={extractAadhaar}
-          />
-        )}
-
-        {tourId && activeTab === "save" && (
-          <>
-        {tourInfo && (
-          <>
-            <BookingWideSection
-              tourInfo={tourInfo}
-              packageSelection={packageSelection}
-              setPackageSelection={setPackageSelection}
-              boardingPoint={boardingPoint}
-              setBoardingPoint={setBoardingPoint}
-              deboardingPoint={deboardingPoint}
-              setDeboardingPoint={setDeboardingPoint}
-              selectedAddons={selectedAddons}
-              setSelectedAddons={setSelectedAddons}
-              remarks={remarks}
-              setRemarks={setRemarks}
-              staffList={staffList}
-              raisedByStaffId={raisedByStaffId}
-              setRaisedByStaffId={setRaisedByStaffId}
+          {tourId && activeTab === "all" && (
+            <AllBookingsTab
+              getAadhaarBookings={getAadhaarBookings}
+              extractAadhaar={extractAadhaar}
+              addCoTravellerApi={addCoTravellerApi}
+              uploadGroupPayment={uploadGroupPayment}
+              deleteGroupPayment={deleteGroupPayment}
+              uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+              linkGroupTnr={linkGroupTnr}
+              editAadhaarTraveller={editAadhaarTraveller}
+              deleteAadhaarTraveller={deleteAadhaarTraveller}
+              linkGuestTnr={linkGuestTnr}
+              unlinkGuestTnr={unlinkGuestTnr}
+              deleteBookingByTnr={deleteBookingByTnr}
+              navigate={navigate}
+              tourId={tourId}
+              tourTitle={tourInfo?.title}
             />
+          )}
 
-            <TravellerCard
-              traveller={travellers[0]}
-              index={0}
-              isMain={true}
-              setTravellerFrontFile={setTravellerFrontFile}
-              setTravellerBackFile={setTravellerBackFile}
-              extractTravellerAadhaar={extractTravellerAadhaar}
-              clearTravellerAadhaar={clearTravellerAadhaar}
-              handleTravellerChange={handleTravellerChange}
+          {tourId && activeTab === "user" && (
+            <UserBookingsTab
+              tourId={tourId}
+              searchUserBookings={searchUserBookings}
+              uploadUserTravellerAadhaar={uploadUserTravellerAadhaar}
+              uploadUserBookingPayment={uploadUserBookingPayment}
+              deleteGroupPayment={deleteGroupPayment}
+              extractAadhaar={extractAadhaar}
             />
+          )}
 
-            {/* Co-travellers — up to 9 more, Aadhaar front side only.
-                  Added here and saved together with the main traveller
-                  when "Save Booking" is pressed. */}
-            {travellers.slice(1).map((t, i) => (
-              <TravellerCard
-                key={i + 1}
-                traveller={t}
-                index={i + 1}
-                isMain={false}
-                removeCoTraveller={removeCoTraveller}
-                setTravellerFrontFile={setTravellerFrontFile}
-                setTravellerBackFile={setTravellerBackFile}
-                extractTravellerAadhaar={extractTravellerAadhaar}
-                clearTravellerAadhaar={clearTravellerAadhaar}
-                handleTravellerChange={handleTravellerChange}
-              />
-            ))}
+          {tourId && activeTab === "save" && (
+            <>
+              {tourInfo && (
+                <>
+                  <BookingWideSection
+                    tourInfo={tourInfo}
+                    packageSelection={packageSelection}
+                    setPackageSelection={setPackageSelection}
+                    boardingPoint={boardingPoint}
+                    setBoardingPoint={setBoardingPoint}
+                    deboardingPoint={deboardingPoint}
+                    setDeboardingPoint={setDeboardingPoint}
+                    selectedAddons={selectedAddons}
+                    setSelectedAddons={setSelectedAddons}
+                    remarks={remarks}
+                    setRemarks={setRemarks}
+                    staffList={staffList}
+                    raisedByStaffId={raisedByStaffId}
+                    setRaisedByStaffId={setRaisedByStaffId}
+                  />
 
-            <button
-              onClick={addCoTraveller}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 mb-8 border-2 border-dashed border-indigo-300 text-indigo-700 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-all"
-            >
-              <PlusCircle className="w-4.5 h-4.5" />
-              Add Co-Traveller
-            </button>
+                  <TravellerCard
+                    traveller={travellers[0]}
+                    index={0}
+                    isMain={true}
+                    setTravellerFrontFile={setTravellerFrontFile}
+                    setTravellerBackFile={setTravellerBackFile}
+                    extractTravellerAadhaar={extractTravellerAadhaar}
+                    clearTravellerAadhaar={clearTravellerAadhaar}
+                    handleTravellerChange={handleTravellerChange}
+                  />
 
-            {/* Payment screenshot — Advance only. Balance / Partial
-                  Balance come later from the All Bookings page once a
-                  TNR exists. */}
-              <div className="mb-8">
-                <h3 className="flex items-center gap-2 font-bold text-gray-800 text-lg mb-4">
-                  <IndianRupee className="w-6 h-6 text-indigo-600" /> Advance Payment Screenshot <span className="text-red-500">*</span>
-                  <span className="text-xs font-normal text-gray-400">
-                    (required to create this booking — OCR tries to read the amount automatically, type it in only if OCR misses)
-                  </span>
-                </h3>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {paymentSlots.map(({ type, label, cardClass }) => {
-                    const uploaded = paymentScreenshots[type] || [];
-                    const queue = paymentFiles[type] || [];
-                    const amounts = paymentAmounts[type] || [];
-                    const progress = paymentLoading[type];
-                    return (
-                      <div
-                        key={type}
-                        className={`p-5 rounded-2xl border shadow-sm ${uploaded.length > 0 ? "bg-green-50 border-green-300" : `${cardClass} border`}`}
-                      >
-                        <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3">
-                          <FileImage className="w-5 h-5" /> {label}
-                        </h4>
+                  {travellers.slice(1).map((t, i) => (
+                    <TravellerCard
+                      key={i + 1}
+                      traveller={t}
+                      index={i + 1}
+                      isMain={false}
+                      removeCoTraveller={removeCoTraveller}
+                      setTravellerFrontFile={setTravellerFrontFile}
+                      setTravellerBackFile={setTravellerBackFile}
+                      extractTravellerAadhaar={extractTravellerAadhaar}
+                      clearTravellerAadhaar={clearTravellerAadhaar}
+                      handleTravellerChange={handleTravellerChange}
+                    />
+                  ))}
 
-                        {uploaded.length > 0 && (
-                          <div className="flex flex-col gap-1 mb-3">
-                            {uploaded.map((u, i) => (
-                              <button
-                                type="button"
-                                key={i}
-                                onClick={() =>
-                                  setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))
-                                }
-                                className="flex items-center gap-2 text-sm text-green-700 font-medium hover:underline text-left"
-                              >
-                                <CheckCircle2 className="w-4 h-4 shrink-0" /> #{i + 1}
-                                {u.amount ? ` — ₹${u.amount}` : " — amount not entered"}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        <ScreenshotViewer
-                          items={uploaded}
-                          index={paymentViewerIndex[type] ?? null}
-                          onClose={() => setPaymentViewerIndex((prev) => ({ ...prev, [type]: null }))}
-                          onNav={(i) => setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))}
-                        />
+                  <button
+                    onClick={addCoTraveller}
+                    className="w-full flex items-center justify-center gap-2 px-5 py-3 mb-8 border-2 border-dashed border-indigo-300 text-indigo-700 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-all"
+                  >
+                    <PlusCircle className="w-4.5 h-4.5" />
+                    Add Co-Traveller
+                  </button>
 
-                        {/* Pick several screenshots together — they still
-                            go to the backend one at a time (sequentially),
-                            but a single "Upload All" click walks the whole
-                            queue instead of needing a click per file. */}
-                        {queue.length > 0 && (
-                          <div className="flex flex-col gap-1.5 mb-2.5">
-                            {queue.map((f, i) => (
-                              <div key={i} className="flex items-center gap-1.5">
-                                <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2.5 py-2 truncate">
-                                  <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                                  {f.name}
-                                </div>
-                                <input
-                                  type="number"
-                                  placeholder="₹ (optional — OCR tries first)"
-                                  value={amounts[i] || ""}
-                                  onChange={(e) =>
-                                    setPaymentAmounts((prev) => ({
-                                      ...prev,
-                                      [type]: (prev[type] || []).map((a, idx) => (idx === i ? e.target.value : a)),
-                                    }))
-                                  }
-                                  disabled={!!progress}
-                                  className="w-24 shrink-0 px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPaymentFiles((prev) => ({
-                                      ...prev,
-                                      [type]: (prev[type] || []).filter((_, idx) => idx !== i),
-                                    }));
-                                    setPaymentAmounts((prev) => ({
-                                      ...prev,
-                                      [type]: (prev[type] || []).filter((_, idx) => idx !== i),
-                                    }));
-                                  }}
-                                  disabled={!!progress}
-                                  title="Remove from queue"
-                                  className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <label className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg px-3 py-3 mb-2.5 cursor-pointer hover:border-indigo-400">
-                          <Upload className="w-3.5 h-3.5" />
-                          {queue.length > 0 ? "Add more screenshot(s)" : "Choose screenshot(s)"}
-                          <input
-                            type="file"
-                            accept="image/*,application/pdf"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files || []);
-                              if (!files.length) return;
-                              setPaymentFiles((prev) => ({ ...prev, [type]: [...(prev[type] || []), ...files] }));
-                              setPaymentAmounts((prev) => ({
-                                ...prev,
-                                [type]: [...(prev[type] || []), ...files.map(() => "")],
-                              }));
-                              e.target.value = "";
-                            }}
-                          />
-                        </label>
-
-                        {queue.length > 0 && (
-                          <button
-                            onClick={() => handlePaymentUpload(type)}
-                            disabled={!!progress}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-semibold transition-colors"
+                  <div className="mb-8">
+                    <h3 className="flex items-center gap-2 font-bold text-gray-800 text-lg mb-4">
+                      <IndianRupee className="w-6 h-6 text-indigo-600" /> Advance Payment Screenshot <span className="text-red-500">*</span>
+                      <span className="text-xs font-normal text-gray-400">
+                        (required to create this booking — OCR tries to read the amount automatically, type it in only if OCR misses)
+                      </span>
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {paymentSlots.map(({ type, label, cardClass }) => {
+                        const uploaded = paymentScreenshots[type] || [];
+                        const queue = paymentFiles[type] || [];
+                        const amounts = paymentAmounts[type] || [];
+                        const remarksQueue = paymentRemarks[type] || [];
+                        const progress = paymentLoading[type];
+                        return (
+                          <div
+                            key={type}
+                            className={`min-w-0 w-full p-4 sm:p-5 rounded-2xl border shadow-sm ${uploaded.length > 0 ? "bg-green-50 border-green-300" : `${cardClass} border`}`}
                           >
-                            {progress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                            {progress
-                              ? `Uploading ${progress.current} of ${progress.total}...`
-                              : `Upload ${queue.length > 1 ? `All (${queue.length})` : ""}`}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                            <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3">
+                              <FileImage className="w-5 h-5" /> {label}
+                            </h4>
 
-              <button
-                onClick={handleSaveBooking}
-                disabled={saving}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-700 to-indigo-600 hover:from-indigo-800 hover:to-indigo-700 disabled:opacity-60 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    Save Booking <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
-          </>
-        )}
-          </>
-        )}
+                            {uploaded.length > 0 && (
+                              <div className="flex flex-col gap-1 mb-3">
+                                {uploaded.map((u, i) => (
+                                  <button
+                                    type="button"
+                                    key={i}
+                                    onClick={() =>
+                                      setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))
+                                    }
+                                    className="flex items-center gap-2 text-sm text-green-700 font-medium hover:underline text-left"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 shrink-0" /> #{i + 1}
+                                    {u.amount ? ` — ₹${u.amount}` : " — amount not entered"}
+                                    {u.remarks ? ` — ${u.remarks}` : ""}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            <ScreenshotViewer
+                              items={uploaded}
+                              index={paymentViewerIndex[type] ?? null}
+                              onClose={() => setPaymentViewerIndex((prev) => ({ ...prev, [type]: null }))}
+                              onNav={(i) => setPaymentViewerIndex((prev) => ({ ...prev, [type]: i }))}
+                            />
+
+                            {queue.length > 0 && (
+                              <div className="flex flex-col gap-1.5 mb-2.5">
+                                {queue.map((f, i) => (
+                                  <div key={i} className="flex flex-col gap-1.5 p-2 bg-white border border-gray-200 rounded-lg">
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 px-1 py-1">
+                                        <FileImage className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                                        <span className="truncate">{f.name}</span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPaymentFiles((prev) => ({
+                                            ...prev,
+                                            [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+                                          }));
+                                          setPaymentAmounts((prev) => ({
+                                            ...prev,
+                                            [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+                                          }));
+                                          setPaymentRemarks((prev) => ({
+                                            ...prev,
+                                            [type]: (prev[type] || []).filter((_, idx) => idx !== i),
+                                          }));
+                                        }}
+                                        disabled={!!progress}
+                                        title="Remove from queue"
+                                        className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    <input
+                                      type="number"
+                                      placeholder="₹ (optional — OCR tries first)"
+                                      value={amounts[i] || ""}
+                                      onChange={(e) =>
+                                        setPaymentAmounts((prev) => ({
+                                          ...prev,
+                                          [type]: (prev[type] || []).map((a, idx) => (idx === i ? e.target.value : a)),
+                                        }))
+                                      }
+                                      disabled={!!progress}
+                                      className="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="Bank (e.g. SBI)"
+                                      value={remarksQueue[i] || ""}
+                                      onChange={(e) =>
+                                        setPaymentRemarks((prev) => ({
+                                          ...prev,
+                                          [type]: (prev[type] || []).map((r, idx) => (idx === i ? e.target.value : r)),
+                                        }))
+                                      }
+                                      disabled={!!progress}
+                                      className="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <label className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg px-3 py-3 mb-2.5 cursor-pointer hover:border-indigo-400">
+                              <Upload className="w-3.5 h-3.5" />
+                              {queue.length > 0 ? "Add more screenshot(s)" : "Choose screenshot(s)"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                multiple
+                                className="hidden"
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  if (!files.length) return;
+                                  setPaymentFiles((prev) => ({ ...prev, [type]: [...(prev[type] || []), ...files] }));
+                                  setPaymentAmounts((prev) => ({
+                                    ...prev,
+                                    [type]: [...(prev[type] || []), ...files.map(() => "")],
+                                  }));
+                                  setPaymentRemarks((prev) => ({
+                                    ...prev,
+                                    [type]: [...(prev[type] || []), ...files.map(() => "")],
+                                  }));
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+
+                            {queue.length > 0 && (
+                              <button
+                                onClick={() => handlePaymentUpload(type)}
+                                disabled={!!progress}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-semibold transition-colors"
+                              >
+                                {progress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                {progress
+                                  ? `Uploading ${progress.current} of ${progress.total}...`
+                                  : `Upload ${queue.length > 1 ? `All (${queue.length})` : ""}`}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSaveBooking}
+                    disabled={saving}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-700 to-indigo-600 hover:from-indigo-800 hover:to-indigo-700 disabled:opacity-60 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      <>
+                        Save Booking <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

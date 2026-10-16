@@ -227,31 +227,29 @@ const TourApp = () => {
             />
             {/* Tour Routes */}
             <Route path="/task-dashboard" element={<TaskDashboard />} />
-            <Route path="/staff-profile" element={<AdminProfile />} />
+            <Route path="/tour-dashboard" element={<TourDashboard />} />
             <Route path="/payment-tasks" element={<PaymentTasks />} />
+            <Route path="/staff-profile" element={<AdminProfile />} />
+            <Route path="/tour-profile" element={<TourProfile />} />
             <Route path="/ticket-landing" element={<TicketLanding />} />
             <Route path="/aadhaar-upload" element={<AadhaarUpload />} />
             <Route path="/creat-bookings" element={<CreateBooking />} />
+            <Route path="/tour-bookings" element={<TourBookings />} />
             <Route path="/admin-bookings" element={<AdminCreatedBooking />} />
             <Route path="/tour-enquiries" element={<TripEnquiries />} />
-            <Route path="/tour-dashboard" element={<TourDashboard />} />
-            <Route path="/tour-bookings" element={<TourBookings />} />
             <Route path="/invoice/:tnr" element={<Invoice />} />  {/* ← ADD THIS */}
-            <Route path="/tour-profile" element={<TourProfile />} />
             <Route path="/tour-namelist" element={<TourNameList />} />
+            <Route path="/tour-roomlist" element={<TourRoomList />} />
             <Route path="/tour-updateBalance" element={<BookingControls />} />
             <Route
               path="/tour-cancelTraveller"
               element={<CancellationControls />}
             />
-
+            <Route path="/tour-allbookings" element={<AllTourBookings />} />
             <Route path="/tour-managebooking" element={<ManageBooking />} />
-            <Route path="/tour-roomlist" element={<TourRoomList />} />
             <Route path="/tour-termspage" element={<TernsAgreement />} />
             <Route path="/tour-balancepage" element={<BalanceUpdate />} />
             <Route path="/payment-details" element={<PaymentDetails />} />
-
-            <Route path="/tour-allbookings" element={<AllTourBookings />} />
             <Route path="/add-tourDetail" element={<AddTourDetail />} />
             <Route path="/vehicles" element={<TourVehicles />} />
             <Route
