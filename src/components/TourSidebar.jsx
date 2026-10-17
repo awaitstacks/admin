@@ -470,7 +470,7 @@ const tourMenuItems = [
   {
     to: "/creat-bookings",
     icon: CreativeCommons,
-    label: "Creat Booking",
+    label: "Create Booking",
   },
 
   {
