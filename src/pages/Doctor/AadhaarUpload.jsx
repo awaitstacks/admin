@@ -7561,7 +7561,7 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
               </div>
               <input
                 type="number"
-                placeholder="₹ (optional — OCR tries first)"
+                placeholder="₹ Amount (optional)"
                 value={queueAmounts[i] || ""}
                 onChange={(e) =>
                   setQueueAmounts((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
@@ -9726,7 +9726,7 @@ const AadhaarUpload = () => {
                     <h3 className="flex items-center gap-2 font-bold text-gray-800 text-lg mb-4">
                       <IndianRupee className="w-6 h-6 text-indigo-600" /> Advance Payment Screenshot <span className="text-red-500">*</span>
                       <span className="text-xs font-normal text-gray-400">
-                        (required to create this booking — OCR tries to read the amount automatically, type it in only if OCR misses)
+                        (required to create this booking — the amount you type is saved; leave it empty and OCR tries to read it)
                       </span>
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

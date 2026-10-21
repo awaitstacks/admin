@@ -464,7 +464,7 @@ const PaymentSlot = ({ tnr, slot, label, Icon, uploadUserBookingPayment, deleteG
               </div>
               <input
                 type="number"
-                placeholder="₹ (optional — OCR tries first)"
+                placeholder="₹ Amount (optional)"
                 value={queueAmounts[i] || ""}
                 onChange={(e) =>
                   setQueueAmounts((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
@@ -564,18 +564,18 @@ const UserBookingsTab = ({ tourId, searchUserBookings, uploadUserTravellerAadhaa
 
   const visibleBookings = filter.trim()
     ? bookings.filter((b) => {
-        const q = filter.trim().toLowerCase();
-        const names = (b.travellers || [])
-          .map((t) => [t.title, t.firstName, t.lastName].filter(Boolean).join(" "))
-          .join(" ")
-          .toLowerCase();
-        return (
-          b.tnr?.toLowerCase().includes(q) ||
-          b.contact?.email?.toLowerCase().includes(q) ||
-          b.contact?.mobile?.toLowerCase().includes(q) ||
-          names.includes(q)
-        );
-      })
+      const q = filter.trim().toLowerCase();
+      const names = (b.travellers || [])
+        .map((t) => [t.title, t.firstName, t.lastName].filter(Boolean).join(" "))
+        .join(" ")
+        .toLowerCase();
+      return (
+        b.tnr?.toLowerCase().includes(q) ||
+        b.contact?.email?.toLowerCase().includes(q) ||
+        b.contact?.mobile?.toLowerCase().includes(q) ||
+        names.includes(q)
+      );
+    })
     : bookings;
 
   return (
