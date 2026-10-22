@@ -8230,6 +8230,36 @@ const TourContextProvider = (props) => {
     }
   };
 
+  const closeEnquiry = async (id) => {
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/enquiry/${id}/close`,
+        {},
+        { headers: { ttoken } }
+      );
+      data.success ? toast.success(data.message) : toast.error(data.message);
+      return data;
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+      return { success: false };
+    }
+  };
+
+  const reopenEnquiry = async (id) => {
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/api/tour/enquiry/${id}/reopen`,
+        {},
+        { headers: { ttoken } }
+      );
+      data.success ? toast.success(data.message) : toast.error(data.message);
+      return data;
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+      return { success: false };
+    }
+  };
+
 
   // ==================== Context Value ====================
 
@@ -8463,6 +8493,9 @@ const TourContextProvider = (props) => {
     toggleRatePassed,
     acceptEnquiry,
     rejectEnquiry,
+    closeEnquiry,    // ← new
+    reopenEnquiry,   // ← new
+
 
     // ── STAFF PROFILES (new) ──
     staffList,
