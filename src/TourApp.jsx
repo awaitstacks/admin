@@ -171,6 +171,7 @@ import CreateBooking from "./pages/Doctor/CreateBooking.jsx";  // ← ADD THIS
 import AdminCreatedBooking from "./pages/Doctor/AdminCreatedBooking.jsx";  // ← ADD THIS
 import PaymentTasks from "./pages/Doctor/PaymentTasks.jsx";
 import PaymentTasksAdmin from "./pages/Admin/PaymentTasksAdmin.jsx";
+import PaymentRecords from "./pages/Doctor/PaymentRecords.jsx";  // ← ADD THIS
 import { Ticket } from "lucide-react";
 
 
@@ -235,6 +236,7 @@ const TourApp = () => {
             <Route path="/aadhaar-upload" element={<AadhaarUpload />} />
             <Route path="/creat-bookings" element={<CreateBooking />} />
             <Route path="/tour-bookings" element={<TourBookings />} />
+            <Route path="/payment-records" element={<PaymentRecords />} />
             <Route path="/admin-bookings" element={<AdminCreatedBooking />} />
             <Route path="/tour-enquiries" element={<TripEnquiries />} />
             <Route path="/invoice/:tnr" element={<Invoice />} />  {/* ← ADD THIS */}

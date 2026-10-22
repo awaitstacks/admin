@@ -470,7 +470,7 @@ const tourMenuItems = [
   {
     to: "/creat-bookings",
     icon: CreativeCommons,
-    label: "Create Booking",
+    label: "Create Booking(manual)",
   },
 
   {
@@ -485,6 +485,12 @@ const tourMenuItems = [
     icon: Calendar,
     label: "All Bookings",
   },
+  {
+    to: "/payment-records",
+    icon: Calendar,
+    label: "Payment Records",
+  },
+
   {
     to: "/ticket-landing",
     icon: DownloadCloud,

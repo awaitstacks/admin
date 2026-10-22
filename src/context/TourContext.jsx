@@ -5691,6 +5691,20 @@ const TourContextProvider = (props) => {
     }
   };
 
+  const getPaymentRecords = async (params = {}) => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/tour/ocr/payment-records`,
+        { headers: { ttoken }, params }
+      );
+      return data;
+    } catch (error) {
+      console.error("getPaymentRecords error:", error);
+      toast.error(error.response?.data?.message || "Could not load payment records");
+      return { success: false };
+    }
+  };
+
   // POST /api/tour/add-co-traveller
   const addCoTraveller = async (payload) => {
     try {
@@ -8465,6 +8479,7 @@ const TourContextProvider = (props) => {
     uploadPaymentScreenshot,
     saveAadhaarUpload,
     getAadhaarBookings,
+    getPaymentRecords,
     addCoTraveller,
     uploadGroupPayment,
     searchUserBookings,
