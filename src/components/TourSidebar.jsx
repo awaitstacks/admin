@@ -288,7 +288,11 @@ import {
   Upload,
   CreativeCommons,
   BookIcon,
-  ListChecks
+  ListChecks,
+  CoinsIcon,
+  Coins,
+  DollarSign,
+  IndianRupeeIcon
 } from "lucide-react";
 import { Profiler } from "react";
 
@@ -445,11 +449,17 @@ const adminMenuItems = [
 
 const tourMenuItems = [
   {
+    to: "/payment-records",
+    icon: IndianRupeeIcon,
+    label: "Payment Proofs",
+  },
+  
+  { to: "/payment-tasks", icon: ListChecks, label: "Payment Dashboard" },
+  {
     to: "/task-dashboard",
     icon: LucideThermometerSnowflake,
     label: "Task Dashboard",
   },
-  { to: "/payment-tasks", icon: ListChecks, label: "Payment Tasks" },
 
   {
     to: "/staff-profile",
@@ -479,17 +489,14 @@ const tourMenuItems = [
     label: "Admin-Bookings",
   },
   { to: "/tour-bookings", icon: BookImage, label: "Tour Bookings" },
+  { to: "/tour-dashboard", icon: Info, label: "Tour info" },
 
   {
     to: "/tour-allbookings",
     icon: Calendar,
     label: "All Bookings",
   },
-  {
-    to: "/payment-records",
-    icon: Calendar,
-    label: "Payment Records",
-  },
+  
 
   {
     to: "/ticket-landing",
@@ -503,9 +510,6 @@ const tourMenuItems = [
     icon: MapPinHouse,
     label: "FIT Enquiries",
   },
-
-  { to: "/tour-dashboard", icon: Info, label: "Tour info" },
-
 
   { to: "/tour-namelist", icon: FileText, label: "Tour Name List" },
 
