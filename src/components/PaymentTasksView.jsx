@@ -3875,7 +3875,7 @@ const PaymentTasksView = ({ isAuthed, fetchTasks, markTaskDone, markAdvanceDone,
 
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-gray-900 mb-8 sm:mb-10 leading-tight">
-          Payment Tasks
+          Payment Dashboard
         </h1>
 
         {isLoading ? (

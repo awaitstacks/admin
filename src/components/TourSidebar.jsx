@@ -448,17 +448,18 @@ const adminMenuItems = [
 ];
 
 const tourMenuItems = [
-  {
-    to: "/payment-records",
-    icon: IndianRupeeIcon,
-    label: "Payment Proofs",
-  },
+  
   
   { to: "/payment-tasks", icon: ListChecks, label: "Payment Dashboard" },
   {
     to: "/task-dashboard",
     icon: LucideThermometerSnowflake,
     label: "Task Dashboard",
+  },
+  {
+    to: "/payment-records",
+    icon: IndianRupeeIcon,
+    label: "Payment Records",
   },
 
   {

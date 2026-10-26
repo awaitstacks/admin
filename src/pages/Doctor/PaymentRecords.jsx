@@ -67,6 +67,18 @@ const dayParts = (key) => {
   };
 };
 
+// Quick day filters — each sets From and To to that one day.
+const dayOffsetKey = (offset) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return dayKey(d);
+};
+const QUICK_DAYS = [
+  { offset: -2, label: "Day before yesterday" },
+  { offset: -1, label: "Yesterday" },
+  { offset: 0, label: "Today" },
+];
+
 // Tear-off calendar leaf for each day block in the statement.
 const DateStamp = ({ dp }) => (
   <span className="inline-flex flex-col w-11 shrink-0 rounded-lg overflow-hidden border border-[#CFE3D6] bg-white text-center shadow-sm">
@@ -402,7 +414,7 @@ const PaymentRecords = () => {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Payment records</h1>
+            <h1 className="text-xl font-bold tracking-tight">Payment Records</h1>
             <p className="text-xs text-[#6B7F77]">Screenshots uploaded from Aadhaar Upload, {sortDir === "asc" ? "oldest" : "newest"} first</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none [&>button]:justify-center">
@@ -493,7 +505,7 @@ const PaymentRecords = () => {
 
         {/* Filters — one compact toolbar */}
         <section className="bg-white rounded-2xl border border-[#DCE5E0] p-3 mb-4">
-          <div className="grid grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             <div className="col-span-2 md:col-span-1 relative min-w-0">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA39B] pointer-events-none" />
               <input
@@ -534,7 +546,7 @@ const PaymentRecords = () => {
                 <ChevronRight className={`w-4 h-4 shrink-0 text-[#8FA39B] transition-transform ${showDrop ? "-rotate-90" : "rotate-90"}`} />
               </button>
               {showDrop && (
-                <div className="absolute left-0 right-0 xl:right-auto xl:w-[360px] top-[calc(100%+4px)] z-30 bg-white border border-[#DCE5E0] rounded-xl shadow-lg overflow-hidden">
+                <div className="absolute left-0 right-0 md:right-auto md:w-[360px] top-[calc(100%+4px)] z-30 bg-white border border-[#DCE5E0] rounded-xl shadow-lg overflow-hidden">
                   <div className="p-2 border-b border-[#EEF2EF]">
                     <div className="relative">
                       <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8FA39B] pointer-events-none" />
@@ -610,6 +622,35 @@ const PaymentRecords = () => {
                 </div>
               )}
             </div>
+            <select
+              aria-label="Date"
+              value={(() => {
+                const hit = QUICK_DAYS.find(({ offset }) => {
+                  const k = dayOffsetKey(offset);
+                  return from === k && to === k;
+                });
+                return hit ? String(hit.offset) : "";
+              })()}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "") {
+                  setFrom("");
+                  setTo("");
+                } else {
+                  const k = dayOffsetKey(Number(v));
+                  setFrom(k);
+                  setTo(k);
+                }
+              }}
+              className={`${fieldCls} col-span-2 md:col-span-1 pr-8 cursor-pointer`}
+            >
+              <option value="">All dates</option>
+              {QUICK_DAYS.map(({ offset, label }) => (
+                <option key={offset} value={String(offset)}>
+                  {label}
+                </option>
+              ))}
+            </select>
             <label className="relative min-w-0">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">From</span>
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={`${fieldCls} pl-12`} />
@@ -618,7 +659,7 @@ const PaymentRecords = () => {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">To</span>
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={`${fieldCls} pl-9`} />
             </label>
-            <div className="col-span-2 xl:col-span-1 inline-flex h-9 rounded-lg border border-[#DCE5E0] p-0.5 bg-[#F7F9F8]" role="group" aria-label="Booking type">
+            <div className="col-span-2 md:col-span-1 flex h-9 rounded-lg border border-[#DCE5E0] p-0.5 bg-[#F7F9F8]" role="group" aria-label="Booking type">
               {[
                 { v: "", l: "All" },
                 { v: "admin", l: "Admin" },
@@ -629,7 +670,7 @@ const PaymentRecords = () => {
                   type="button"
                   onClick={() => setSource(o.v)}
                   aria-pressed={source === o.v}
-                  className={`flex-1 xl:flex-none px-3 rounded-md text-xs font-semibold ${source === o.v ? "bg-white text-[#1F7A3D] shadow-sm" : "text-[#6B7F77] hover:text-[#1B2B26]"
+                  className={`flex-1 px-3 rounded-md text-xs font-semibold ${source === o.v ? "bg-white text-[#1F7A3D] shadow-sm" : "text-[#6B7F77] hover:text-[#1B2B26]"
                     }`}
                 >
                   {o.l}
