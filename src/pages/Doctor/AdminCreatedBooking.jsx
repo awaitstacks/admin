@@ -257,7 +257,7 @@ const AdminCreatedBooking = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gray-50/50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-50/50 pt-20 pb-6 lg:pt-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8 text-center">
             Admin Created Bookings
@@ -518,14 +518,13 @@ const AdminCreatedBooking = () => {
                                 )}
                                 {travellerBadge && (
                                   <span
-                                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-3 ${
-                                      travellerBadge === "Cancelled"
+                                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-3 ${travellerBadge === "Cancelled"
                                         ? "bg-red-100 text-red-700"
                                         : travellerBadge ===
-                                            "Cancellation Requested"
+                                          "Cancellation Requested"
                                           ? "bg-orange-100 text-orange-700"
                                           : "bg-purple-100 text-purple-700"
-                                    }`}
+                                      }`}
                                   >
                                     {travellerBadge}
                                   </span>
