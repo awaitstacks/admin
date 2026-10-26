@@ -395,9 +395,9 @@ const PaymentRecords = () => {
 
   const fieldCls =
     "w-full h-9 px-3 rounded-lg border border-[#DCE5E0] bg-white text-sm text-[#1B2B26] placeholder:text-[#8FA39B] outline-none focus:border-[#2E9E4F] focus:ring-2 focus:ring-[#2E9E4F]/15";
-  
+
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#EEF5F0] py-4 sm:py-5 px-3 sm:px-6 text-[#1B2B26] text-sm">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#EEF5F0] pt-16 pb-4 sm:pb-5 lg:pt-5 px-3 sm:px-6 text-[#1B2B26] text-sm">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -406,23 +406,23 @@ const PaymentRecords = () => {
             <p className="text-xs text-[#6B7F77]">Screenshots uploaded from Aadhaar Upload, {sortDir === "asc" ? "oldest" : "newest"} first</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none [&>button]:justify-center">
-          <button
-            type="button"
-            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-            title="Change date order"
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[#DCE5E0] bg-white text-sm font-semibold text-[#1B2B26] hover:bg-[#F7F9F8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2E9E4F]"
-          >
-            <ArrowUpDown className="w-4 h-4 text-[#2E9E4F]" />
-            {sortDir === "asc" ? "Oldest first" : "Newest first"}
-          </button>
-          <button
-            type="button"
-            onClick={fetchRecords}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-[#2E9E4F] hover:bg-[#268A44] text-white text-sm font-semibold disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E6FD9]"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-          </button>
+            <button
+              type="button"
+              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+              title="Change date order"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[#DCE5E0] bg-white text-sm font-semibold text-[#1B2B26] hover:bg-[#F7F9F8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2E9E4F]"
+            >
+              <ArrowUpDown className="w-4 h-4 text-[#2E9E4F]" />
+              {sortDir === "asc" ? "Oldest first" : "Newest first"}
+            </button>
+            <button
+              type="button"
+              onClick={fetchRecords}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-[#2E9E4F] hover:bg-[#268A44] text-white text-sm font-semibold disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E6FD9]"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </button>
           </div>
         </div>
 
@@ -455,11 +455,9 @@ const PaymentRecords = () => {
                   type="button"
                   onClick={() => setType(active ? "" : k)}
                   aria-pressed={active}
-                  className={`relative min-w-0 text-left px-3 sm:px-4 py-3 sm:py-3.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#1E6FD9] ${
-                    i < 2 ? "border-r border-dashed border-[#DCE5E0]" : "xl:border-r-0"
-                  } ${i === 2 ? "col-span-2 sm:col-span-1 border-t sm:border-t-0 border-dashed border-[#DCE5E0]" : ""} ${
-                    active ? "" : "hover:bg-[#FAFCFB]"
-                  } ${type && !active ? "opacity-50" : ""}`}
+                  className={`relative min-w-0 text-left px-3 sm:px-4 py-3 sm:py-3.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#1E6FD9] ${i < 2 ? "border-r border-dashed border-[#DCE5E0]" : "xl:border-r-0"
+                    } ${i === 2 ? "col-span-2 sm:col-span-1 border-t sm:border-t-0 border-dashed border-[#DCE5E0]" : ""} ${active ? "" : "hover:bg-[#FAFCFB]"
+                    } ${type && !active ? "opacity-50" : ""}`}
                   style={active ? { background: m.soft } : undefined}
                 >
                   <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: active ? bar : "transparent" }} />
@@ -572,9 +570,8 @@ const PaymentRecords = () => {
                         return (
                           <li key={t}>
                             <label
-                              className={`flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-[#F7F9F8] ${
-                                checked ? "bg-[#F1F8F3]" : ""
-                              }`}
+                              className={`flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-[#F7F9F8] ${checked ? "bg-[#F1F8F3]" : ""
+                                }`}
                             >
                               <input
                                 type="checkbox"
@@ -632,9 +629,8 @@ const PaymentRecords = () => {
                   type="button"
                   onClick={() => setSource(o.v)}
                   aria-pressed={source === o.v}
-                  className={`flex-1 xl:flex-none px-3 rounded-md text-xs font-semibold ${
-                    source === o.v ? "bg-white text-[#1F7A3D] shadow-sm" : "text-[#6B7F77] hover:text-[#1B2B26]"
-                  }`}
+                  className={`flex-1 xl:flex-none px-3 rounded-md text-xs font-semibold ${source === o.v ? "bg-white text-[#1F7A3D] shadow-sm" : "text-[#6B7F77] hover:text-[#1B2B26]"
+                    }`}
                 >
                   {o.l}
                 </button>
@@ -680,185 +676,183 @@ const PaymentRecords = () => {
             </div>
           ) : (
             <>
-            <div className="hidden xl:block overflow-x-auto">
-              <table className="w-full min-w-[900px] text-sm border-collapse">
-                <thead>
-                  <tr className="text-xs text-[#1F7A3D] bg-[#F2FAF4] border-b border-[#CFE3D6]">
-                    <th className="pl-5 pr-3 py-3 text-left font-semibold w-24">Time</th>
-                    <th className="px-3 py-3 text-left font-semibold w-20">Proof</th>
-                    <th className="px-3 py-3 text-left font-semibold">Guest and TNR</th>
-                    <th className="px-3 py-3 text-left font-semibold">Bank / remarks</th>
-                    <th className="px-3 py-3 text-left font-semibold">Tour</th>
-                    <th className="px-3 py-3 text-left font-semibold w-24">Booking</th>
-                    <th className="pl-3 pr-5 py-3 text-right font-semibold w-40">Amount</th>
-                  </tr>
-                </thead>
+              <div className="hidden xl:block overflow-x-auto">
+                <table className="w-full min-w-[900px] text-sm border-collapse">
+                  <thead>
+                    <tr className="text-xs text-[#1F7A3D] bg-[#F2FAF4] border-b border-[#CFE3D6]">
+                      <th className="pl-5 pr-3 py-3 text-left font-semibold w-24">Time</th>
+                      <th className="px-3 py-3 text-left font-semibold w-20">Proof</th>
+                      <th className="px-3 py-3 text-left font-semibold">Guest and TNR</th>
+                      <th className="px-3 py-3 text-left font-semibold">Bank / remarks</th>
+                      <th className="px-3 py-3 text-left font-semibold">Tour</th>
+                      <th className="px-3 py-3 text-left font-semibold w-24">Booking</th>
+                      <th className="pl-3 pr-5 py-3 text-right font-semibold w-40">Amount</th>
+                    </tr>
+                  </thead>
+                  {days.map((g) => {
+                    const dp = dayParts(g.key);
+                    return (
+                      <tbody key={g.key}>
+                        <tr className="border-y border-[#DCE5E0] bg-[#FAFCFB]">
+                          <td colSpan={6} className="pl-5 pr-3 py-3">
+                            <div className="flex items-center gap-3">
+                              <DateStamp dp={dp} />
+                              <div>
+                                <p className="font-semibold leading-tight">{dp.rel}</p>
+                                <p className="text-xs text-[#8FA39B]">{g.rows.length} payment{g.rows.length !== 1 ? "s" : ""} received</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="pl-3 pr-5 py-3 text-right">
+                            <span className="inline-block rounded-lg bg-[#E4F5EA] text-[#1F7A3D] px-3 py-1 font-bold tabular-nums">
+                              ₹{formatAmount(g.total)}
+                            </span>
+                          </td>
+                        </tr>
+                        {g.rows.map(({ r, index }) => {
+                          const m = TYPE_META[r.type] || TYPE_META.partial;
+                          return (
+                            <tr key={r._id} className="border-b border-[#EEF2EF] last:border-0 hover:bg-[#F7F9F8]">
+                              <td className="pl-5 pr-3 py-2.5 align-middle whitespace-nowrap tabular-nums text-[#4B5F57]">
+                                <span className="relative pl-3">
+                                  <span className="absolute left-0 top-0.5 bottom-0.5 w-1 rounded-full" style={{ background: m.color }} />
+                                  {formatTime(r.createdAt)}
+                                </span>
+                              </td>
+                              <td className="px-3 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setViewerIndex(index)}
+                                  aria-label="View screenshot"
+                                  className="relative block w-10 h-10 rounded-md overflow-hidden border border-[#DCE5E0] bg-[#EEF2EF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3B5BDB] hover:border-[#3B5BDB]"
+                                >
+                                  <img src={toPreviewUrl(r.url)} alt="" loading="lazy" className="w-full h-full object-cover" />
+                                  {isPdf(r.url) && (
+                                    <span className="absolute inset-x-0 bottom-0 text-[9px] font-bold text-center bg-[#1B2B26]/70 text-white">
+                                      PDF
+                                    </span>
+                                  )}
+                                </button>
+                              </td>
+                              <td className="px-3 py-3 max-w-[260px]">
+                                <p className="font-semibold truncate">{r.name || "Unnamed guest"}</p>
+                                {r.tnr ? (
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold tracking-wide text-[#3B5BDB]">
+                                    <span className="select-all">{r.tnr}</span> <CopyTnr tnr={r.tnr} />
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-[#8FA39B]">TNR not linked yet</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-3 max-w-[180px] text-[#4B5F57]">
+                                <span className="block truncate">{r.remarks || <span className="text-[#B9C9C1]">—</span>}</span>
+                              </td>
+                              <td className="px-3 py-3 max-w-[220px] text-[#4B5F57]">
+                                <span className="block truncate">{r.tourTitle || <span className="text-[#B9C9C1]">—</span>}</span>
+                              </td>
+                              <td className="px-3 py-3">
+                                <span
+                                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${r.bookingSource === "user" ? "bg-[#EBFBEE] text-[#2B8A3E]" : "bg-[#EDF2FF] text-[#364FC7]"
+                                    }`}
+                                >
+                                  {r.bookingSource === "user" ? "User" : "Admin"}
+                                </span>
+                              </td>
+                              <td className="pl-3 pr-5 py-3 text-right whitespace-nowrap">
+                                <span className="block font-bold tabular-nums text-sm">
+                                  {r.amount ? `₹${formatAmount(r.amount)}` : <span className="text-[#B9C9C1] font-normal">—</span>}
+                                </span>
+                                <span className="text-xs font-semibold" style={{ color: m.color }}>
+                                  {m.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    );
+                  })}
+                </table>
+              </div>
+
+              {/* Mobile: same statement as a compact list */}
+              <div className="xl:hidden">
                 {days.map((g) => {
                   const dp = dayParts(g.key);
                   return (
-                    <tbody key={g.key}>
-                      <tr className="border-y border-[#DCE5E0] bg-[#FAFCFB]">
-                        <td colSpan={6} className="pl-5 pr-3 py-3">
-                          <div className="flex items-center gap-3">
-                            <DateStamp dp={dp} />
-                            <div>
-                              <p className="font-semibold leading-tight">{dp.rel}</p>
-                              <p className="text-xs text-[#8FA39B]">{g.rows.length} payment{g.rows.length !== 1 ? "s" : ""} received</p>
-                            </div>
+                    <div key={g.key}>
+                      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 bg-[#FAFCFB] border-y border-[#DCE5E0]">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <DateStamp dp={dp} />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm leading-tight truncate">{dp.rel}</p>
+                            <p className="text-xs text-[#8FA39B]">{g.rows.length} received</p>
                           </div>
-                        </td>
-                        <td className="pl-3 pr-5 py-3 text-right">
-                          <span className="inline-block rounded-lg bg-[#E4F5EA] text-[#1F7A3D] px-3 py-1 font-bold tabular-nums">
-                            ₹{formatAmount(g.total)}
-                          </span>
-                        </td>
-                      </tr>
+                        </div>
+                        <span className="rounded-lg bg-[#E4F5EA] text-[#1F7A3D] px-2.5 py-1 font-bold tabular-nums text-sm shrink-0">
+                          ₹{formatAmount(g.total)}
+                        </span>
+                      </div>
                       {g.rows.map(({ r, index }) => {
                         const m = TYPE_META[r.type] || TYPE_META.partial;
                         return (
-                          <tr key={r._id} className="border-b border-[#EEF2EF] last:border-0 hover:bg-[#F7F9F8]">
-                            <td className="pl-5 pr-3 py-2.5 align-middle whitespace-nowrap tabular-nums text-[#4B5F57]">
-                              <span className="relative pl-3">
-                                <span className="absolute left-0 top-0.5 bottom-0.5 w-1 rounded-full" style={{ background: m.color }} />
-                                {formatTime(r.createdAt)}
-                              </span>
-                            </td>
-                            <td className="px-3 py-3">
-                              <button
-                                type="button"
-                                onClick={() => setViewerIndex(index)}
-                                aria-label="View screenshot"
-                                className="relative block w-10 h-10 rounded-md overflow-hidden border border-[#DCE5E0] bg-[#EEF2EF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3B5BDB] hover:border-[#3B5BDB]"
-                              >
-                                <img src={toPreviewUrl(r.url)} alt="" loading="lazy" className="w-full h-full object-cover" />
-                                {isPdf(r.url) && (
-                                  <span className="absolute inset-x-0 bottom-0 text-[9px] font-bold text-center bg-[#1B2B26]/70 text-white">
-                                    PDF
-                                  </span>
-                                )}
-                              </button>
-                            </td>
-                            <td className="px-3 py-3 max-w-[260px]">
-                              <p className="font-semibold truncate">{r.name || "Unnamed guest"}</p>
-                              {r.tnr ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-semibold tracking-wide text-[#3B5BDB]">
-                                  <span className="select-all">{r.tnr}</span> <CopyTnr tnr={r.tnr} />
-                                </span>
-                              ) : (
-                                <span className="text-xs text-[#8FA39B]">TNR not linked yet</span>
+                          <div
+                            key={r._id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setViewerIndex(index)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setViewerIndex(index);
+                              }
+                            }}
+                            className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 border-b border-[#EEF2EF] text-left cursor-pointer active:bg-[#F7F9F8] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2E9E4F]"
+                            style={{ boxShadow: `inset 3px 0 0 ${m.color}` }}
+                          >
+                            <span className="relative w-12 h-12 shrink-0 rounded-md overflow-hidden border border-[#DCE5E0] bg-[#EEF2EF]">
+                              <img src={toPreviewUrl(r.url)} alt="" loading="lazy" className="w-full h-full object-cover" />
+                              {isPdf(r.url) && (
+                                <span className="absolute inset-x-0 bottom-0 text-[9px] font-bold text-center bg-[#1B2B26]/70 text-white">PDF</span>
                               )}
-                            </td>
-                            <td className="px-3 py-3 max-w-[180px] text-[#4B5F57]">
-                              <span className="block truncate">{r.remarks || <span className="text-[#B9C9C1]">—</span>}</span>
-                            </td>
-                            <td className="px-3 py-3 max-w-[220px] text-[#4B5F57]">
-                              <span className="block truncate">{r.tourTitle || <span className="text-[#B9C9C1]">—</span>}</span>
-                            </td>
-                            <td className="px-3 py-3">
-                              <span
-                                className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
-                                  r.bookingSource === "user" ? "bg-[#EBFBEE] text-[#2B8A3E]" : "bg-[#EDF2FF] text-[#364FC7]"
-                                }`}
-                              >
-                                {r.bookingSource === "user" ? "User" : "Admin"}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block font-semibold text-sm truncate">{r.name || "Unnamed guest"}</span>
+                              <span className="flex items-center gap-1 min-w-0 text-xs">
+                                {r.tnr ? (
+                                  <>
+                                    <span className="font-semibold tracking-wide text-[#3B5BDB] select-all">{r.tnr}</span>
+                                    <CopyTnr tnr={r.tnr} size="lg" />
+                                  </>
+                                ) : (
+                                  <span className="text-[#8FA39B]">No TNR</span>
+                                )}
+                                {r.remarks && <span className="text-[#4B5F57] truncate">· {r.remarks}</span>}
                               </span>
-                            </td>
-                            <td className="pl-3 pr-5 py-3 text-right whitespace-nowrap">
-                              <span className="block font-bold tabular-nums text-sm">
-                                {r.amount ? `₹${formatAmount(r.amount)}` : <span className="text-[#B9C9C1] font-normal">—</span>}
+                              <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#8FA39B]">
+                                <span className="tabular-nums">{formatTime(r.createdAt)}</span>
+                                {r.tourTitle && <span className="hidden sm:inline truncate max-w-[260px]">· {r.tourTitle}</span>}
+                                <span
+                                  className={`text-[10px] font-semibold px-1.5 py-px rounded ${r.bookingSource === "user" ? "bg-[#EBFBEE] text-[#2B8A3E]" : "bg-[#EDF2FF] text-[#364FC7]"
+                                    }`}
+                                >
+                                  {r.bookingSource === "user" ? "User" : "Admin"}
+                                </span>
                               </span>
-                              <span className="text-xs font-semibold" style={{ color: m.color }}>
-                                {m.label}
+                            </span>
+                            <span className="text-right shrink-0">
+                              <span className="block font-bold tabular-nums">
+                                {r.amount ? `₹${formatAmount(r.amount)}` : "—"}
                               </span>
-                            </td>
-                          </tr>
+                              <span className="text-xs font-semibold" style={{ color: m.color }}>{m.label}</span>
+                            </span>
+                          </div>
                         );
                       })}
-                    </tbody>
+                    </div>
                   );
                 })}
-              </table>
-            </div>
-
-            {/* Mobile: same statement as a compact list */}
-            <div className="xl:hidden">
-              {days.map((g) => {
-                const dp = dayParts(g.key);
-                return (
-                  <div key={g.key}>
-                    <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 bg-[#FAFCFB] border-y border-[#DCE5E0]">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <DateStamp dp={dp} />
-                        <div className="min-w-0">
-                          <p className="font-semibold text-sm leading-tight truncate">{dp.rel}</p>
-                          <p className="text-xs text-[#8FA39B]">{g.rows.length} received</p>
-                        </div>
-                      </div>
-                      <span className="rounded-lg bg-[#E4F5EA] text-[#1F7A3D] px-2.5 py-1 font-bold tabular-nums text-sm shrink-0">
-                        ₹{formatAmount(g.total)}
-                      </span>
-                    </div>
-                    {g.rows.map(({ r, index }) => {
-                      const m = TYPE_META[r.type] || TYPE_META.partial;
-                      return (
-                        <div
-                          key={r._id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => setViewerIndex(index)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setViewerIndex(index);
-                            }
-                          }}
-                          className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 border-b border-[#EEF2EF] text-left cursor-pointer active:bg-[#F7F9F8] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2E9E4F]"
-                          style={{ boxShadow: `inset 3px 0 0 ${m.color}` }}
-                        >
-                          <span className="relative w-12 h-12 shrink-0 rounded-md overflow-hidden border border-[#DCE5E0] bg-[#EEF2EF]">
-                            <img src={toPreviewUrl(r.url)} alt="" loading="lazy" className="w-full h-full object-cover" />
-                            {isPdf(r.url) && (
-                              <span className="absolute inset-x-0 bottom-0 text-[9px] font-bold text-center bg-[#1B2B26]/70 text-white">PDF</span>
-                            )}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block font-semibold text-sm truncate">{r.name || "Unnamed guest"}</span>
-                            <span className="flex items-center gap-1 min-w-0 text-xs">
-                              {r.tnr ? (
-                                <>
-                                  <span className="font-semibold tracking-wide text-[#3B5BDB] select-all">{r.tnr}</span>
-                                  <CopyTnr tnr={r.tnr} size="lg" />
-                                </>
-                              ) : (
-                                <span className="text-[#8FA39B]">No TNR</span>
-                              )}
-                              {r.remarks && <span className="text-[#4B5F57] truncate">· {r.remarks}</span>}
-                            </span>
-                            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#8FA39B]">
-                              <span className="tabular-nums">{formatTime(r.createdAt)}</span>
-                              {r.tourTitle && <span className="hidden sm:inline truncate max-w-[260px]">· {r.tourTitle}</span>}
-                              <span
-                                className={`text-[10px] font-semibold px-1.5 py-px rounded ${
-                                  r.bookingSource === "user" ? "bg-[#EBFBEE] text-[#2B8A3E]" : "bg-[#EDF2FF] text-[#364FC7]"
-                                }`}
-                              >
-                                {r.bookingSource === "user" ? "User" : "Admin"}
-                              </span>
-                            </span>
-                          </span>
-                          <span className="text-right shrink-0">
-                            <span className="block font-bold tabular-nums">
-                              {r.amount ? `₹${formatAmount(r.amount)}` : "—"}
-                            </span>
-                            <span className="text-xs font-semibold" style={{ color: m.color }}>{m.label}</span>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
+              </div>
             </>
           )}
         </section>

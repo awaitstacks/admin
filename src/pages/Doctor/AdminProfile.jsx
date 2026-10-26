@@ -347,7 +347,7 @@ export default function StaffProfiles() {
     });
   }, [staff, query, typeFilter]);
 
-  
+
   function openCreateForm() {
     setEditingId(null);
     setOrigStatus("Active");
@@ -533,7 +533,7 @@ export default function StaffProfiles() {
   }
 
   return (
-    <div className="mx-4 mt-8 mb-6 max-w-6xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl sm:mx-6 sm:mt-10 sm:mb-8 sm:rounded-3xl">
+    <div className="mx-4 mt-16 mb-6 max-w-6xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl sm:mx-6 sm:mb-8 sm:rounded-3xl lg:mt-10">
       {/* banner */}
       <div className="flex items-center gap-3 bg-gradient-to-r from-blue-800 to-blue-700 px-4 py-4 sm:px-6 sm:py-5">
         <Crown />
@@ -577,8 +577,8 @@ export default function StaffProfiles() {
               onClick={() => setTypeFilter(t)}
               aria-pressed={typeFilter === t}
               className={`min-h-[30px] rounded-full border px-3 text-[12.5px] font-medium ${typeFilter === t
-                  ? "border-blue-700 bg-blue-700 text-white"
-                  : "border-slate-300 bg-white text-slate-600"
+                ? "border-blue-700 bg-blue-700 text-white"
+                : "border-slate-300 bg-white text-slate-600"
                 }`}
             >
               {t === "All" ? "All" : t === "Field Staff" ? "🧭 Field Staff" : "🏢 Admin Staff"}
@@ -626,7 +626,7 @@ export default function StaffProfiles() {
         )}
 
         {!loading && !loadError && visibleStaff.length > 0 && (
-          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {visibleStaff.map((s) => (
               <button
                 key={s._id}

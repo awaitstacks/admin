@@ -394,7 +394,7 @@ const CancellationControls = () => {
   // ────────────────────── RENDER ──────────────────────
   if (!singleBooking && !loading && !error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-16 pb-6 lg:pt-6 px-4 sm:px-6 lg:px-8">
         <ToastContainer position="top-right" autoClose={3000} />
         <div className="max-w-4xl mx-auto mb-10">
           <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -435,7 +435,7 @@ const CancellationControls = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-16 pb-6 lg:pt-6 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
           <p className="mt-3 text-gray-600">Fetching booking...</p>
@@ -446,7 +446,7 @@ const CancellationControls = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-16 pb-6 lg:pt-6 px-4 sm:px-6 lg:px-8">
         <ToastContainer position="top-right" autoClose={3000} />
         <div className="max-w-4xl mx-auto mb-10">
           <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -481,7 +481,7 @@ const CancellationControls = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-16 pb-6 lg:pt-6 px-4 sm:px-6 lg:px-8">
       <ToastContainer position="top-right" autoClose={3000} />
 
       {/* HEADER */}

@@ -276,7 +276,7 @@ const BookingControls = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8 lg:p-10">
+    <div className="min-h-screen bg-gray-50 p-4 pt-16 sm:p-6 sm:pt-16 md:p-8 md:pt-16 lg:p-10">
       <ToastContainer position="top-right" autoClose={3000} newestOnTop />
 
       {/* TNR Input */}

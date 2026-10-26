@@ -294,7 +294,7 @@ const ToursList = () => {
   };
 
   return (
-    <div className="w-full min-w-0 max-w-full p-3 sm:p-6 lg:p-8 max-w-screen-2xl mx-auto">
+        <div className="w-full min-w-0 max-w-full p-3 pt-16 sm:p-6 sm:pt-16 lg:p-8 max-w-screen-2xl mx-auto">
       <ToastContainer
         position="top-right"
         autoClose={3000}

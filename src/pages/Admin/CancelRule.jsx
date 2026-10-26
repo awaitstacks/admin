@@ -206,10 +206,10 @@ const CancelRule = () => {
 
   // === RENDER ===
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 pt-16 sm:p-6 sm:pt-16 lg:p-8">
       <ToastContainer />
       <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center sm:text-4xl">
+                <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center sm:text-3xl lg:text-4xl">
           Update Cancellation Chart
         </h1>
 
@@ -249,11 +249,10 @@ const CancelRule = () => {
                             e.target.value
                           )
                         }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                          errors[`gv_${section}_${idx}`]
+                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`gv_${section}_${idx}`]
                             ? "border-red-500"
                             : "border-gray-300"
-                        }`}
+                          }`}
                         placeholder="e.g. 30"
                       />
                     </div>
@@ -267,11 +266,10 @@ const CancelRule = () => {
                         onChange={(e) =>
                           handleGVChange(section, idx, "toDays", e.target.value)
                         }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                          errors[`gv_${section}_${idx}`]
+                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`gv_${section}_${idx}`]
                             ? "border-red-500"
                             : "border-gray-300"
-                        }`}
+                          }`}
                         placeholder="e.g. 15"
                       />
                     </div>
@@ -290,11 +288,10 @@ const CancelRule = () => {
                             e.target.value
                           )
                         }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                          errors[`gv_${section}_${idx}`]
+                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`gv_${section}_${idx}`]
                             ? "border-red-500"
                             : "border-gray-300"
-                        }`}
+                          }`}
                         placeholder="e.g. 20"
                       />
                     </div>
@@ -339,11 +336,10 @@ const CancelRule = () => {
                             e.target.value
                           )
                         }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                          errors[`gv_${section}_${idx}`]
+                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`gv_${section}_${idx}`]
                             ? "border-red-500"
                             : "border-gray-300"
-                        }`}
+                          }`}
                         placeholder="30"
                       />
                     </td>
@@ -354,11 +350,10 @@ const CancelRule = () => {
                         onChange={(e) =>
                           handleGVChange(section, idx, "toDays", e.target.value)
                         }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                          errors[`gv_${section}_${idx}`]
+                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`gv_${section}_${idx}`]
                             ? "border-red-500"
                             : "border-gray-300"
-                        }`}
+                          }`}
                         placeholder="15"
                       />
                     </td>
@@ -374,11 +369,10 @@ const CancelRule = () => {
                             e.target.value
                           )
                         }
-                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                          errors[`gv_${section}_${idx}`]
+                        className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`gv_${section}_${idx}`]
                             ? "border-red-500"
                             : "border-gray-300"
-                        }`}
+                          }`}
                         placeholder="20"
                       />
                     </td>
@@ -428,11 +422,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "classType", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="e.g. SL"
                     />
                   </div>
@@ -446,11 +439,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "noOfDays", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="e.g. 7"
                     />
                   </div>
@@ -464,11 +456,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "fixedAmount", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="e.g. 60"
                     />
                   </div>
@@ -482,11 +473,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "percentage", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="e.g. 50"
                     />
                   </div>
@@ -527,11 +517,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "classType", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="SL"
                     />
                   </td>
@@ -542,11 +531,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "noOfDays", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="7"
                     />
                   </td>
@@ -557,11 +545,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "fixedAmount", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="60"
                     />
                   </td>
@@ -572,11 +559,10 @@ const CancelRule = () => {
                       onChange={(e) =>
                         handleIRCTCChange(idx, "percentage", e.target.value)
                       }
-                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors[`irctc_${idx}`]
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${errors[`irctc_${idx}`]
                           ? "border-red-500"
                           : "border-gray-300"
-                      }`}
+                        }`}
                       placeholder="50"
                     />
                   </td>
@@ -606,11 +592,10 @@ const CancelRule = () => {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className={`px-8 py-3 rounded-lg text-white font-semibold transition duration-200 text-lg ${
-              loading
+            className={`px-8 py-3 rounded-lg text-white font-semibold transition duration-200 text-lg ${loading
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-600 hover:bg-green-700"
-            } w-full sm:w-auto`}
+              } w-full sm:w-auto`}
           >
             {loading ? "Updating..." : "Update Cancellation Chart"}
           </button>

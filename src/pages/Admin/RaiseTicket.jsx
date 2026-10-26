@@ -981,7 +981,7 @@ const TicketLaunching = () => {
 
   // ════════════════════════════════════════════════════════════════
   return (
-    <div className="w-full min-w-0 max-w-7xl flex-1 p-3 sm:p-5">
+    <div className="w-full min-w-0 max-w-7xl flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:pt-5">
       <div className="mb-5 text-center sm:mb-6">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Raise Ticket</h1>
         <p className="mt-1 text-sm text-gray-500">Raise a ticket, follow the replies, and see it through to closed.</p>
