@@ -412,7 +412,7 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }) => {
   );
 };
 
-const adminMenuItems = [
+export const adminMenuItems = [
   { to: "/admin-dashboard", icon: Home, label: "Dashboard" },
   {
     to: "/tour-analytics",
@@ -447,9 +447,9 @@ const adminMenuItems = [
   { to: "/db-migration", icon: OctagonAlert, label: "DB Migration centre" },
 ];
 
-const tourMenuItems = [
-  
-  
+export const tourMenuItems = [
+
+
   { to: "/payment-tasks", icon: ListChecks, label: "Payment Dashboard" },
   {
     to: "/task-dashboard",
@@ -468,6 +468,11 @@ const tourMenuItems = [
     label: "Staff-Profile",
   },
 
+  {
+    to: "/staff-roles",
+    icon: Users,
+    label: "Staff Roles",
+  },
 
   { to: "/add-tourDetail", icon: Plus, label: "Add Tour" },
   { to: "/tour-profile", icon: User, label: "Tour profile" },
@@ -497,7 +502,7 @@ const tourMenuItems = [
     icon: Calendar,
     label: "All Bookings",
   },
-  
+
 
   {
     to: "/ticket-landing",
