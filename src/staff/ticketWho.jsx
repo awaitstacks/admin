@@ -92,7 +92,7 @@ export function TnrInfo({ info }) {
           {info.staff.employeeId ? ` (${info.staff.employeeId})` : ""}
           {info.staff.role?.name ? ` · ${info.staff.role.name}` : ""}
           {!info.staff.active && <span className="ml-1 text-red-600">— inactive, choose someone else</span>}
-          {info.selfBooked && <span className="ml-1 text-red-600">— that's you, remove the TNR to raise</span>}
+          {info.selfBooked && <span className="ml-1 text-red-600">— that's you, choose who to raise it to</span>}
         </p>
       ) : info.bookedBy?.name ? (
         <p>
@@ -103,5 +103,53 @@ export function TnrInfo({ info }) {
         <p className="text-gray-500">No staff linked to this booking (online booking) — choose "Raised to" manually</p>
       )}
     </div>
+  );
+}
+
+// ─── Team (department) tickets ──────────────────────────────────────────────
+// Staff list la irundhu teams (role) — [{ _id, name, count }]
+export function teamsFromStaff(list = []) {
+  const map = new Map();
+  list.forEach((s) => {
+    const r = s?.role && typeof s.role === "object" ? s.role : null;
+    if (!r?._id) return;
+    const key = String(r._id);
+    if (!map.has(key)) map.set(key, { _id: key, name: r.name || "Team", count: 0 });
+    map.get(key).count += 1;
+  });
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const teamName = (q) => (q?.raisedToRole && typeof q.raisedToRole === "object" ? q.raisedToRole.name : "") || "Team";
+
+// Team ku raise aagi innum yaarum pick pannala
+export const isTeamOpen = (q) => !!q?.raisedToRole && !q?.raisedTo;
+
+// "Raised to" column — peru / team
+export const toName = (q, nameFn) => (q?.raisedTo ? nameFn(q.raisedTo) : q?.raisedToRole ? `${teamName(q)} team` : "—");
+export const toSub = (q, roleFn) => {
+  if (isTeamOpen(q)) return "Waiting for pickup";
+  const role = q?.raisedTo ? roleFn(q.raisedTo) : "";
+  return q?.raisedToRole ? [role, `via ${teamName(q)} team`].filter(Boolean).join(" · ") : role;
+};
+
+// Raise form la "Person / Team" switch (staff site mattum)
+export function ToModeSwitch({ value, onChange }) {
+  const btn = (key, label) => (
+    <button
+      type="button"
+      onClick={() => onChange(key)}
+      className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+        value === key ? "bg-white text-blue-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <span className="ml-2 inline-flex rounded-lg bg-gray-100 p-0.5 align-middle">
+      {btn("person", "Person")}
+      {btn("team", "Team")}
+    </span>
   );
 }
