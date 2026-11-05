@@ -14,7 +14,10 @@ import { TourAdminContext } from "../../context/TourAdminContext";
 import PaymentTasksView from "../../components/PaymentTasksView";
 
 const PaymentTasksAdmin = () => {
-  const { aToken, getPaymentTasks, markPaymentTaskDone, markAdvanceTaskDone } =
+  // const { aToken, getPaymentTasks, markPaymentTaskDone, markAdvanceTaskDone } =
+  //   useContext(TourAdminContext);
+
+  const { aToken, getPaymentTasks, markPaymentTaskDone, markAdvanceTaskDone, ticketApi } =
     useContext(TourAdminContext);
 
   const fetchTasks = useCallback(() => getPaymentTasks(), [getPaymentTasks]);
@@ -28,12 +31,21 @@ const PaymentTasksAdmin = () => {
   );
 
   return (
+    // <PaymentTasksView
+    //   isAuthed={!!aToken}
+    //   fetchTasks={fetchTasks}
+    //   markTaskDone={markTaskDone}
+    //   markAdvanceDone={markAdvanceDone}
+    //   canMarkDone={false}
+    // />
+
     <PaymentTasksView
       isAuthed={!!aToken}
       fetchTasks={fetchTasks}
       markTaskDone={markTaskDone}
       markAdvanceDone={markAdvanceDone}
       canMarkDone={false}
+      ticketApi={ticketApi}
     />
   );
 };

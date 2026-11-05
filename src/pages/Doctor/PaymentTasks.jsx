@@ -50,9 +50,8 @@ import { TourContext } from "../../context/TourContext";
 import PaymentTasksView from "../../components/PaymentTasksView";
 
 const PaymentTasks = () => {
-  const { ttoken, getPaymentTasks, markPaymentTaskDone, deleteGroupPayment } =
+  const { ttoken, getPaymentTasks, markPaymentTaskDone, deleteGroupPayment, ticketApi } =
     useContext(TourContext);
-
   const fetchTasks = useCallback(() => getPaymentTasks(), [getPaymentTasks]);
   const markTaskDone = useCallback(
     (docId) => markPaymentTaskDone(docId),
@@ -71,11 +70,18 @@ const PaymentTasks = () => {
   );
 
   return (
+    // <PaymentTasksView
+    //   isAuthed={!!ttoken}
+    //   fetchTasks={fetchTasks}
+    //   markTaskDone={markTaskDone}
+    //   deletePayment={deletePayment}
+    // />
     <PaymentTasksView
       isAuthed={!!ttoken}
       fetchTasks={fetchTasks}
       markTaskDone={markTaskDone}
       deletePayment={deletePayment}
+      ticketApi={ticketApi}
     />
   );
 };

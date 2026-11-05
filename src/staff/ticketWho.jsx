@@ -1,3 +1,4 @@
+import React from "react";
 // ══════════════════════════════════════════════════════════════════════════════
 // Tickets — "yaar, enga irundhu" helpers. Admin (RaiseTicket) + Tour Admin
 // (TicketLanding) rendu page um, staff site um idha use pannum.
@@ -150,6 +151,70 @@ export function ToModeSwitch({ value, onChange }) {
     <span className="ml-2 inline-flex rounded-lg bg-gray-100 p-0.5 align-middle">
       {btn("person", "Person")}
       {btn("team", "Team")}
+    </span>
+  );
+}
+
+// ─── Ticket number + copy (ore click la copy) ───────────────────────────────
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* keezha fallback */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+export function CopyTicketNo({ no, className = "" }) {
+  const [copied, setCopied] = React.useState(false);
+  if (!no) return <span className={`text-xs text-gray-400 ${className}`}>—</span>;
+  const onCopy = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (await copyText(no)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md bg-blue-50 py-0.5 pl-2 pr-1 text-xs font-bold tracking-wide text-blue-800 ${className}`}>
+      {no}
+      <button
+        type="button"
+        onClick={onCopy}
+        title={copied ? "Copied" : "Copy ticket number"}
+        aria-label={copied ? `${no} copied` : `Copy ${no}`}
+        className={`flex h-6 w-6 items-center justify-center rounded transition ${
+          copied ? "text-green-600" : "text-blue-500 hover:bg-blue-100 hover:text-blue-800"
+        }`}
+      >
+        {copied ? (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        )}
+      </button>
     </span>
   );
 }
