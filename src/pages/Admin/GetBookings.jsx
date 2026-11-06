@@ -7,6 +7,114 @@
 // import "react-toastify/dist/ReactToastify.css";
 // import { ChevronDown, ChevronRight, ChevronUp, Copy } from "lucide-react";
 
+// // ── Shared addon renderer — used by both the desktop grid view and the
+// // mobile compact view below, so the two stay visually consistent and
+// // only need one place to fix. ──
+// // NEW bookings: t.selectedAddons is an array, each entry EITHER
+// // train-wise (trainNo/trainName) OR flight-wise (flightNo/airline).
+// // OLD bookings: t.selectedAddon is a flat single object — kept working
+// // exactly as before.
+// const getTripTypeStyle = (tripType) => {
+//   const tt = (tripType || "").toUpperCase();
+//   if (tt.startsWith("BOARD"))
+//     return { badge: "bg-blue-100 text-blue-700", label: "Boarding" };
+//   if (tt.startsWith("MIDDLE"))
+//     return { badge: "bg-purple-100 text-purple-700", label: "Middle" };
+//   if (tt.startsWith("DEBOARD") || tt.startsWith("DEBOARF"))
+//     return { badge: "bg-orange-100 text-orange-700", label: "Deboarding" };
+//   return { badge: "bg-gray-100 text-gray-700", label: tripType || "Trip" };
+// };
+
+// // Classify by which identifying fields are ACTUALLY present — not by
+// // tripKind/flightIndex alone, since those can be missing on entries
+// // saved from admin-edit flows (ManageBooking.jsx) or older data.
+// // Checking fields first avoids a real flight addon getting
+// // misclassified into the train bucket with no matching train fields to
+// // show (the "blank ()" bug).
+// const isFlightAddon = (a) => {
+//   if (a.flightNo || a.airline) return true;
+//   if (a.trainNo || a.trainName) return false;
+//   return (
+//     (a.flightIndex !== undefined && a.flightIndex !== null) ||
+//     a.tripKind === "flight"
+//   );
+// };
+
+// const buildAddonLabel = (a, isFlight) => {
+//   const primary = isFlight ? a.airline : a.trainName;
+//   const secondary = isFlight ? a.flightNo : a.trainNo;
+//   if (!primary && !secondary) return null;
+//   if (primary && secondary) return `${primary} (${secondary})`;
+//   return primary || secondary;
+// };
+
+// // `compact` = true renders tighter spacing/smaller text for the mobile
+// // card view; false renders the roomier desktop grid style.
+// const TravellerAddonDisplay = ({ traveller: t, compact = false }) => {
+//   if (Array.isArray(t.selectedAddons) && t.selectedAddons.length > 0) {
+//     const trainEntries = t.selectedAddons.filter((a) => !isFlightAddon(a));
+//     const flightEntries = t.selectedAddons.filter((a) => isFlightAddon(a));
+
+//     const renderRow = (a, idx) => {
+//       const isFlight = isFlightAddon(a);
+//       const style = getTripTypeStyle(a.tripType);
+//       const label = buildAddonLabel(a, isFlight);
+//       return (
+//         <div
+//           key={idx}
+//           className={`flex flex-wrap items-center gap-1.5 ${compact ? "mt-0.5" : "mt-1"}`}
+//         >
+//           <span
+//             className={`px-1.5 py-0.5 rounded-full font-semibold ${style.badge} ${compact ? "text-[9px]" : "text-[10px]"}`}
+//           >
+//             {style.label}
+//           </span>
+//           <span className="text-gray-700">
+//             {label ? `${label}: ` : ""}
+//             {a.name}
+//           </span>
+//           <span className="font-semibold text-green-700">
+//             +₹{a.amount || 0}
+//           </span>
+//         </div>
+//       );
+//     };
+
+//     return (
+//       <div>
+//         {trainEntries.length > 0 && (
+//           <div className={compact ? "mt-1" : "mt-1.5"}>
+//             <p
+//               className={`font-semibold text-red-600 ${compact ? "text-[10px]" : "text-[11px]"}`}
+//             >
+//               🚆 Train Addons
+//             </p>
+//             {trainEntries.map((a, idx) => renderRow(a, idx))}
+//           </div>
+//         )}
+//         {flightEntries.length > 0 && (
+//           <div className={compact ? "mt-1" : "mt-1.5"}>
+//             <p
+//               className={`font-semibold text-orange-900 ${compact ? "text-[10px]" : "text-[11px]"}`}
+//             >
+//               ✈️ Flight Addons
+//             </p>
+//             {flightEntries.map((a, idx) => renderRow(a, idx))}
+//           </div>
+//         )}
+//       </div>
+//     );
+//   }
+
+//   // ── OLD flat addon (unchanged) ──
+//   if (!t.selectedAddon?.name) return <span>Nil</span>;
+//   return (
+//     <span>
+//       {t.selectedAddon.name} (₹{t.selectedAddon.price || 0})
+//     </span>
+//   );
+// };
+
 // const GetBookings = () => {
 //   const { aToken, bookings, fetchAllBookings, rejectBooking } =
 //     useContext(TourAdminContext);
@@ -98,8 +206,8 @@
 //           );
 //           toast.error(
 //             error.response?.data?.message ||
-//               error.message ||
-//               "Failed to fetch bookings",
+//             error.message ||
+//             "Failed to fetch bookings",
 //           );
 //         })
 //         .finally(() => setIsLoading(false));
@@ -219,9 +327,8 @@
 //           ?.toLowerCase()
 //           .includes(filters.contact.toLowerCase());
 
-//       const paymentStatus = `${
-//         b.payment?.advance?.paid ? "advance-paid" : "advance-pending"
-//       } ${b.payment?.balance?.paid ? "balance-paid" : "balance-pending"}`;
+//       const paymentStatus = `${b.payment?.advance?.paid ? "advance-paid" : "advance-pending"
+//         } ${b.payment?.balance?.paid ? "balance-paid" : "balance-pending"}`;
 
 //       const paymentMatch = paymentStatus.includes(
 //         filters.payment.toLowerCase(),
@@ -474,13 +581,13 @@
 //                         <td className="p-3 text-sm text-gray-800">
 //                           {booking?.bookingDate
 //                             ? new Date(booking.bookingDate).toLocaleDateString(
-//                                 "en-IN",
-//                                 {
-//                                   day: "2-digit",
-//                                   month: "short",
-//                                   year: "numeric",
-//                                 },
-//                               )
+//                               "en-IN",
+//                               {
+//                                 day: "2-digit",
+//                                 month: "short",
+//                                 year: "numeric",
+//                               },
+//                             )
 //                             : "N/A"}
 //                         </td>
 //                         <td className="p-3 text-sm text-gray-800">
@@ -639,10 +746,10 @@
 //                                           {t.title} {t.firstName} {t.lastName}
 //                                           {(t.cancelled?.byTraveller ||
 //                                             t.cancelled?.byAdmin) && (
-//                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-//                                               Cancelled
-//                                             </span>
-//                                           )}
+//                                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+//                                                 Cancelled
+//                                               </span>
+//                                             )}
 //                                         </p>
 //                                         <p>Age: {t.age}</p>
 //                                         <p>Gender: {t.gender}</p>
@@ -658,9 +765,9 @@
 //                                         </p>
 //                                         <p>
 //                                           Addon:{" "}
-//                                           {t.selectedAddon?.name
-//                                             ? `${t.selectedAddon.name} (₹${t.selectedAddon.price || 0})`
-//                                             : "Nil"}
+//                                           <TravellerAddonDisplay
+//                                             traveller={t}
+//                                           />
 //                                         </p>
 //                                         <p>
 //                                           Boarding:{" "}
@@ -734,13 +841,13 @@
 //                         <p className="text-xs text-gray-600 mt-0.5">
 //                           {booking?.bookingDate
 //                             ? new Date(booking.bookingDate).toLocaleDateString(
-//                                 "en-IN",
-//                                 {
-//                                   day: "2-digit",
-//                                   month: "short",
-//                                   year: "numeric",
-//                                 },
-//                               )
+//                               "en-IN",
+//                               {
+//                                 day: "2-digit",
+//                                 month: "short",
+//                                 year: "numeric",
+//                               },
+//                             )
 //                             : "N/A"}
 //                         </p>
 //                       </div>
@@ -888,10 +995,10 @@
 //                                   {t.title} {t.firstName} {t.lastName}
 //                                   {(t.cancelled?.byTraveller ||
 //                                     t.cancelled?.byAdmin) && (
-//                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-//                                       Cancelled
-//                                     </span>
-//                                   )}
+//                                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+//                                         Cancelled
+//                                       </span>
+//                                     )}
 //                                 </div>
 
 //                                 <div className="space-y-2">
@@ -942,9 +1049,10 @@
 //                                     <span className="text-gray-600">
 //                                       Addon:
 //                                     </span>{" "}
-//                                     {t.selectedAddon?.name
-//                                       ? t.selectedAddon.name
-//                                       : "Nil"}
+//                                     <TravellerAddonDisplay
+//                                       traveller={t}
+//                                       compact
+//                                     />
 //                                   </div>
 //                                   <div className="break-words whitespace-normal">
 //                                     <span className="text-gray-600">
@@ -1020,6 +1128,8 @@ import { TourAdminContext } from "../../context/TourAdminContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ChevronDown, ChevronRight, ChevronUp, Copy } from "lucide-react";
+import TnrTickets from "../../components/TnrTickets"; // indha TNR la raise aana tickets
+import { TravellerCancelInfo } from "../../components/CancelWho"; // cancellation yaaru request / approve panna
 
 // ── Shared addon renderer — used by both the desktop grid view and the
 // mobile compact view below, so the two stay visually consistent and
@@ -1130,7 +1240,7 @@ const TravellerAddonDisplay = ({ traveller: t, compact = false }) => {
 };
 
 const GetBookings = () => {
-  const { aToken, bookings, fetchAllBookings, rejectBooking } =
+  const { aToken, bookings, fetchAllBookings, rejectBooking, ticketApi } =
     useContext(TourAdminContext);
   const location = useLocation();
 
@@ -1809,11 +1919,20 @@ const GetBookings = () => {
                                         </p>
                                       </div>
                                     </div>
+                                    {/* Cancellation — yaaru request / approve / reject panna */}
+                                    <TravellerCancelInfo traveller={t} />
                                   </li>
                                 ))}
                               </ul>
                             ) : (
                               <p className="text-gray-500">No travellers</p>
+                            )}
+
+                            {/* Indha booking (TNR) la raise aana tickets */}
+                            {ticketApi && booking.tnr && (
+                              <div className="mt-6">
+                                <TnrTickets api={ticketApi} tnr={booking.tnr} />
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -2075,11 +2194,16 @@ const GetBookings = () => {
                                     {t.remarks || "Nil"}
                                   </div>
                                 </div>
+                                {/* Cancellation — yaaru request / approve / reject panna */}
+                                <TravellerCancelInfo traveller={t} />
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
+
+                      {/* Indha booking (TNR) la raise aana tickets */}
+                      {ticketApi && booking.tnr && <TnrTickets api={ticketApi} tnr={booking.tnr} />}
                     </div>
                   )}
                 </div>

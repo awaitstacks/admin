@@ -3154,6 +3154,27 @@ const TourAdminContextProvider = (props) => {
     };
   }, [backendUrl, aToken]);
 
+  // ════════════════════════════════════════════════════════════════
+  //  VIEW ONLY — Staff Profile / FIT Enquiries (Admin login)
+  //  Tour admin oda list ah aToken vachu padikkum. Create / Edit / Delete illa.
+  //  Error na throw pannum — page la catch pannum.
+  // ════════════════════════════════════════════════════════════════
+  const adminViewStaffList = useCallback(async () => {
+    const { data } = await axios.get(`${backendUrl}/api/touradmin/staff/view-all`, {
+      headers: { aToken },
+    });
+    if (!data?.success) throw new Error(data?.message || "Failed to load staff");
+    return data.data || [];
+  }, [backendUrl, aToken]);
+
+  const adminViewEnquiries = useCallback(async () => {
+    const { data } = await axios.get(`${backendUrl}/api/touradmin/enquiry/all`, {
+      headers: { aToken },
+    });
+    if (!data?.success) throw new Error(data?.message || "Failed to load enquiries");
+    return data.data || [];
+  }, [backendUrl, aToken]);
+
   const value = {
     aToken,
     setAToken,
@@ -3253,6 +3274,9 @@ const TourAdminContextProvider = (props) => {
 
     // ─── Tickets (queries) ───
     ticketApi,
+    adminViewStaffList,
+    adminViewEnquiries,
+
   };
 
   return (

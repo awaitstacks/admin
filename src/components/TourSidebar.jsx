@@ -292,7 +292,9 @@ import {
   CoinsIcon,
   Coins,
   DollarSign,
-  IndianRupeeIcon
+  IndianRupeeIcon,
+  UserRound,
+  BadgeQuestionMark
 } from "lucide-react";
 import { Profiler } from "react";
 
@@ -419,6 +421,9 @@ export const adminMenuItems = [
     icon: ChartPieIcon,
     label: "Sales DashBoard",
   },
+ { to: "/admin-staff-view", icon: UserRound, label: "Staff Profile" },
+{ to: "/admin-enquiries-view", icon:BadgeQuestionMark, label: "FIT Enquiries" },
+
   { to: "/admin-payment-tasks", icon: ListChecks, label: "Payment Tasks" },
   { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
   { to: "/ticket-launching", icon: UploadCloudIcon, label: "Raise Tickets" },

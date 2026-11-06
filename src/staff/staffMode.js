@@ -46,15 +46,26 @@ export function installStaffAxios() {
     return config;
   });
 
-  // Token expire / HR login OFF pannaa → login page ku
+  // Staff token unmaiyaave expire / HR login OFF pannaa mattum → login page ku.
+  // (Indha message ellaam backend authStaff.js staffGate la irundhu mattum varum.)
+  const STAFF_LOGOUT_MSG = /login is disabled or expired|invalid or expired token/i;
+
   axios.interceptors.response.use(
     (res) => res,
     (error) => {
       const status = error.response?.status;
+      const msg = error.response?.data?.message || "";
+      const url = error.config?.url || "";
       const hadToken = !!localStorage.getItem(STAFF_TOKEN_KEY);
+
       if (status === 401 && hadToken) {
-        localStorage.removeItem(STAFF_TOKEN_KEY);
-        window.location.href = "/";
+        if (STAFF_LOGOUT_MSG.test(msg)) {
+          localStorage.removeItem(STAFF_TOKEN_KEY);
+          window.location.href = "/";
+        } else {
+          // Vera 401 (staff ku open aagaadha route) → logout pannaadhu, endha API nu console la kaattum
+          console.warn("[staff] 401 — logout pannala. API:", url, "| message:", msg);
+        }
       }
       return Promise.reject(error);
     }

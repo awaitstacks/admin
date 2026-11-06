@@ -327,10 +327,14 @@ import PaymentTasks from "./pages/Doctor/PaymentTasks.jsx";
 import PaymentTasksAdmin from "./pages/Admin/PaymentTasksAdmin.jsx";
 import PaymentRecords from "./pages/Doctor/PaymentRecords.jsx";
 import StaffRoles from "./pages/Doctor/StaffRoles.jsx";
+import FitEnquiry from "./pages/Admin/FitEnquiry.jsx";
+import StaffProfile from "./pages/Admin/StaffProfile.jsx";
 
 export const appRoutes = [
   { path: "/admin-dashboard", element: <TourAdminDashboard /> },
   { path: "/tour-analytics", element: <Analytics /> },
+  { path: "/admin-staff-view", element: <StaffProfile /> },
+  { path: "/admin-enquiries-view", element: <FitEnquiry /> },
   { path: "/admin-payment-tasks", element: <PaymentTasksAdmin /> },
   { path: "/all-bookings", element: <AllBookings /> },
   { path: "/ticket-launching", element: <RaiseTicket /> },

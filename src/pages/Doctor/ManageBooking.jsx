@@ -727,7 +727,9 @@ const ManageBooking = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ttoken: localStorage.getItem("ttoken"),
+            ...(localStorage.getItem("stoken")
+              ? { stoken: localStorage.getItem("stoken") }
+              : { ttoken: localStorage.getItem("ttoken") }),
           },
           body: JSON.stringify({ updates }),
         },
@@ -840,8 +842,8 @@ const ManageBooking = () => {
               onClick={handleSaveUpdate}
               disabled={saving || !hasChanges}
               className={`flex items-center gap-3 px-6 py-3 rounded-xl font-bold text-white transition-all shadow-lg ${saving || !hasChanges
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
                 }`}
             >
               {saving ? (
@@ -961,8 +963,8 @@ const ManageBooking = () => {
                     <div
                       key={i}
                       className={`p-4 rounded-lg text-sm font-medium border ${isNegative
-                          ? "bg-red-50 text-red-800 border-red-200"
-                          : "bg-green-50 text-green-800 border-green-200"
+                        ? "bg-red-50 text-red-800 border-red-200"
+                        : "bg-green-50 text-green-800 border-green-200"
                         }`}
                     >
                       <div className="flex justify-between items-center">
@@ -1085,8 +1087,8 @@ const ManageBooking = () => {
                     <div
                       key={entry._id}
                       className={`p-5 rounded-xl border text-sm font-medium transition-all ${isApproved
-                          ? "bg-green-50 text-green-800 border-green-300"
-                          : "bg-red-50 text-red-800 border-red-300"
+                        ? "bg-green-50 text-green-800 border-green-300"
+                        : "bg-red-50 text-red-800 border-red-300"
                         }`}
                     >
                       <div className="flex justify-between items-start mb-3">
