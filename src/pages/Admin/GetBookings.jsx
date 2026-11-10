@@ -1239,6 +1239,50 @@ const TravellerAddonDisplay = ({ traveller: t, compact = false }) => {
   );
 };
 
+// Booking yaaru pottaanga — Tour Admin "Tour Bookings" page la varra adhe maadhiri
+const bookedByLabel = (p) => {
+  if (!p) return "";
+  const name = p.name || "";
+  if (p.type === "staff") return `${name || "Staff"}${p.employeeId ? ` (${p.employeeId})` : ""}${p.role ? ` · ${p.role}` : ""} · Staff`;
+  if (p.type === "touradmin") return name && name !== "Tour admin" ? `${name} (Tour admin)` : "Tour admin";
+  if (p.type === "admin") return p.unknown ? "Admin (login not recorded)" : name ? `${name} (Admin)` : "Admin";
+  if (p.type === "user") return `${name || "Customer"} · Customer (website)`;
+  return name;
+};
+const bookedByWhen = (d) =>
+  d ? new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+const BOOKED_BY_TAG = {
+  staff: { text: "Staff", cls: "bg-indigo-50 text-indigo-700 ring-indigo-200" },
+  user: { text: "Customer", cls: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
+  touradmin: { text: "Tour admin", cls: "bg-sky-50 text-sky-700 ring-sky-200" },
+  admin: { text: "Admin", cls: "bg-slate-100 text-slate-600 ring-slate-200" },
+};
+// Compact: "by  V MANGALAM  [STAFF]" — full detail (ID, role, time) title la / expand la
+const BookedByLine = ({ by }) => {
+  if (!by) return null;
+  const tag = BOOKED_BY_TAG[by.type] || BOOKED_BY_TAG.admin;
+  const notRecorded = by.type === "admin" && by.unknown;
+  const showName = by.type === "staff" || by.type === "user" || (by.name && !["Admin", "Tour admin"].includes(by.name));
+  return (
+    <div
+      className="flex max-w-[260px] items-center gap-1.5 font-sans text-[11.5px] font-normal leading-5 tracking-normal"
+      title={`Booked by ${bookedByLabel(by)}`}
+    >
+      <span className="shrink-0 text-gray-400">by</span>
+      {notRecorded ? (
+        <span className="truncate italic text-gray-400">not recorded</span>
+      ) : (
+        <>
+          {showName && <span className="min-w-0 truncate font-semibold text-gray-800">{by.name || "Customer"}</span>}
+          <span className={`shrink-0 rounded-md px-1.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${tag.cls}`}>
+            {tag.text}
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
+
 const GetBookings = () => {
   const { aToken, bookings, fetchAllBookings, rejectBooking, ticketApi } =
     useContext(TourAdminContext);
@@ -1698,6 +1742,11 @@ const GetBookings = () => {
                               <Copy size={16} />
                             </button>
                           </div>
+                          {booking.bookedBy && (
+                            <div className="mt-1">
+                              <BookedByLine by={booking.bookedBy} />
+                            </div>
+                          )}
                         </td>
                         <td className="p-3 text-sm text-gray-800">
                           {booking?.tourData?.title || "N/A"}
@@ -1765,6 +1814,12 @@ const GetBookings = () => {
                                 Copy
                               </button>
                             </div>
+                            {booking.bookedBy && (
+                              <p className="mb-4 -mt-2 text-sm text-gray-700">
+                                <strong>Booked by:</strong> {bookedByLabel(booking.bookedBy)}
+                                {booking.bookedBy.at ? ` · ${bookedByWhen(booking.bookedBy.at)}` : ""}
+                              </p>
+                            )}
 
                             {/* Payment Details */}
                             <div className="mb-6">
@@ -1983,6 +2038,11 @@ const GetBookings = () => {
                             )
                             : "N/A"}
                         </p>
+                        {booking.bookedBy && (
+                          <div className="mt-1">
+                            <BookedByLine by={booking.bookedBy} />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2019,6 +2079,12 @@ const GetBookings = () => {
                           Copy
                         </button>
                       </div>
+                      {booking.bookedBy && (
+                        <p className="text-sm text-gray-700 break-words">
+                          <strong>Booked by:</strong> {bookedByLabel(booking.bookedBy)}
+                          {booking.bookedBy.at ? ` · ${bookedByWhen(booking.bookedBy.at)}` : ""}
+                        </p>
+                      )}
 
                       <div className="space-y-1.5">
                         <div className="font-medium text-gray-800">

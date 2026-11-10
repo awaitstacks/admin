@@ -83,7 +83,37 @@ function StaffLayout() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden text-[14px] font-semibold text-gray-700 sm:inline">{staff?.fullName}</span>
+          {/* Welcome + peyar + initials avatar */}
+          <div className="flex items-center gap-2.5">
+            <div className="hidden text-right leading-tight sm:block">
+              <p className="text-[12px] font-medium text-gray-400">
+                {(() => {
+                  const h = new Date().getHours();
+                  return h < 12 ? "Good morning," : h < 17 ? "Good afternoon," : "Good evening,";
+                })()}{" "}
+                welcome 👋
+              </p>
+              <p className="text-[14px] font-semibold text-gray-800">{staff?.fullName}</p>
+            </div>
+            {staff?.photo ? (
+              <img
+                src={staff.photo}
+                alt=""
+                title={staff?.fullName}
+                className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-indigo-100"
+              />
+            ) : (
+              <div
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-indigo-50 text-indigo-600 ring-2 ring-indigo-100"
+                title={staff?.fullName}
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={logout}
