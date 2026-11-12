@@ -6285,12 +6285,14 @@ const TourContextProvider = (props) => {
         ((await call("get", `${B}/staff/all`)).data || []).filter((s) => s.status !== "Inactive"),
 
       // Status buttons
+      // Status buttons
       pickup: (id) => call("patch", `${B}/queries/${id}/pickup`),
       processing: (id) => call("patch", `${B}/queries/${id}/processing`),
       close: (id) => call("patch", `${B}/queries/${id}/close`),
       reject: (id, reason = "") =>
         call("patch", `${B}/queries/${id}/reject`, { data: { reason } }),
-
+      reopen: (id, reason = "") => call("patch", `${B}/queries/${id}/reopen`, { data: { reason } }),
+      delegate: (id, payload) => call("patch", `${B}/queries/${id}/delegate`, { data: payload }),
       // ── NEW: Edit & Delete query ──
       updateQuery: (queryId, formData, onUploadProgress) =>
         call("patch", `${B}/queries/${queryId}`, { data: formData, onUploadProgress }),
