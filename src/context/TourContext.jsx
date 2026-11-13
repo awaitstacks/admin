@@ -6300,10 +6300,10 @@ const TourContextProvider = (props) => {
 
       // Replies
       getReplies: (id) => call("get", `${B}/queries/${id}/replies`),
-      addReply: (id, message) =>
-        call("post", `${B}/queries/${id}/replies`, { data: { message } }),
+      addReply: (id, message, onUploadProgress) =>
+        call("post", `${B}/queries/${id}/replies`, { data: typeof message === "string" ? { message } : message, onUploadProgress }),
       editReply: (id, replyId, message) =>
-        call("patch", `${B}/queries/${id}/replies/${replyId}`, { data: { message } }),
+        call("patch", `${B}/queries/${id}/replies/${replyId}`, { data: typeof message === "string" ? { message } : message }),
       deleteReply: (id, replyId) =>
         call("delete", `${B}/queries/${id}/replies/${replyId}`),
 
