@@ -42,6 +42,19 @@ const StaffContextProvider = ({ children }) => {
     try {
       const { data } = await axios.post(`${backendUrl}/api/staff/login`, { username, password });
       if (!data.success) return { success: false, message: data.message };
+
+      // Login aanadhum udane check — disabled / role illana ulla vida koodaadhu, error inga kaattanum
+      const check = await axios
+        .get(`${backendUrl}/api/staff/me`, { headers: { stoken: data.token } })
+        .then((r) => r.data)
+        .catch((e) => e.response?.data || { success: false });
+      if (!check?.success) {
+        return { success: false, message: check?.message || "Your login is disabled. Please contact HR." };
+      }
+      if (!check.data?.role || !(check.data.role.tabs || []).length) {
+        return { success: false, message: "No role or access has been given to your login yet. Please contact HR." };
+      }
+
       localStorage.setItem(STAFF_TOKEN_KEY, data.token);
       setStoken(data.token);
       return { success: true };
@@ -49,7 +62,6 @@ const StaffContextProvider = ({ children }) => {
       return { success: false, message: error.response?.data?.message || "Login failed. Please try again." };
     }
   };
-
   // POST /api/staff/forgot-password
   const forgotPassword = async (username) => {
     try {

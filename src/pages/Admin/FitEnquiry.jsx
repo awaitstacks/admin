@@ -2538,7 +2538,7 @@ const FitEnquiry = ({ adminView = true }) => {
 
             {/* Tabs */}
             <div style={{ marginBottom: "16px", textAlign: "center" }}>
-                <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", margin: "0 0 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>✈️ FIT Enquiries
+                <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", margin: "0 0 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>FIT Enquiries
                     {viewOnly && <span style={{ fontSize: "12px", fontWeight: 600, background: "#f1f5f9", color: "#475569", padding: "3px 10px", borderRadius: "20px" }}>👁 View only</span>}
                 </h1><br />
                 <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", borderRadius: "10px", padding: "4px", width: "fit-content", margin: "0 auto" }}>

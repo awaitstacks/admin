@@ -89,6 +89,35 @@
 //   </span>
 // );
 
+// // "2026-11-08" → "08 Nov'26"
+// const payRangeLabel = (key) => {
+//   const d = new Date(`${key}T00:00:00`);
+//   if (Number.isNaN(d.getTime())) return key;
+//   return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleDateString("en-IN", { month: "short" }).slice(0, 3)}'${String(d.getFullYear()).slice(-2)}`;
+// };
+
+// // Andha naal advance pay panna bookings count (tourBookingModel). Mouse vachaa TNR list.
+// const AdvanceBookingsBadge = ({ count, tnrs = [] }) =>
+//   count > 0 ? (
+//     <span
+//       title={`Advance paid: ${tnrs.filter(Boolean).join(", ")}`}
+//       className="inline-flex items-center gap-1 rounded-md bg-[#E8F1FD] text-[#1E6FD9] px-2 py-0.5 text-[11px] font-semibold tabular-nums whitespace-nowrap"
+//     >
+//       {count} booking{count !== 1 ? "s" : ""} · advance paid
+//     </span>
+//   ) : null;
+
+// // Yaaru upload panna — { type, name, role } → "Pavithra · BAT" / "Tour admin" / "Admin"
+// const uploaderName = (u) => {
+//   if (!u) return "";
+//   if (u.type === "staff") return u.name || "Staff";
+//   if (u.type === "touradmin") return "Tour admin";
+//   if (u.type === "admin") return "Admin";
+//   if (u.type === "user") return u.name ? `${u.name} (Customer)` : "Customer";
+//   return u.name || "";
+// };
+// const uploaderSub = (u) => (u?.type === "staff" ? u.role || u.employeeId || "Staff" : "");
+
 // // Works on every device: the Clipboard API needs HTTPS (or localhost), and
 // // some phones/in-app browsers don't have it, so fall back to a hidden
 // // textarea + execCommand("copy").
@@ -206,6 +235,19 @@
 //               <dd className="font-semibold text-[#1B2B26]">{formatDateTime(r.createdAt)}</dd>
 //             </div>
 //             <div>
+//               <dt className="text-xs text-[#8FA39B]">Uploaded by</dt>
+//               <dd className="font-semibold text-[#1B2B26]">
+//                 {r.uploader ? (
+//                   <>
+//                     {uploaderName(r.uploader)}
+//                     {uploaderSub(r.uploader) && <span className="font-normal text-[#8FA39B]"> · {uploaderSub(r.uploader)}</span>}
+//                   </>
+//                 ) : (
+//                   "—"
+//                 )}
+//               </dd>
+//             </div>
+//             <div>
 //               <dt className="text-xs text-[#8FA39B]">Guest</dt>
 //               <dd className="font-semibold text-[#1B2B26]">{r.name || "—"}</dd>
 //             </div>
@@ -263,6 +305,8 @@
 //   const { ttoken, getPaymentRecords } = useContext(TourContext);
 
 //   const [records, setRecords] = useState([]);
+//   // tourBookingModel la advance.paid = true bookings (backend → advancePaid)
+//   const [advancePaid, setAdvancePaid] = useState([]);
 //   const [loading, setLoading] = useState(false);
 //   const [search, setSearch] = useState("");
 //   const [type, setType] = useState("");
@@ -288,6 +332,7 @@
 //       const data = await getPaymentRecords(params);
 //       if (data?.success) {
 //         setRecords(data.records || []);
+//         setAdvancePaid(data.advancePaid || []);
 //       } else {
 //         toast.error(data?.message || "Could not load payment records");
 //       }
@@ -346,7 +391,7 @@
 //       if (source && r.bookingSource !== source) return false;
 //       if (selTours.length && !selTours.includes(r.tourTitle)) return false;
 //       if (!q) return true;
-//       return [r.tnr, r.name, r.remarks, r.tourTitle, r.amount != null ? String(r.amount) : ""]
+//       return [r.tnr, r.name, r.remarks, r.tourTitle, uploaderName(r.uploader), r.amount != null ? String(r.amount) : ""]
 //         .join(" ")
 //         .toLowerCase()
 //         .includes(q);
@@ -374,6 +419,63 @@
 //   }, [baseFiltered]);
 
 //   const shownTotal = type ? split[type] : split.all;
+
+//   // Advance paid bookings — tourBookingModel la payment.advance.paid = true.
+//   // Naal = advance paidAt. Search / Tour / Admin-User filter ku yetha maadhiri.
+//   const advanceBookings = useMemo(() => {
+//     const q = search.trim().toLowerCase();
+//     const byDay = new Map(); // dayKey → [tnr...]
+//     let total = 0;
+//     advancePaid.forEach((b) => {
+//       if (source && b.bookingSource !== source) return;
+//       if (selTours.length && !selTours.includes(b.tourTitle)) return;
+//       if (q && ![b.tnr, b.name, b.tourTitle].join(" ").toLowerCase().includes(q)) return;
+//       const k = dayKey(b.paidAt);
+//       if (!byDay.has(k)) byDay.set(k, []);
+//       byDay.get(k).push(b.tnr);
+//       total += 1;
+//     });
+//     return { byDay, total };
+//   }, [advancePaid, search, source, selTours]);
+//   const advanceCountOn = (k) => advanceBookings.byDay.get(k)?.length || 0;
+
+//   // Strip: default inniku mattum; From / To select pannaa andha range
+//   const hasRange = Boolean(from || to);
+//   const todayKey = dayKey(new Date());
+//   const stripDays = hasRange
+//     ? [...advanceBookings.byDay.entries()].sort((a, b) =>
+//         sortDir === "asc" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]),
+//       )
+//     : [[todayKey, advanceBookings.byDay.get(todayKey) || []]];
+//   const stripTotal = hasRange ? advanceBookings.total : advanceCountOn(todayKey);
+
+//   const advanceTnrsOn = (k) => advanceBookings.byDay.get(k) || [];
+
+//   // Average bookings per day — range la ulla ellaa calendar days (booking illaadha naalum count aagum).
+//   // Filter illana: mudhal advance booking naal → inniku varai.
+//   const avgStats = useMemo(() => {
+//     const keys = [...advanceBookings.byDay.keys()].sort();
+//     if (!keys.length && !hasRange) return null;
+//     const start = from || keys[0];
+//     let end = to || todayKey;
+//     if (end > todayKey) end = todayKey;
+//     if (!start || start > end) return { avg: 0, days: 0, total: 0, activeDays: 0, start, end };
+//     const toUTC = (k) => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+//     const days = Math.round((toUTC(end) - toUTC(start)) / 86400000) + 1;
+//     let total = 0;
+//     let activeDays = 0;
+//     let best = null;
+//     keys.forEach((k) => {
+//       if (k < start || k > end) return;
+//       const n = advanceBookings.byDay.get(k).length;
+//       total += n;
+//       activeDays += 1;
+//       if (!best || n > best.n) best = { k, n };
+//     });
+//     return { avg: days ? total / days : 0, days, total, activeDays, start, end, best };
+//   }, [advanceBookings, from, to, todayKey, hasRange]);
+//   // Round off — fraction (4.3) vendaam, 4 nu kaattum
+//   const fmtAvg = (n) => String(Math.round(n));
 
 //   const visible = filtered.slice(0, visibleCount);
 
@@ -502,6 +604,96 @@
 //             )}
 //           </div>
 //         </section>
+
+//         {/* Advance paid bookings — per day (tourBookingModel, advance.paid = true). Click → andha naal filter */}
+//         {(
+//           <section className="bg-white rounded-2xl border border-[#DCE5E0] p-3 mb-4">
+//             <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+//               <div>
+//                 <p className="text-xs font-semibold text-[#1E6FD9]">Advance paid bookings per day</p>
+//                 <p className="text-[11px] text-[#8FA39B]">New bookings only — balance payments are not counted</p>
+//               </div>
+//               {/* Filter la From / To pottaa andha range ku motham */}
+//               <div className="rounded-lg bg-[#E8F1FD] px-3 py-1.5 text-right">
+//                 <p className="text-[11px] text-[#4B5F57]">
+//                   {hasRange
+//                     ? (from && to && from === to
+//                         ? payRangeLabel(from)
+//                         : `${from ? payRangeLabel(from) : "Start"} – ${to ? payRangeLabel(to) : "Today"}`)
+//                     : `Today · ${payRangeLabel(todayKey)}`}
+//                 </p>
+//                 <p className="text-base font-bold tabular-nums text-[#1E6FD9] leading-tight">
+//                   {stripTotal} booking{stripTotal !== 1 ? "s" : ""}
+//                 </p>
+//               </div>
+//             </div>
+//             {/* Average per day — filter range (illana mudhal booking → inniku) */}
+//             {avgStats && avgStats.days > 0 && (
+//               <div className="mb-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+//                 <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-1.5">
+//                   <p className="text-[11px] text-[#6B7F77]">Average per day</p>
+//                   <p className="text-base font-bold tabular-nums text-[#0F7A5A] leading-tight">
+//                     {fmtAvg(avgStats.avg)} booking{Math.round(avgStats.avg) === 1 ? "" : "s"}
+//                   </p>
+//                   <p className="text-[10.5px] text-[#8FA39B]">
+//                     {avgStats.total} in {avgStats.days} day{avgStats.days !== 1 ? "s" : ""}
+//                     {hasRange ? "" : ` · since ${payRangeLabel(avgStats.start)}`}
+//                   </p>
+//                 </div>
+//                 <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-1.5">
+//                   <p className="text-[11px] text-[#6B7F77]">Days with bookings</p>
+//                   <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
+//                     {avgStats.activeDays} / {avgStats.days}
+//                   </p>
+//                   <p className="text-[10.5px] text-[#8FA39B]">
+//                     {avgStats.activeDays ? `${fmtAvg(avgStats.total / avgStats.activeDays)} per active day` : "No bookings"}
+//                   </p>
+//                 </div>
+//                 {avgStats.best && (
+//                   <button
+//                     type="button"
+//                     onClick={() => { setFrom(avgStats.best.k); setTo(avgStats.best.k); }}
+//                     title="Show this day"
+//                     className="col-span-2 sm:col-span-1 text-left rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-1.5 hover:bg-[#EEF3F0]"
+//                   >
+//                     <p className="text-[11px] text-[#6B7F77]">Busiest day</p>
+//                     <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
+//                       {avgStats.best.n} booking{avgStats.best.n !== 1 ? "s" : ""}
+//                     </p>
+//                     <p className="text-[10.5px] text-[#8FA39B]">{payRangeLabel(avgStats.best.k)}</p>
+//                   </button>
+//                 )}
+//               </div>
+//             )}
+//             <div className="flex gap-2 overflow-x-auto pb-1">
+//               {hasRange && stripDays.length === 0 && (
+//                 <p className="text-xs text-[#8FA39B] py-1">No advance paid bookings in this date range.</p>
+//               )}
+//               {stripDays.map(([k, tnrs]) => {
+//                   const dp = dayParts(k);
+//                   const active = from === k && to === k;
+//                   return (
+//                     <button
+//                       key={k}
+//                       type="button"
+//                       title={`Advance paid: ${tnrs.filter(Boolean).join(", ")}`}
+//                       onClick={() => {
+//                         if (active) { setFrom(""); setTo(""); } else { setFrom(k); setTo(k); }
+//                       }}
+//                       className={`shrink-0 text-left rounded-lg border px-3 py-1.5 ${active ? "border-[#1E6FD9] bg-[#E8F1FD]" : "border-[#DCE5E0] hover:bg-[#F7F9F8]"}`}
+//                     >
+//                       <span className="block text-[11px] text-[#6B7F77] whitespace-nowrap">
+//                         {String(dp.day).padStart(2, "0")} {dp.month} {String(dp.year).slice(2)} · {dp.rel}
+//                       </span>
+//                       <span className="block text-sm font-bold tabular-nums text-[#1E6FD9]">
+//                         {tnrs.length} booking{tnrs.length !== 1 ? "s" : ""}
+//                       </span>
+//                     </button>
+//                   );
+//                 })}
+//             </div>
+//           </section>
+//         )}
 
 //         {/* Filters — one compact toolbar */}
 //         <section className="bg-white rounded-2xl border border-[#DCE5E0] p-3 mb-4">
@@ -718,7 +910,7 @@
 //           ) : (
 //             <>
 //               <div className="hidden xl:block overflow-x-auto">
-//                 <table className="w-full min-w-[900px] text-sm border-collapse">
+//                 <table className="w-full min-w-[1020px] text-sm border-collapse">
 //                   <thead>
 //                     <tr className="text-xs text-[#1F7A3D] bg-[#F2FAF4] border-b border-[#CFE3D6]">
 //                       <th className="pl-5 pr-3 py-3 text-left font-semibold w-24">Time</th>
@@ -727,6 +919,7 @@
 //                       <th className="px-3 py-3 text-left font-semibold">Bank / remarks</th>
 //                       <th className="px-3 py-3 text-left font-semibold">Tour</th>
 //                       <th className="px-3 py-3 text-left font-semibold w-24">Booking</th>
+//                       <th className="px-3 py-3 text-left font-semibold w-36">Uploaded by</th>
 //                       <th className="pl-3 pr-5 py-3 text-right font-semibold w-40">Amount</th>
 //                     </tr>
 //                   </thead>
@@ -735,13 +928,14 @@
 //                     return (
 //                       <tbody key={g.key}>
 //                         <tr className="border-y border-[#DCE5E0] bg-[#FAFCFB]">
-//                           <td colSpan={6} className="pl-5 pr-3 py-3">
+//                           <td colSpan={7} className="pl-5 pr-3 py-3">
 //                             <div className="flex items-center gap-3">
 //                               <DateStamp dp={dp} />
 //                               <div>
 //                                 <p className="font-semibold leading-tight">{dp.rel}</p>
 //                                 <p className="text-xs text-[#8FA39B]">{g.rows.length} payment{g.rows.length !== 1 ? "s" : ""} received</p>
 //                               </div>
+//                               <AdvanceBookingsBadge count={advanceCountOn(g.key)} tnrs={advanceTnrsOn(g.key)} />
 //                             </div>
 //                           </td>
 //                           <td className="pl-3 pr-5 py-3 text-right">
@@ -799,6 +993,18 @@
 //                                   {r.bookingSource === "user" ? "User" : "Admin"}
 //                                 </span>
 //                               </td>
+//                               <td className="px-3 py-3 max-w-[160px]">
+//                                 {r.uploader ? (
+//                                   <>
+//                                     <span className="block font-semibold truncate text-[#1B2B26]">{uploaderName(r.uploader)}</span>
+//                                     {uploaderSub(r.uploader) && (
+//                                       <span className="block text-[11px] text-[#8FA39B] truncate">{uploaderSub(r.uploader)}</span>
+//                                     )}
+//                                   </>
+//                                 ) : (
+//                                   <span className="text-[#B9C9C1]">—</span>
+//                                 )}
+//                               </td>
 //                               <td className="pl-3 pr-5 py-3 text-right whitespace-nowrap">
 //                                 <span className="block font-bold tabular-nums text-sm">
 //                                   {r.amount ? `₹${formatAmount(r.amount)}` : <span className="text-[#B9C9C1] font-normal">—</span>}
@@ -828,6 +1034,9 @@
 //                           <div className="min-w-0">
 //                             <p className="font-semibold text-sm leading-tight truncate">{dp.rel}</p>
 //                             <p className="text-xs text-[#8FA39B]">{g.rows.length} received</p>
+//                             <div className="mt-1">
+//                               <AdvanceBookingsBadge count={advanceCountOn(g.key)} tnrs={advanceTnrsOn(g.key)} />
+//                             </div>
 //                           </div>
 //                         </div>
 //                         <span className="rounded-lg bg-[#E4F5EA] text-[#1F7A3D] px-2.5 py-1 font-bold tabular-nums text-sm shrink-0">
@@ -879,6 +1088,9 @@
 //                                 >
 //                                   {r.bookingSource === "user" ? "User" : "Admin"}
 //                                 </span>
+//                                 {r.uploader && (
+//                                   <span className="truncate max-w-[160px]">· by {uploaderName(r.uploader)}</span>
+//                                 )}
 //                               </span>
 //                             </span>
 //                             <span className="text-right shrink-0">
@@ -917,7 +1129,6 @@
 // };
 
 // export default PaymentRecords;
-
 
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
@@ -1038,6 +1249,7 @@ const uploaderName = (u) => {
   return u.name || "";
 };
 const uploaderSub = (u) => (u?.type === "staff" ? u.role || u.employeeId || "Staff" : "");
+const uploaderSubOf = (r) => uploaderSub(r?.uploader); // staff → role / employee ID
 
 // Works on every device: the Clipboard API needs HTTPS (or localhost), and
 // some phones/in-app browsers don't have it, so fall back to a hidden
@@ -1108,7 +1320,12 @@ const Viewer = ({ items, index, onClose, onNav }) => {
       if (e.key === "ArrowRight" && index < items.length - 1) onNav(index + 1);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden"; // pinnaadi page scroll aaga koodaadhu
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
   }, [index, items.length, onClose, onNav]);
 
   if (index === null || !items[index]) return null;
@@ -1116,24 +1333,24 @@ const Viewer = ({ items, index, onClose, onNav }) => {
   const meta = TYPE_META[r.type] || TYPE_META.partial;
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#1B2B26]/80 flex items-center justify-center p-3 sm:p-6"
+      className="fixed inset-0 z-50 bg-[#1B2B26]/80 flex items-start md:items-center justify-center p-3 sm:p-6 overflow-y-auto"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden shadow-2xl grid grid-rows-[minmax(0,1fr)_auto] md:grid-rows-1 md:grid-cols-[minmax(0,1fr)_260px] max-h-[92vh]"
+        className="relative my-auto w-full max-w-3xl bg-white rounded-2xl shadow-2xl flex flex-col md:grid md:grid-cols-[minmax(0,1fr)_260px] md:max-h-[92vh] md:overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-[#EEF2EF] min-h-0 flex items-center justify-center">
-          <img src={toPreviewUrl(r.url)} alt="Payment screenshot" className="max-w-full max-h-[50vh] md:max-h-[86vh] object-contain" />
+        <div className="bg-[#EEF2EF] min-h-0 flex items-center justify-center rounded-t-2xl md:rounded-none md:rounded-l-2xl overflow-hidden">
+          <img src={toPreviewUrl(r.url)} alt="Payment screenshot" className="max-w-full max-h-[55dvh] md:max-h-[86vh] object-contain" />
         </div>
-        <div className="p-4 sm:p-5 flex flex-col gap-3 sm:gap-4 overflow-y-auto border-t md:border-t-0 md:border-l border-[#DCE5E0]">
+        <div className="p-4 sm:p-5 pb-6 flex flex-col gap-3 sm:gap-4 md:overflow-y-auto border-t md:border-t-0 md:border-l border-[#DCE5E0]">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 text-[#1B2B26] shadow hover:bg-white"
+            className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/90 text-[#1B2B26] shadow hover:bg-white"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1161,10 +1378,10 @@ const Viewer = ({ items, index, onClose, onNav }) => {
                 {r.uploader ? (
                   <>
                     {uploaderName(r.uploader)}
-                    {uploaderSub(r.uploader) && <span className="font-normal text-[#8FA39B]"> · {uploaderSub(r.uploader)}</span>}
+                    {uploaderSubOf(r) && <span className="font-normal text-[#8FA39B]"> · {uploaderSubOf(r)}</span>}
                   </>
                 ) : (
-                  "—"
+                  <span className="font-normal text-[#8FA39B]">Not recorded (older upload)</span>
                 )}
               </dd>
             </div>
@@ -1351,7 +1568,7 @@ const PaymentRecords = () => {
       if (source && b.bookingSource !== source) return;
       if (selTours.length && !selTours.includes(b.tourTitle)) return;
       if (q && ![b.tnr, b.name, b.tourTitle].join(" ").toLowerCase().includes(q)) return;
-      const k = dayKey(b.paidAt);
+      const k = dayKey(b.bookedAt || b.paidAt); // tour booking date (advance.paid === true)
       if (!byDay.has(k)) byDay.set(k, []);
       byDay.get(k).push(b.tnr);
       total += 1;
@@ -1360,43 +1577,26 @@ const PaymentRecords = () => {
   }, [advancePaid, search, source, selTours]);
   const advanceCountOn = (k) => advanceBookings.byDay.get(k)?.length || 0;
 
-  // Strip: default inniku mattum; From / To select pannaa andha range
-  const hasRange = Boolean(from || to);
+  // ── Advance paid bookings (tour bookings, advance.paid === true) ──
+  // Filter illana: inniku mattum. From / To pottaa: andha naatkal mattum —
+  // bookings = andha naatkal la motham, average = motham ÷ naatkal.
   const todayKey = dayKey(new Date());
-  const stripDays = hasRange
-    ? [...advanceBookings.byDay.entries()].sort((a, b) =>
-        sortDir === "asc" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]),
-      )
-    : [[todayKey, advanceBookings.byDay.get(todayKey) || []]];
-  const stripTotal = hasRange ? advanceBookings.total : advanceCountOn(todayKey);
-
   const advanceTnrsOn = (k) => advanceBookings.byDay.get(k) || [];
-
-  // Average bookings per day — range la ulla ellaa calendar days (booking illaadha naalum count aagum).
-  // Filter illana: mudhal advance booking naal → inniku varai.
-  const avgStats = useMemo(() => {
-    const keys = [...advanceBookings.byDay.keys()].sort();
-    if (!keys.length && !hasRange) return null;
-    const start = from || keys[0];
-    let end = to || todayKey;
-    if (end > todayKey) end = todayKey;
-    if (!start || start > end) return { avg: 0, days: 0, total: 0, activeDays: 0, start, end };
+  const perDay = useMemo(() => {
+    let start = from || to || todayKey;
+    let end = to || (from ? todayKey : todayKey);
+    if (!from && to) start = to; // To mattum → andha oru naal
+    if (end > todayKey && start <= todayKey) end = todayKey;
+    if (start > end) [start, end] = [end, start];
+    let total = 0;
+    advanceBookings.byDay.forEach((tnrs, k) => {
+      if (k >= start && k <= end) total += tnrs.length;
+    });
     const toUTC = (k) => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d); };
     const days = Math.round((toUTC(end) - toUTC(start)) / 86400000) + 1;
-    let total = 0;
-    let activeDays = 0;
-    let best = null;
-    keys.forEach((k) => {
-      if (k < start || k > end) return;
-      const n = advanceBookings.byDay.get(k).length;
-      total += n;
-      activeDays += 1;
-      if (!best || n > best.n) best = { k, n };
-    });
-    return { avg: days ? total / days : 0, days, total, activeDays, start, end, best };
-  }, [advanceBookings, from, to, todayKey, hasRange]);
-  // Round off — fraction (4.3) vendaam, 4 nu kaattum
-  const fmtAvg = (n) => String(Math.round(n));
+    return { total, days, avg: days ? total / days : 0, start, end };
+  }, [advanceBookings, from, to, todayKey]);
+  const fmtAvg = (n) => String(Math.round(n)); // round off — 4.3 → 4, 4.5 → 5
 
   const visible = filtered.slice(0, visibleCount);
 
@@ -1438,7 +1638,7 @@ const PaymentRecords = () => {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold tracking-tight">Payment Records</h1>
-            <p className="text-xs text-[#6B7F77]">Screenshots uploaded from Aadhaar Upload, {sortDir === "asc" ? "oldest" : "newest"} first</p>
+            <p className="text-xs text-[#6B7F77]">Advance, balance and partial payment screenshots, {sortDir === "asc" ? "oldest" : "newest"} first</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none [&>button]:justify-center">
             <button
@@ -1526,95 +1726,28 @@ const PaymentRecords = () => {
           </div>
         </section>
 
-        {/* Advance paid bookings — per day (tourBookingModel, advance.paid = true). Click → andha naal filter */}
-        {(
-          <section className="bg-white rounded-2xl border border-[#DCE5E0] p-3 mb-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <div>
-                <p className="text-xs font-semibold text-[#1E6FD9]">Advance paid bookings per day</p>
-                <p className="text-[11px] text-[#8FA39B]">New bookings only — balance payments are not counted</p>
-              </div>
-              {/* Filter la From / To pottaa andha range ku motham */}
-              <div className="rounded-lg bg-[#E8F1FD] px-3 py-1.5 text-right">
-                <p className="text-[11px] text-[#4B5F57]">
-                  {hasRange
-                    ? (from && to && from === to
-                        ? payRangeLabel(from)
-                        : `${from ? payRangeLabel(from) : "Start"} – ${to ? payRangeLabel(to) : "Today"}`)
-                    : `Today · ${payRangeLabel(todayKey)}`}
-                </p>
-                <p className="text-base font-bold tabular-nums text-[#1E6FD9] leading-tight">
-                  {stripTotal} booking{stripTotal !== 1 ? "s" : ""}
-                </p>
-              </div>
+        {/* Advance paid bookings (tour bookings, advance.paid === true) — inniku, illana filter potta naatkal */}
+        <section className="bg-white rounded-2xl border border-[#DCE5E0] p-3 mb-4">
+          <p className="text-xs font-semibold text-[#1E6FD9]">Advance paid bookings</p>
+          <p className="text-[11px] text-[#8FA39B] mb-2">
+            {perDay.start === perDay.end
+              ? `${perDay.start === todayKey ? "Today · " : ""}${payRangeLabel(perDay.start)}`
+              : `${payRangeLabel(perDay.start)} – ${payRangeLabel(perDay.end)} · ${perDay.days} days`}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg bg-[#E8F1FD] px-3 py-2">
+              <p className="text-[11px] text-[#4B5F57]">Bookings (advance paid)</p>
+              <p className="text-xl font-bold tabular-nums text-[#1E6FD9] leading-tight">{perDay.total}</p>
             </div>
-            {/* Average per day — filter range (illana mudhal booking → inniku) */}
-            {avgStats && avgStats.days > 0 && (
-              <div className="mb-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-1.5">
-                  <p className="text-[11px] text-[#6B7F77]">Average per day</p>
-                  <p className="text-base font-bold tabular-nums text-[#0F7A5A] leading-tight">
-                    {fmtAvg(avgStats.avg)} booking{Math.round(avgStats.avg) === 1 ? "" : "s"}
-                  </p>
-                  <p className="text-[10.5px] text-[#8FA39B]">
-                    {avgStats.total} in {avgStats.days} day{avgStats.days !== 1 ? "s" : ""}
-                    {hasRange ? "" : ` · since ${payRangeLabel(avgStats.start)}`}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-1.5">
-                  <p className="text-[11px] text-[#6B7F77]">Days with bookings</p>
-                  <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
-                    {avgStats.activeDays} / {avgStats.days}
-                  </p>
-                  <p className="text-[10.5px] text-[#8FA39B]">
-                    {avgStats.activeDays ? `${fmtAvg(avgStats.total / avgStats.activeDays)} per active day` : "No bookings"}
-                  </p>
-                </div>
-                {avgStats.best && (
-                  <button
-                    type="button"
-                    onClick={() => { setFrom(avgStats.best.k); setTo(avgStats.best.k); }}
-                    title="Show this day"
-                    className="col-span-2 sm:col-span-1 text-left rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-1.5 hover:bg-[#EEF3F0]"
-                  >
-                    <p className="text-[11px] text-[#6B7F77]">Busiest day</p>
-                    <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
-                      {avgStats.best.n} booking{avgStats.best.n !== 1 ? "s" : ""}
-                    </p>
-                    <p className="text-[10.5px] text-[#8FA39B]">{payRangeLabel(avgStats.best.k)}</p>
-                  </button>
-                )}
-              </div>
-            )}
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {hasRange && stripDays.length === 0 && (
-                <p className="text-xs text-[#8FA39B] py-1">No advance paid bookings in this date range.</p>
+            <div className="rounded-lg bg-[#E7F6EC] px-3 py-2">
+              <p className="text-[11px] text-[#4B5F57]">Average per day</p>
+              <p className="text-xl font-bold tabular-nums text-[#0F7A5A] leading-tight">{fmtAvg(perDay.avg)}</p>
+              {perDay.days > 1 && (
+                <p className="text-[10.5px] text-[#8FA39B] tabular-nums">{perDay.total} ÷ {perDay.days} days</p>
               )}
-              {stripDays.map(([k, tnrs]) => {
-                  const dp = dayParts(k);
-                  const active = from === k && to === k;
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      title={`Advance paid: ${tnrs.filter(Boolean).join(", ")}`}
-                      onClick={() => {
-                        if (active) { setFrom(""); setTo(""); } else { setFrom(k); setTo(k); }
-                      }}
-                      className={`shrink-0 text-left rounded-lg border px-3 py-1.5 ${active ? "border-[#1E6FD9] bg-[#E8F1FD]" : "border-[#DCE5E0] hover:bg-[#F7F9F8]"}`}
-                    >
-                      <span className="block text-[11px] text-[#6B7F77] whitespace-nowrap">
-                        {String(dp.day).padStart(2, "0")} {dp.month} {String(dp.year).slice(2)} · {dp.rel}
-                      </span>
-                      <span className="block text-sm font-bold tabular-nums text-[#1E6FD9]">
-                        {tnrs.length} booking{tnrs.length !== 1 ? "s" : ""}
-                      </span>
-                    </button>
-                  );
-                })}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* Filters — one compact toolbar */}
         <section className="bg-white rounded-2xl border border-[#DCE5E0] p-3 mb-4">
@@ -1825,7 +1958,7 @@ const PaymentRecords = () => {
               <FileImage className="w-10 h-10 mx-auto mb-3 text-[#B9C9C1]" />
               <p className="font-semibold">No payment screenshots match</p>
               <p className="text-sm text-[#4B5F57] mt-1">
-                {hasFilters ? "Change or clear the filters to see more." : "Screenshots uploaded from Aadhaar Upload will show here."}
+                {hasFilters ? "Change or clear the filters to see more." : "Payment screenshots will show here once they are uploaded."}
               </p>
             </div>
           ) : (
@@ -1918,12 +2051,12 @@ const PaymentRecords = () => {
                                 {r.uploader ? (
                                   <>
                                     <span className="block font-semibold truncate text-[#1B2B26]">{uploaderName(r.uploader)}</span>
-                                    {uploaderSub(r.uploader) && (
-                                      <span className="block text-[11px] text-[#8FA39B] truncate">{uploaderSub(r.uploader)}</span>
+                                    {uploaderSubOf(r) && (
+                                      <span className="block text-[11px] text-[#8FA39B] truncate">{uploaderSubOf(r)}</span>
                                     )}
                                   </>
                                 ) : (
-                                  <span className="text-[#B9C9C1]">—</span>
+                                  <span className="text-[11px] text-[#B9C9C1]">Not recorded</span>
                                 )}
                               </td>
                               <td className="pl-3 pr-5 py-3 text-right whitespace-nowrap">
@@ -2050,3 +2183,4 @@ const PaymentRecords = () => {
 };
 
 export default PaymentRecords;
+

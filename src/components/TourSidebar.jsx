@@ -421,8 +421,10 @@ export const adminMenuItems = [
     icon: ChartPieIcon,
     label: "Sales DashBoard",
   },
- { to: "/admin-staff-view", icon: UserRound, label: "Staff Profile" },
-{ to: "/admin-enquiries-view", icon:BadgeQuestionMark, label: "FIT Enquiries" },
+  { to: "/employee-performance", icon: ChartBarIncreasing, label: "Employee Performance" },
+  { to: "/fit-performance", icon: ChartAreaIcon, label: "FIT Performance" },
+  { to: "/admin-staff-view", icon: UserRound, label: "Staff Profile" },
+  { to: "/admin-enquiries-view", icon: BadgeQuestionMark, label: "FIT Enquiries" },
 
   { to: "/admin-payment-tasks", icon: ListChecks, label: "Payment Tasks" },
   { to: "/get-bookings", icon: BookHeartIcon, label: "All Bookings" },
