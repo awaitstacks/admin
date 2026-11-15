@@ -7361,7 +7361,7 @@ const ownerText = (o) => !o ? "" : o.type === "team" ? `${o.name} team` : o.type
 // ZONES — states select panni "Zone 1", "Zone 2" … (oru state oru zone la mattum)
 // ─────────────────────────────────────────────
 const zoneWhen = (d) => new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
-const ZonesPanel = ({ zones, reload, api }) => {
+const ZonesPanel = ({ zones, reload, api, readOnly = false }) => {
     const [picked, setPicked] = useState([]);
     const [dists, setDists] = useState({}); // { state: [districts] } — [] na full state
     const [editId, setEditId] = useState(null);
@@ -7409,7 +7409,7 @@ const ZonesPanel = ({ zones, reload, api }) => {
     };
     return (
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ background: "#fff", border: "0.5px solid #e2e8f0", borderRadius: "14px", padding: "18px", marginBottom: "16px" }}>
+            {!readOnly && <div style={{ background: "#fff", border: "0.5px solid #e2e8f0", borderRadius: "14px", padding: "18px", marginBottom: "16px" }}>
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "12px" }}>
                     <div>
                         <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: "#0f172a" }}>{editId ? `Edit ${zones.find((z) => z._id === editId)?.name || "zone"}` : `Create ${nextName}`}</h2>
@@ -7474,12 +7474,12 @@ const ZonesPanel = ({ zones, reload, api }) => {
                         {picked.length} state{picked.length === 1 ? "" : "s"} selected{missingDist.length ? ` · select districts for ${missingDist.join(", ")}` : ""}
                     </span>
                 </div>
-            </div>
+            </div>}
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: "12px" }}>
                 {zones.length === 0 && (
                     <div style={{ gridColumn: "1/-1", padding: "30px", textAlign: "center", color: "#94a3b8", fontSize: "13px", background: "#fff", border: "0.5px dashed #cbd5e1", borderRadius: "12px" }}>
-                        No zones yet. Create one above — enquiries can be picked up only after choosing a zone.
+                        {readOnly ? "No zones yet." : "No zones yet. Create one above — enquiries can be picked up only after choosing a zone."}
                     </div>
                 )}
                 {zones.map((z) => (
@@ -7494,10 +7494,10 @@ const ZonesPanel = ({ zones, reload, api }) => {
                             <div>Created by <b style={{ color: "#334155" }}>{cancelWho(z.createdBy) || "—"}</b>{z.createdAt ? ` · ${zoneWhen(z.createdAt)}` : ""}</div>
                             {z.updatedBy && <div>Edited by <b style={{ color: "#334155" }}>{cancelWho(z.updatedBy) || "—"}</b>{z.updatedAt ? ` · ${zoneWhen(z.updatedAt)}` : ""}</div>}
                         </div>
-                        <div style={{ display: "flex", gap: "6px" }}>
+                        {!readOnly && <div style={{ display: "flex", gap: "6px" }}>
                             <button onClick={() => startEdit(z)} style={{ flex: 1, padding: "7px", border: "none", borderRadius: "8px", background: "#EEF2FF", color: "#4338CA", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}>✎ Edit</button>
                             <button onClick={() => remove(z)} style={{ flex: 1, padding: "7px", border: "none", borderRadius: "8px", background: "#FCEBEB", color: "#A32D2D", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}>🗑 Delete</button>
-                        </div>
+                        </div>}
                     </div>
                 ))}
             </div>
@@ -7736,7 +7736,7 @@ const ConfirmModal = ({ open, type, name, fitCode, sub, onConfirm, onCancel, zon
                 {type === "pickup" && (
                     <div style={{ marginBottom: "18px" }}>
                         <label style={lblStyle}>
-                            🗺 Zones <span style={{ color: "#ef4444" }}>*</span>
+                            🗺 Zones <span style={{ color: "#ef4444" }}>*</span> 
                             <span style={{ float: "right", fontSize: "11px", fontWeight: 600, background: zoneIds.length ? "#E0F2FE" : "#f1f5f9", color: zoneIds.length ? "#075985" : "#94a3b8", padding: "2px 8px", borderRadius: "10px" }}>{zoneIds.length} selected</span>
                         </label>
                         {zones.length === 0 ? (
@@ -8389,12 +8389,12 @@ const TripEnquiries = ({ adminView = false }) => {
         try { return await fn(...a); } catch (err) { throw new Error(err.response?.data?.message || err.message); }
     }]));
     const loadZones = useCallback(async () => {
-        if (viewOnly) return;
+        
         try {
-            const { data } = await axios.get(`${backendUrl}/api/tour/fit-zones`, { headers: { ttoken } });
+            const { data } = await axios.get(`${backendUrl}/api/tour/fit-zones`, { headers: viewOnly ? { aToken, atoken: aToken } : { ttoken } });
             if (data.success) setZones(data.data || []);
         } catch { /* zones illaama list velai seyyum */ }
-    }, [backendUrl, ttoken, viewOnly]);
+    }, [backendUrl, ttoken, aToken, viewOnly]);
     const loadStaff = useCallback(async () => {
         if (viewOnly) return;
         try {
@@ -8715,7 +8715,7 @@ const TripEnquiries = ({ adminView = false }) => {
                     {viewOnly && <span style={{ fontSize: "12px", fontWeight: 600, background: "#f1f5f9", color: "#475569", padding: "3px 10px", borderRadius: "20px" }}>👁 View only</span>}
                 </h1><br />
                 <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", borderRadius: "10px", padding: "4px", width: "fit-content", margin: "0 auto" }}>
-                    {[{ key: "all", label: "📋 All Enquiries" }, ...(viewOnly ? [] : [...(showMineTab ? [{ key: "mine", label: `👤 My Enquiries${myCount ? ` (${myCount})` : ""}` }] : []), { key: "raise", label: "➕ Raise Enquiry" }, { key: "zones", label: `🗺 Zones${zones.length ? ` (${zones.length})` : ""}` }])].map((t) => (
+                    {[{ key: "all", label: "📋 All Enquiries" }, ...(viewOnly ? [{ key: "zones", label: `🗺 Zones${zones.length ? ` (${zones.length})` : ""}` }] : [...(showMineTab ? [{ key: "mine", label: `👤 My Enquiries${myCount ? ` (${myCount})` : ""}` }] : []), { key: "raise", label: "➕ Raise Enquiry" }, { key: "zones", label: `🗺 Zones${zones.length ? ` (${zones.length})` : ""}` }])].map((t) => (
                         <button key={t.key} onClick={() => setActiveTab(t.key)}
                             style={{ padding: "7px 18px", borderRadius: "7px", border: "none", fontSize: "13px", fontWeight: 600, cursor: "pointer", background: activeTab === t.key ? "#fff" : "transparent", color: activeTab === t.key ? "#0f172a" : "#64748b", boxShadow: activeTab === t.key ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}>
                             {t.label}
@@ -8724,7 +8724,7 @@ const TripEnquiries = ({ adminView = false }) => {
                 </div>
             </div>
 
-            {activeTab === "zones" && !viewOnly && <ZonesPanel zones={zones} reload={loadZones} api={wrapApi} />}
+            {activeTab === "zones" && <ZonesPanel zones={zones} reload={loadZones} api={wrapApi} readOnly={viewOnly} />}
             {activeTab === "raise" && !viewOnly && <AdminEnquiryForm onSuccess={() => { setActiveTab("all"); setFilters(p => ({ ...p, status: "pending" })); getAllEnquiries(); }} />}
             {(activeTab === "all" || activeTab === "mine") && (
                 <>
