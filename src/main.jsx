@@ -38,11 +38,12 @@ import TourAdminContextProvider from "./context/TourAdminContext.jsx";
 
 // Staff site (staff.gvtourplanners.com) — npm run dev:staff / build:staff
 import { IS_STAFF, installStaffAxios } from "./staff/staffMode.js";
+import { installAuthLogout } from "./authLogout.js";
 import StaffContextProvider from "./staff/StaffContext.jsx";
 import StaffApp from "./staff/StaffApp.jsx";
 
 installStaffAxios(); // staff mode la mattum — API calls ku stoken podum
-
+if (!IS_STAFF) installAuthLogout(); // Admin / Tour Admin — .env password maathinaa logout
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <TourAdminContextProvider>

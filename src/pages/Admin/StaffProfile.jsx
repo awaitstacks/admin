@@ -3191,7 +3191,6 @@ function FormModal({
                     autoComplete="off"
                     value={form.username}
                     onChange={(e) => onField("username", e.target.value.toLowerCase().replace(/\s/g, ""))}
-                    placeholder="priya.s"
                   />
                 </Field>
                 <Field

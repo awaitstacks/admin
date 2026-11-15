@@ -20,6 +20,7 @@
     "chartjs-plugin-datalabels": "^2.2.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.27.2",
+    "heic2any": "^0.0.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.9",

@@ -243,7 +243,7 @@ export default function StaffLogin() {
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
                   autoCapitalize="none"
-                  placeholder="e.g. GVEMP00X"
+                  placeholder="Enter your username"
                   className={inputClass(!!error)}
                 />
               </div>
@@ -290,7 +290,7 @@ export default function StaffLogin() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoCapitalize="none"
-                  placeholder="e.g. GVEMP00X"
+                  placeholder="Enter your username"
                   className={inputClass(!!error)}
                 />
               </div>
