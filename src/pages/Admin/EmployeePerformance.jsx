@@ -803,55 +803,71 @@ const EmployeePerformance = ({
   const COLS =
     tab === "tickets" ? {
       ticketNo: { label: "Ticket no", fields: [{ key: "c_tno", kind: "text", label: "Ticket no contains", placeholder: "e.g. GVTKT033", get: (t) => t.ticketNo }] },
-      ticket: { label: "Ticket", fields: [
-        { key: "c_subj", kind: "text", label: "Subject / TNR contains", placeholder: "e.g. Advance or XQ08ZT", get: (t) => `${t.subject || ""} ${t.tnr || ""}` },
-        { key: "c_type", kind: "multi", label: "Ticket type", options: opts(base, (t) => t.queryType), get: (t) => t.queryType },
-      ] },
+      ticket: {
+        label: "Ticket", fields: [
+          { key: "c_subj", kind: "text", label: "Subject / TNR contains", placeholder: "e.g. Advance or XQ08ZT", get: (t) => `${t.subject || ""} ${t.tnr || ""}` },
+          { key: "c_type", kind: "multi", label: "Ticket type", options: opts(base, (t) => t.queryType), get: (t) => t.queryType },
+        ]
+      },
       raisedBy: { label: "Raised by", fields: [{ key: "c_by", kind: "multi", label: "Raised by", search: true, options: opts(base, (t) => t.raisedBy), get: (t) => t.raisedBy }] },
       raisedTo: { label: "Raised to", fields: [{ key: "c_to", kind: "multi", label: "Raised to", search: true, options: opts(base, (t) => t.raisedTo), get: (t) => t.raisedTo }] },
       date: { label: "Raised on", fields: [{ key: "date", kind: "date", label: "Raised on", get: (t) => t.createdAt }] },
       status: { label: "Status", fields: [{ key: "c_st", kind: "multi", label: "Status", options: TICKET_CARDS.filter((c) => c.key).map((c) => ({ value: c.key, label: c.label })), get: (t) => t.status }] },
     }
       : tab === "bookings" ? {
-        tnr: { label: "TNR", fields: [
-          { key: "c_tnr", kind: "text", label: "TNR contains", placeholder: "e.g. UF08IX", get: (b) => b.tnr },
-          { key: "date", kind: "date", label: "Booked on", get: (b) => b.bookingDate },
-        ] },
-        tour: { label: "Tour / Customer", fields: [
-          { key: "c_tour", kind: "multi", label: "Tour", search: true, options: opts(base, (b) => b.tour), get: (b) => b.tour },
-          { key: "c_cust", kind: "text", label: "Customer contains", placeholder: "Customer name", get: (b) => b.customer },
-        ] },
+        tnr: {
+          label: "TNR", fields: [
+            { key: "c_tnr", kind: "text", label: "TNR contains", placeholder: "e.g. UF08IX", get: (b) => b.tnr },
+            { key: "date", kind: "date", label: "Booked on", get: (b) => b.bookingDate },
+          ]
+        },
+        tour: {
+          label: "Tour / Customer", fields: [
+            { key: "c_tour", kind: "multi", label: "Tour", search: true, options: opts(base, (b) => b.tour), get: (b) => b.tour },
+            { key: "c_cust", kind: "text", label: "Customer contains", placeholder: "Customer name", get: (b) => b.customer },
+          ]
+        },
         by: { label: "Booked by", fields: [{ key: "c_by", kind: "multi", label: "Booked by", search: true, options: opts(base, (b) => nameOf(b.empKey)), get: (b) => nameOf(b.empKey) }] },
         pax: { label: "Pax", fields: [{ key: "c_pax", kind: "multi", label: "Pax", options: fixed([["c", "Has cancelled pax"], ["r", "Has rejected pax"], ["none", "No cancelled / rejected"]]), get: paxTags }] },
-        pay: { label: "Advance / Balance", fields: [
-          { key: "c_adv", kind: "multi", label: "Advance", options: fixed([["paid", "Paid"], ["pending", "Pending"]]), get: (b) => (b.advance?.paid ? "paid" : "pending") },
-          { key: "c_bal", kind: "multi", label: "Balance", options: fixed([["paid", "Paid"], ["pending", "Pending"], ["adjusted", "Adjusted in cancellation"]]), get: (b) => (b.balance?.adjusted ? "adjusted" : b.balance?.paid ? "paid" : "pending") },
-        ] },
+        pay: {
+          label: "Advance / Balance", fields: [
+            { key: "c_adv", kind: "multi", label: "Advance", options: fixed([["paid", "Paid"], ["pending", "Pending"]]), get: (b) => (b.advance?.paid ? "paid" : "pending") },
+            { key: "c_bal", kind: "multi", label: "Balance", options: fixed([["paid", "Paid"], ["pending", "Pending"], ["adjusted", "Adjusted in cancellation"]]), get: (b) => (b.balance?.adjusted ? "adjusted" : b.balance?.paid ? "paid" : "pending") },
+          ]
+        },
         canc: { label: "Cancellation", fields: [{ key: "c_canc", kind: "multi", label: "Cancellation", options: fixed([["gv", "Has GV"], ["irctc", "Has IRCTC"], ["refund", "Has refund"], ["none", "No cancellation"]]), get: cancTags }] },
         status: { label: "Status", fields: [{ key: "c_st", kind: "multi", label: "Status", options: BOOKING_CARDS.filter((c) => c.key).map((c) => ({ value: c.key, label: c.label })), get: (b) => b.state }] },
       }
         : {
-          code: { label: "Enquiry", fields: [
-            { key: "c_code", kind: "text", label: "FIT code contains", placeholder: "e.g. GVFIT0030", get: (e) => e.fitCode },
-            { key: "date", kind: "date", label: "Enquired on", get: (e) => e.createdAt },
-            { key: "c_raised", kind: "multi", label: "Raised by", search: true, options: opts(base, raiserName), get: raiserName },
-          ] },
-          name: { label: "Customer", fields: [
-            { key: "c_name", kind: "text", label: "Name / mobile contains", placeholder: "Name or mobile", get: (e) => `${e.name || ""} ${e.mobile || ""}` },
-          ] },
-          trip: { label: "Trip", fields: [
-            { key: "c_dest", kind: "multi", label: "Destination", search: true, options: opts(base, (e) => e.destination), get: (e) => String(e.destination || "").trim() },
-            { key: "c_ttype", kind: "multi", label: "Tour type", options: opts(base, (e) => e.tourType), get: (e) => e.tourType },
-            { key: "c_tmonth", kind: "multi", label: "Travel month", options: opts(base, (e) => monthOf(e.travelDate)), get: (e) => monthOf(e.travelDate) },
-            { key: "c_zone", kind: "multi", label: "Zone", options: opts(base, (e) => e.zones || []), get: (e) => (e.zones?.length ? e.zones : ["No zone"]) },
-          ] },
+          code: {
+            label: "Enquiry", fields: [
+              { key: "c_code", kind: "text", label: "FIT code contains", placeholder: "e.g. GVFIT0030", get: (e) => e.fitCode },
+              { key: "date", kind: "date", label: "Enquired on", get: (e) => e.createdAt },
+              { key: "c_raised", kind: "multi", label: "Raised by", search: true, options: opts(base, raiserName), get: raiserName },
+            ]
+          },
+          name: {
+            label: "Customer", fields: [
+              { key: "c_name", kind: "text", label: "Name / mobile contains", placeholder: "Name or mobile", get: (e) => `${e.name || ""} ${e.mobile || ""}` },
+            ]
+          },
+          trip: {
+            label: "Trip", fields: [
+              { key: "c_dest", kind: "multi", label: "Destination", search: true, options: opts(base, (e) => e.destination), get: (e) => String(e.destination || "").trim() },
+              { key: "c_ttype", kind: "multi", label: "Tour type", options: opts(base, (e) => e.tourType), get: (e) => e.tourType },
+              { key: "c_tmonth", kind: "multi", label: "Travel month", options: opts(base, (e) => monthOf(e.travelDate)), get: (e) => monthOf(e.travelDate) },
+              { key: "c_zone", kind: "multi", label: "Zone", options: opts(base, (e) => e.zones || []), get: (e) => (e.zones?.length ? e.zones : ["No zone"]) },
+            ]
+          },
           fto: { label: "Forwarded to", fields: [{ key: "c_fto", kind: "multi", label: "Forwarded to", search: true, options: opts(base, (e) => splitNames(e.fwdOut)), get: (e) => splitNames(e.fwdOut) }] },
           fby: { label: "Forwarded by", fields: [{ key: "c_fby", kind: "multi", label: "Forwarded by", search: true, options: opts(base, (e) => splitNames(e.fwdIn)), get: (e) => splitNames(e.fwdIn) }] },
           with: { label: "Handled by now", fields: [{ key: "c_with", kind: "multi", label: "Currently handled by", search: true, options: opts(base, ownerName), get: ownerName }] },
-          value: { label: "Value", fields: [
-            { key: "c_sales", kind: "multi", label: "Sales value", options: fixed([["yes", "Has sales value"], ["no", "No sales value"]]), get: (e) => (e.salesValue > 0 ? "yes" : "no") },
-            { key: "c_canc", kind: "multi", label: "Cancellation charge", options: fixed([["yes", "Has cancellation charge"], ["no", "No cancellation charge"]]), get: (e) => (e.cancellationCharge > 0 ? "yes" : "no") },
-          ] },
+          value: {
+            label: "Value", fields: [
+              { key: "c_sales", kind: "multi", label: "Sales value", options: fixed([["yes", "Has sales value"], ["no", "No sales value"]]), get: (e) => (e.salesValue > 0 ? "yes" : "no") },
+              { key: "c_canc", kind: "multi", label: "Cancellation charge", options: fixed([["yes", "Has cancellation charge"], ["no", "No cancellation charge"]]), get: (e) => (e.cancellationCharge > 0 ? "yes" : "no") },
+            ]
+          },
           stage: { label: "Stage", fields: [{ key: "c_st", kind: "multi", label: "Stage", options: FIT_CARDS.filter((c) => c.key).map((c) => ({ value: c.key, label: c.label })), get: (e) => e.stage }] },
         };
   // Indha tab la kaattura columns mattum (filter apply aaga)
@@ -999,6 +1015,12 @@ const EmployeePerformance = ({
                   <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <Money label="Sales value (accepted)" value={sum(CB.filter((e) => ["Accepted", "Closed"].includes(e.stage)), (e) => e.salesValue)} tone="text-green-700" />
                     <Money label="Cancellation charge" value={sum(CB, (e) => e.cancellationCharge)} sub={`${CB.filter((e) => e.cancellationCharge > 0).length} enquiries`} tone="text-rose-700" />
+                    {CB.some((e) => "gvVinoth" in e) && (
+                      <>
+                        <Money label="Vinoth share (GVEMP008)" value={sum(CB, (e) => e.gvVinoth)} sub={`${CB.filter((e) => e.gvVinoth > 0).length} enquiries`} tone="text-indigo-700" />
+                        <Money label="Giridharan share (GVEMP009)" value={sum(CB, (e) => e.gvGiridhar)} sub={`${CB.filter((e) => e.gvGiridhar > 0).length} enquiries`} tone="text-indigo-700" />
+                      </>
+                    )}
                   </div>
                 </>
               )}
