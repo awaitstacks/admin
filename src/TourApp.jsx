@@ -331,10 +331,12 @@ import FitEnquiry from "./pages/Admin/FitEnquiry.jsx";
 import StaffProfile from "./pages/Admin/StaffProfile.jsx";
 import EmployeePerformance from "./pages/Admin/EmployeePerformance.jsx";
 import FitPerformance from "./pages/Admin/FitPerformance.jsx";
+import WebsiteTraffic from "./pages/Admin/WebsiteTraffic.jsx";
 
 export const appRoutes = [
   { path: "/admin-dashboard", element: <TourAdminDashboard /> },
   { path: "/tour-analytics", element: <Analytics /> },
+  { path: "/website-traffic", element: <WebsiteTraffic /> },
   { path: "/admin-staff-view", element: <StaffProfile /> },
   { path: "/employee-performance", element: <EmployeePerformance /> },
   { path: "/fit-performance", element: <FitPerformance /> },

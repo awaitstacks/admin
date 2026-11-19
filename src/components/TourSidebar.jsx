@@ -421,6 +421,8 @@ export const adminMenuItems = [
     icon: ChartPieIcon,
     label: "Sales DashBoard",
   },
+
+  { to: "/website-traffic", label: "Website Traffic", icon: ChartNoAxesColumn },
   { to: "/employee-performance", icon: ChartBarIncreasing, label: "Employee Performance" },
   { to: "/fit-performance", icon: ChartAreaIcon, label: "FIT Performance" },
   { to: "/admin-staff-view", icon: UserRound, label: "Staff Profile" },
