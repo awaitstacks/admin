@@ -4311,10 +4311,18 @@ const BANK_ALIAS = { sbi: "SBI", statebankofindia: "SBI", iob: "Indian Overseas 
 const bankKey = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "").replace(/bank|ltd|limited/g, "");
 const BANK_BY_KEY = Object.fromEntries(BANK_NAMES.map((n) => [bankKey(n), n]));
 // "hdfc", "HDFC bank", "Hdfc Bank Ltd" → "HDFC Bank"
+// Remarks la neelama note irundhaa (HDFC (A payment of …)) → bank name mattum; "ACC" / "A/C" → "ACCOUNT"
+const BANK_KEYS = [...Object.entries(BANK_BY_KEY), ...Object.entries(BANK_ALIAS)].sort((a, b) => b[0].length - a[0].length);
 const bankOf = (remarks) => {
-  const k = bankKey(remarks);
+  let t = String(remarks || "").split(/[(\[{\n:,;]/)[0].trim();
+  if (!t) return "";
+  const k = bankKey(t);
   if (!k) return "";
-  return BANK_BY_KEY[k] || BANK_ALIAS[k] || String(remarks).trim();
+  if (BANK_BY_KEY[k] || BANK_ALIAS[k]) return BANK_BY_KEY[k] || BANK_ALIAS[k];
+  const hit = BANK_KEYS.find(([key]) => key.length >= 3 && k.startsWith(key));
+  if (hit) return hit[1];
+  t = t.replace(/\b(a\/c|acc|acct|accnt)\b\.?/gi, "ACCOUNT").replace(/\s+/g, " ").toUpperCase();
+  return t.length > 40 ? `${t.slice(0, 40).trim()}…` : t;
 };
 // Total / Advance / Balance / Partial — screen mela irukkura maadhiri
 const statsOf = (list) => {
@@ -4347,17 +4355,42 @@ const buildPdfHtml = ({ rows, filterText, dateText }) => {
   const now = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
   const PER_PAGE = 15; // oru page la max 15 records — otti otti illaama
   const thead = `<thead><tr><th class="c" style="width:4.5%">S.No</th><th style="width:10%">Date &amp; Time</th><th style="width:9%">TNR</th><th style="width:19%">Guest Name</th><th>Tour Name</th><th style="width:11.5%">Uploaded By</th><th style="width:9%">Type</th><th style="width:10.5%">Amount</th></tr></thead>`;
-  const pages = order.map((bank) => {
+  // Pages waste aagaama fill pannuvom (mm la approx alavu). Date order maaradhu.
+  // Oru bank current page la mudhiyalana, page la idam irukkura varaikkum rows pottu
+  // meedhi adutha page la thodarum (heading mudhal page la vandhaalum ok).
+  const PAGE_MM = 264, ROW_MM = 9.4, GAP_MM = 8, MIN_ROWS = 2, PAGE_ROWS = 15; // oru page ku 15 rows
+  const pageGroups = [];
+  let cur = [], used = 0, rowsOn = 0;
+  const newPage = () => { if (cur.length) pageGroups.push(cur); cur = []; used = 0; rowsOn = 0; };
+  order.forEach((bank) => {
     const list = banks.get(bank);
     const total = list.reduce((a, r) => a + (Number(r.amount) || 0), 0);
-    const chunks = [];
-    for (let i = 0; i < list.length; i += PER_PAGE) chunks.push(list.slice(i, i + PER_PAGE));
-    return chunks.map((chunk, ci) => {
-      const last = ci === chunks.length - 1;
-      const trs = chunk.map((r, j) => {
-        const m = TYPE_META[r.type] || TYPE_META.partial;
-        return `<tr>
-        <td class="c">${ci * PER_PAGE + j + 1}</td>
+    const parts = [];
+    let i = 0;
+    while (i < list.length) {
+      if (rowsOn >= PAGE_ROWS) newPage();
+      const over = (parts.length === 0 ? 50 : 30) + GAP_MM;
+      const fit = Math.min(PAGE_ROWS - rowsOn, Math.floor((PAGE_MM - used - over) / ROW_MM));
+      const left = list.length - i;
+      if (fit < Math.min(MIN_ROWS, left)) { newPage(); continue; }
+      const take = Math.min(fit, left);
+      const bl = { bank, list, total, chunk: list.slice(i, i + take), ci: parts.length, start: i };
+      parts.push(bl);
+      cur.push(bl);
+      used += over + take * ROW_MM;
+      rowsOn += take;
+      i += take;
+    }
+    parts.forEach((bl) => { bl.n = parts.length; });
+  });
+  newPage();
+
+  const blockHtml = ({ bank, list, total, chunk, ci, n, start }) => {
+    const last = ci === n - 1;
+    const trs = chunk.map((r, j) => {
+      const m = TYPE_META[r.type] || TYPE_META.partial;
+      return `<tr>
+        <td class="c">${start + j + 1}</td>
         <td class="dt">${esc(new Date(r.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" }))}<div class="sub">${esc(formatTime(r.createdAt))}</div></td>
         <td class="tnr">${esc(r.tnr || "—")}</td>
         <td>${esc(r.name || "—")}</td>
@@ -4366,10 +4399,10 @@ const buildPdfHtml = ({ rows, filterText, dateText }) => {
         <td><span class="pill" style="color:${m.color};background:${m.soft}">${m.label}</span></td>
         <td class="amt">${r.amount ? `₹${formatAmount(r.amount)}` : "—"}</td>
       </tr>`;
-      }).join("");
-      return `<section class="page${chunk.length === PER_PAGE ? " full" : ""}">
+    }).join("");
+    return `<div class="blk">
       <div class="head">
-        <div><h1>${esc(bank)}${chunks.length > 1 ? ` <small>· Page ${ci + 1} of ${chunks.length}</small>` : ""}</h1><p class="date">${esc(dateText)}</p>${filterText ? `<p class="meta">${esc(filterText)}</p>` : ""}</div>
+        <div><h1>${esc(bank)}${n > 1 ? ` <small>· Part ${ci + 1} of ${n}</small>` : ""}</h1><p class="date">${esc(dateText)}</p>${filterText ? `<p class="meta">${esc(filterText)}</p>` : ""}</div>
         <div class="tot"><span>${list.length} payment${list.length !== 1 ? "s" : ""}</span><b>₹${formatAmount(total)}</b></div>
       </div>
       ${ci === 0 ? statsHtml(statsOf(list)) : ""}
@@ -4378,9 +4411,14 @@ const buildPdfHtml = ({ rows, filterText, dateText }) => {
         <tbody>${trs}</tbody>
         ${last ? `<tfoot><tr><td colspan="7" style="text-align:right">Total</td><td class="amt">₹${formatAmount(total)}</td></tr></tfoot>` : ""}
       </table>
+    </div>`;
+  };
+  const pages = pageGroups.map((g) => {
+    const full = g.reduce((a, bl) => a + bl.chunk.length, 0) >= PER_PAGE; // 15 rows → page fulla stretch
+    return `<section class="page${full ? " full" : ""}">
+      ${g.map(blockHtml).join("")}
       <p class="gen">GV Tour Planners · Generated ${esc(now)}</p>
     </section>`;
-    }).join("");
   }).join("");
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Payment Records - Bank wise</title>
@@ -4392,25 +4430,27 @@ const buildPdfHtml = ({ rows, filterText, dateText }) => {
   .bar button { font: inherit; font-size: 13px; font-weight: 700; padding: 9px 16px; border-radius: 8px; border: 0; background: #2E9E4F; color: #fff; cursor: pointer; }
   .bar .sec { background: #fff; color: #1B2B26; border: 1px solid #DCE5E0; }
   .page { background: #fff; max-width: 900px; margin: 14px auto; padding: 18px; border-radius: 10px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid #1B2B26; padding-bottom: 8px; margin-bottom: 10px; }
-  h1 { font-size: 22px; margin: 0; } h1 small { font-size: 12px; font-weight: 600; color: #8FA39B; }
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid #1B2B26; padding-bottom: 5px; margin-bottom: 6px; }
+  h1 { font-size: 19px; margin: 0; } h1 small { font-size: 12px; font-weight: 600; color: #8FA39B; }
   .meta { color: #6B7F77; font-size: 11px; margin: 2px 0 0; }
-  .date { display: inline-block; margin: 5px 0 0; font-size: 12px; font-weight: 700; color: #1E6FD9; background: #E8F1FD; padding: 3px 9px; border-radius: 6px; }
-  .stats { position: relative; display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; border: 1px solid #DCE5E0; border-radius: 12px; overflow: hidden; margin-bottom: 12px; padding-bottom: 5px; }
-  .st { padding: 9px 11px; border-right: 1px dashed #DCE5E0; } .st:last-of-type { border-right: 0; } .st.first { background: #F1F8F3; }
+  .date { display: inline-block; margin: 3px 0 0; font-size: 12px; font-weight: 700; color: #1E6FD9; background: #E8F1FD; padding: 3px 9px; border-radius: 6px; }
+  .stats { position: relative; display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; border: 1px solid #DCE5E0; border-radius: 12px; overflow: hidden; margin-bottom: 8px; padding-bottom: 5px; }
+  .st { padding: 6px 10px; border-right: 1px dashed #DCE5E0; } .st:last-of-type { border-right: 0; } .st.first { background: #F1F8F3; }
   .st .l { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; color: #4B5F57; } .st .l i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; } .st .l span { margin-left: auto; color: #8FA39B; font-weight: 500; }
   .st .v { font-size: 16px; font-weight: 800; margin-top: 2px; } .st .s { font-size: 9.5px; color: #8FA39B; }
   .split { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; display: flex; background: #EEF2EF; } .split b { display: block; height: 100%; }
-  .tot { text-align: right; } .tot span { display: block; font-size: 11px; color: #4B5F57; } .tot b { font-size: 18px; color: #1F7A3D; }
+  .tot { text-align: right; } .tot span { display: block; font-size: 11px; color: #4B5F57; } .tot b { font-size: 16px; color: #1F7A3D; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   th { text-align: center; font-size: 10.5px; color: #1F7A3D; background: #F2FAF4; padding: 7px 6px; border: 1px solid #CFE3D6; }
-  td { padding: 7px 6px; border: 1px solid #E3EAE6; vertical-align: middle; word-break: break-word; line-height: 1.3; font-size: 10.5px; text-align: center; }
+  td { padding: 5px 6px; border: 1px solid #E3EAE6; vertical-align: middle; word-break: break-word; line-height: 1.3; font-size: 10.5px; text-align: center; }
   tr { page-break-inside: avoid; }
   tbody tr:nth-child(even) td { background: #FAFCFB; }
   tfoot td { font-weight: 700; background: #F2FAF4; }
   .dt { white-space: nowrap; } .sub { font-size: 9.5px; color: #8FA39B; margin-top: 2px; }
   .c { text-align: center; } .tnr { font-weight: 600; white-space: nowrap; } .amt { white-space: nowrap; font-weight: 700; }
   .pill { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+  .blk + .blk { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #CFE3D6; }
+  .blk { page-break-inside: auto; }
   .gen { margin: 8px 0 0; font-size: 9.5px; color: #8FA39B; text-align: right; }
   /* Phone la paakkumbodhu — table card maadhiri (PDF save pannaa A4 table thaan) */
   @media screen and (max-width: 640px) {
@@ -4427,7 +4467,7 @@ const buildPdfHtml = ({ rows, filterText, dateText }) => {
     .page:last-child { page-break-after: auto; break-after: auto; }
     /* A4 page full-aa fill aaganum — 15 rows irundhaa rows stretch aagi keezha gap irukkaadhu */
     .page { height: 275mm; display: flex; flex-direction: column; }
-    .page > * { flex-shrink: 0; } .page.full table { flex: 1 1 auto; }
+    .page > * { flex-shrink: 0; } .page.full .blk:last-of-type { flex: 1 1 auto; display: flex; flex-direction: column; } .page.full .blk:last-of-type table { flex: 1 1 auto; }
     .gen { margin-top: auto; padding-top: 6px; }
   }
 </style></head><body>
@@ -5463,3 +5503,4 @@ const PaymentRecords = () => {
 };
 
 export default PaymentRecords;
+
