@@ -14,22 +14,32 @@ const BankSelect = ({ value, onChange, disabled, className }) => {
   const showOther = other || (!!v && !inList);
   return (
     <div className="flex flex-col gap-1.5">
-      <select
-        aria-label="Bank"
-        value={showOther ? "__other" : v}
-        onChange={(e) => {
-          const nv = e.target.value;
-          if (nv === "__other") { setOther(true); onChange(""); return; }
-          setOther(false);
-          onChange(nv);
-        }}
-        disabled={disabled}
-        className={`${className} cursor-pointer ${!v && !showOther ? "text-gray-400" : ""}`}
-      >
-        <option value="">Select bank (optional)</option>
-        {BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
-        <option value="__other">Other…</option>
-      </select>
+      <div className="relative">
+        <select
+          aria-label="Bank"
+          aria-required="true"
+          value={showOther ? "__other" : v}
+          onChange={(e) => {
+            const nv = e.target.value;
+            if (nv === "__other") { setOther(true); onChange(""); return; }
+            setOther(false);
+            onChange(nv);
+          }}
+          disabled={disabled}
+          className={`${className} cursor-pointer ${!v && !showOther ? "text-gray-400" : ""}`}
+        >
+          <option value="">Select bank</option>
+          {BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
+          <option value="__other">Other…</option>
+        </select>
+        {/* Red star — mandatory (select option kulla color poda mudiyaadhu, adhaan mela overlay) */}
+        {!v && !showOther && (
+          <span aria-hidden="true" className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-xs whitespace-nowrap">
+            <span className="invisible">Select bank</span>
+            <span className="text-red-500 font-bold ml-0.5">*</span>
+          </span>
+        )}
+      </div>
       {showOther && (
         <input
           type="text"

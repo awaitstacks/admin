@@ -916,6 +916,10 @@ const PaymentSlot = ({ groupId, tnr, type, label, items, uploadGroupPayment, del
         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
       }
     }
+    // Bank mandatory
+    for (let i = 0; i < queue.length; i++) {
+      if (!queueRemarks[i]?.trim()) return toast.error(`Select bank for "${queue[i]?.name}"`);
+    }
     if (uploadingRef.current) return;
     uploadingRef.current = true;
     setUploading(true);
@@ -2941,6 +2945,10 @@ const AadhaarUpload = () => {
         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
       }
     }
+    // Bank mandatory
+    for (let i = 0; i < queue.length; i++) {
+      if (!remarksQueue[i]?.trim()) return toast.error(`Select bank for "${queue[i]?.name}"`);
+    }
     if (paymentUploadingRef.current[type]) return;
     paymentUploadingRef.current[type] = true;
 
@@ -3090,6 +3098,7 @@ const AadhaarUpload = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-slate-50 to-sky-50 pt-20 pb-4 px-2.5 sm:pb-8 sm:px-4 lg:pt-8">
+      <ToastContainer position="top-right" autoClose={4000} style={{ zIndex: 99999 }} />
       <div className="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-indigo-300/30 blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 -right-24 w-80 h-80 rounded-full bg-sky-300/30 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/4 w-72 h-72 rounded-full bg-purple-200/30 blur-3xl" />
@@ -3098,7 +3107,7 @@ const AadhaarUpload = () => {
         <div className="h-1.5 sm:h-2 bg-gradient-to-r from-indigo-600 via-violet-500 to-sky-500" />
 
         <div className="p-3.5 sm:p-6 md:p-8">
-          <ToastContainer position="top-right" autoClose={4000} />
+
 
           <div className="flex items-center gap-3 sm:gap-4 border-b border-gray-100 pb-4 sm:pb-6 mb-4 sm:mb-6">
             <div className="relative shrink-0">

@@ -354,6 +354,10 @@ const PaymentSlot = ({ tnr, slot, label, Icon, uploadUserBookingPayment, deleteG
         return toast.error(`Amount for "${queue[i]?.name}", if entered, must be a positive number`);
       }
     }
+    // Bank mandatory
+    for (let i = 0; i < queue.length; i++) {
+      if (!queueRemarks[i]?.trim()) return toast.error(`Select bank for "${queue[i]?.name}"`);
+    }
     setUploading(true);
     let successCount = 0;
     for (let i = 0; i < queue.length; i++) {
