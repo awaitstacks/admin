@@ -321,6 +321,10 @@
 // //   const [tourQ, setTourQ] = useState("");
 // //   const [showDrop, setShowDrop] = useState(false);
 // //   const [from, setFrom] = useState("");
+// //   // Day box select → keezha table la andha naal mattum (IRCTC date strip maadhiri)
+// //   const [selDay, setSelDay] = useState("");
+// //   // Date dropdown la "Custom" select pannaa dhaan From / To theriyum
+// //   const [customRange, setCustomRange] = useState(false);
 // //   const [to, setTo] = useState("");
 // //   const [viewerIndex, setViewerIndex] = useState(null);
 // //   const [visibleCount, setVisibleCount] = useState(50);
@@ -405,13 +409,14 @@
 // //   }, [records, search, source, selTours]);
 
 // //   const filtered = useMemo(() => {
-// //     const list = type ? baseFiltered.filter((r) => r.type === type) : baseFiltered;
+// //     let list = type ? baseFiltered.filter((r) => r.type === type) : baseFiltered;
+// //     if (selDay) list = list.filter((r) => dayKey(r.createdAt) === selDay);
 // //     return [...list].sort((a, b) =>
 // //       sortDir === "asc"
 // //         ? new Date(a.createdAt) - new Date(b.createdAt)
 // //         : new Date(b.createdAt) - new Date(a.createdAt),
 // //     );
-// //   }, [baseFiltered, type, sortDir]);
+// //   }, [baseFiltered, type, sortDir, selDay]);
 
 // //   const split = useMemo(() => {
 // //     const t = { advance: 0, balance: 0, partial: 0, count: { advance: 0, balance: 0, partial: 0 } };
@@ -438,7 +443,7 @@
 // //       if (q && ![b.tnr, b.name, b.tourTitle].join(" ").toLowerCase().includes(q)) return;
 // //       const k = dayKey(b.bookedAt || b.paidAt); // tour booking date (advance.paid === true)
 // //       if (!byDay.has(k)) byDay.set(k, []);
-// //       byDay.get(k).push(b.tnr);
+// //       byDay.get(k).push(b);
 // //       total += 1;
 // //     });
 // //     return { byDay, total };
@@ -449,7 +454,8 @@
 // //   // Filter illana: inniku mattum. From / To pottaa: andha naatkal mattum —
 // //   // bookings = andha naatkal la motham, average = motham ÷ naatkal.
 // //   const todayKey = dayKey(new Date());
-// //   const advanceTnrsOn = (k) => advanceBookings.byDay.get(k) || [];
+// //   const advanceTnrsOn = (k) => (advanceBookings.byDay.get(k) || []).map((b) => b.tnr);
+// //   const advanceListOn = (k) => advanceBookings.byDay.get(k) || [];
 // //   const perDay = useMemo(() => {
 // //     let start = from || to || todayKey;
 // //     let end = to || (from ? todayKey : todayKey);
@@ -457,13 +463,42 @@
 // //     if (end > todayKey && start <= todayKey) end = todayKey;
 // //     if (start > end) [start, end] = [end, start];
 // //     let total = 0;
-// //     advanceBookings.byDay.forEach((tnrs, k) => {
-// //       if (k >= start && k <= end) total += tnrs.length;
+// //     advanceBookings.byDay.forEach((items, k) => {
+// //       if (k >= start && k <= end) total += items.length;
 // //     });
 // //     const toUTC = (k) => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d); };
 // //     const days = Math.round((toUTC(end) - toUTC(start)) / 86400000) + 1;
-// //     return { total, days, avg: days ? total / days : 0, start, end };
-// //   }, [advanceBookings, from, to, todayKey]);
+
+// //     // Days with bookings / Busiest day / day boxes:
+// //     // filter illana mudhal advance booking naal → inniku varai; filter pottaa andha naatkal.
+// //     let aStart = start;
+// //     let aEnd = end;
+// //     if (!from && !to) {
+// //       const first = [...advanceBookings.byDay.keys()].sort()[0];
+// //       if (first && first < aStart) aStart = first;
+// //     }
+// //     let activeDays = 0;
+// //     let best = null;
+// //     advanceBookings.byDay.forEach((items, k) => {
+// //       if (k < aStart || k > aEnd) return;
+// //       activeDays += 1;
+// //       if (!best || items.length > best.n) best = { k, n: items.length };
+// //     });
+
+// //     // Keezha day boxes — Payment Records filter padi: filter illana inniku mattum,
+// //     // From / To pottaa andha naatkal la booking aana naatkal.
+// //     const list = []; // [dayKey, bookings]
+// //     advanceBookings.byDay.forEach((items, k) => {
+// //       if (k >= start && k <= end) list.push([k, items]);
+// //     });
+// //     if (!from && !to && !list.length) list.push([todayKey, []]); // inniku 0 bookings na kooda box
+// //     const allDays = Math.round((toUTC(aEnd) - toUTC(aStart)) / 86400000) + 1;
+// //     list.sort((a, b) => (sortDir === "asc" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0])));
+// //     return { total, days, avg: days ? total / days : 0, start, end, activeDays, allDays, aStart, best, list };
+// //   }, [advanceBookings, from, to, todayKey, sortDir]);
+
+// //   // Day box click → andha naal details keezha. Matha boxes maraiyaadhu.
+// //   useEffect(() => { setSelDay(""); }, [from, to]);
 // //   const fmtAvg = (n) => String(Math.round(n)); // round off — 4.3 → 4, 4.5 → 5
 
 // //   const visible = filtered.slice(0, visibleCount);
@@ -485,8 +520,10 @@
 // //     return out;
 // //   }, [visible]);
 
-// //   const hasFilters = search || type || source || selTours.length || from || to;
+// //   const hasFilters = search || type || source || selTours.length || from || to || selDay;
 // //   const clearFilters = () => {
+// //     setSelDay("");
+// //     setCustomRange(false);
 // //     setSearch("");
 // //     setType("");
 // //     setSource("");
@@ -615,6 +652,75 @@
 // //               )}
 // //             </div>
 // //           </div>
+
+// //           {/* Days with bookings + Busiest day */}
+// //           <div className="mt-2 grid grid-cols-2 gap-2">
+// //             <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-2">
+// //               <p className="text-[11px] text-[#6B7F77]">Days with bookings</p>
+// //               <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
+// //                 {perDay.activeDays} / {perDay.allDays}
+// //               </p>
+// //               <p className="text-[10.5px] text-[#8FA39B]">
+// //                 {!from && !to && perDay.activeDays ? `Since ${payRangeLabel(perDay.aStart)}` : perDay.activeDays ? "" : "No bookings"}
+// //               </p>
+// //             </div>
+// //             {perDay.best ? (
+// //               <button
+// //                 type="button"
+// //                 onClick={() => setSelDay((d) => (d === perDay.best.k ? "" : perDay.best.k))}
+// //                 title="Show this day's bookings"
+// //                 className={`text-left rounded-lg border px-3 py-2 hover:bg-[#EEF3F0] ${selDay === perDay.best.k ? "border-[#1E6FD9] bg-[#E8F1FD]" : "border-[#DCE5E0] bg-[#F7F9F8]"}`}
+// //               >
+// //                 <p className="text-[11px] text-[#6B7F77]">Busiest day</p>
+// //                 <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
+// //                   {perDay.best.n} booking{perDay.best.n !== 1 ? "s" : ""}
+// //                 </p>
+// //                 <p className="text-[10.5px] text-[#8FA39B]">{payRangeLabel(perDay.best.k)}</p>
+// //               </button>
+// //             ) : (
+// //               <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-2">
+// //                 <p className="text-[11px] text-[#6B7F77]">Busiest day</p>
+// //                 <p className="text-base font-bold text-[#8FA39B] leading-tight">—</p>
+// //               </div>
+// //             )}
+// //           </div>
+
+// //           {/* Day boxes — click pannaa andha naal details keezha; matha boxes apdiye irukkum */}
+// //           {perDay.list.length > 0 && (
+// //             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+// //               {perDay.list.map(([k, items]) => {
+// //                 const dp = dayParts(k);
+// //                 const active = selDay === k;
+// //                 return (
+// //                   <button
+// //                     key={k}
+// //                     type="button"
+// //                     aria-pressed={active}
+// //                     onClick={() => setSelDay(active ? "" : k)}
+// //                     className={`shrink-0 text-left rounded-lg border px-3 py-1.5 ${active ? "border-[#1E6FD9] bg-[#E8F1FD]" : "border-[#DCE5E0] hover:bg-[#F7F9F8]"}`}
+// //                   >
+// //                     <span className="block text-[11px] text-[#6B7F77] whitespace-nowrap">
+// //                       {String(dp.day).padStart(2, "0")} {dp.month} {String(dp.year).slice(2)} · {dp.rel}
+// //                     </span>
+// //                     <span className="block text-sm font-bold tabular-nums text-[#1E6FD9]">
+// //                       {items.length} booking{items.length !== 1 ? "s" : ""}
+// //                     </span>
+// //                   </button>
+// //                 );
+// //               })}
+// //             </div>
+// //           )}
+
+// //           {selDay && (
+// //             <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
+// //               <span className="rounded-full bg-[#E8F1FD] text-[#1E6FD9] font-semibold px-2.5 py-1">
+// //                 Showing {payRangeLabel(selDay)} only
+// //               </span>
+// //               <button type="button" onClick={() => setSelDay("")} className="font-semibold text-[#4B5F57] underline hover:text-[#1B2B26]">
+// //                 Show all days
+// //               </button>
+// //             </div>
+// //           )}
 // //         </section>
 
 // //         {/* Filters — one compact toolbar */}
@@ -739,14 +845,21 @@
 // //             <select
 // //               aria-label="Date"
 // //               value={(() => {
+// //                 if (customRange) return "custom";
 // //                 const hit = QUICK_DAYS.find(({ offset }) => {
 // //                   const k = dayOffsetKey(offset);
 // //                   return from === k && to === k;
 // //                 });
-// //                 return hit ? String(hit.offset) : "";
+// //                 if (hit) return String(hit.offset);
+// //                 return from || to ? "custom" : "";
 // //               })()}
 // //               onChange={(e) => {
 // //                 const v = e.target.value;
+// //                 if (v === "custom") {
+// //                   setCustomRange(true);
+// //                   return;
+// //                 }
+// //                 setCustomRange(false);
 // //                 if (v === "") {
 // //                   setFrom("");
 // //                   setTo("");
@@ -764,15 +877,20 @@
 // //                   {label}
 // //                 </option>
 // //               ))}
+// //               <option value="custom">Custom</option>
 // //             </select>
-// //             <label className="relative min-w-0">
-// //               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">From</span>
-// //               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={`${fieldCls} pl-12`} />
-// //             </label>
-// //             <label className="relative min-w-0">
-// //               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">To</span>
-// //               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={`${fieldCls} pl-9`} />
-// //             </label>
+// //             {(customRange || ((from || to) && !QUICK_DAYS.some(({ offset }) => { const k = dayOffsetKey(offset); return from === k && to === k; }))) && (
+// //               <>
+// //               <label className="relative min-w-0">
+// //                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">From</span>
+// //                 <input type="date" value={from} max={to || todayKey} onChange={(e) => setFrom(e.target.value > todayKey ? todayKey : e.target.value)} className={`${fieldCls} pl-12`} />
+// //               </label>
+// //               <label className="relative min-w-0">
+// //                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">To</span>
+// //                 <input type="date" value={to} min={from || undefined} max={todayKey} onChange={(e) => setTo(e.target.value > todayKey ? todayKey : e.target.value)} className={`${fieldCls} pl-9`} />
+// //               </label>
+// //               </>
+// //             )}
 // //             <div className="col-span-2 md:col-span-1 flex h-9 rounded-lg border border-[#DCE5E0] p-0.5 bg-[#F7F9F8]" role="group" aria-label="Booking type">
 // //               {[
 // //                 { v: "", l: "All" },
@@ -832,17 +950,17 @@
 // //           ) : (
 // //             <>
 // //               <div className="hidden xl:block overflow-x-auto">
-// //                 <table className="w-full min-w-[1020px] text-sm border-collapse">
+// //                 {/* table-fixed — screen agalathukku ulla adangum, side la cut aagaadhu */}
+// //                 <table className="w-full table-fixed text-sm border-collapse">
 // //                   <thead>
 // //                     <tr className="text-xs text-[#1F7A3D] bg-[#F2FAF4] border-b border-[#CFE3D6]">
-// //                       <th className="pl-5 pr-3 py-3 text-left font-semibold w-24">Time</th>
-// //                       <th className="px-3 py-3 text-left font-semibold w-20">Proof</th>
-// //                       <th className="px-3 py-3 text-left font-semibold">Guest and TNR</th>
-// //                       <th className="px-3 py-3 text-left font-semibold">Bank / remarks</th>
-// //                       <th className="px-3 py-3 text-left font-semibold">Tour</th>
-// //                       <th className="px-3 py-3 text-left font-semibold w-24">Booking</th>
-// //                       <th className="px-3 py-3 text-left font-semibold w-36">Uploaded by</th>
-// //                       <th className="pl-3 pr-5 py-3 text-right font-semibold w-40">Amount</th>
+// //                       <th className="pl-4 pr-2 py-3 text-left font-semibold w-[5.5rem]">Time</th>
+// //                       <th className="px-2 py-3 text-left font-semibold w-16">Proof</th>
+// //                       <th className="px-2 py-3 text-left font-semibold w-[24%]">Guest and TNR</th>
+// //                       <th className="px-2 py-3 text-left font-semibold w-[9%]">Bank</th>
+// //                       <th className="px-2 py-3 text-left font-semibold">Tour</th>
+// //                       <th className="px-2 py-3 text-left font-semibold w-[15%]">Uploaded by</th>
+// //                       <th className="pl-2 pr-4 py-3 text-right font-semibold w-28">Amount</th>
 // //                     </tr>
 // //                   </thead>
 // //                   {days.map((g) => {
@@ -850,7 +968,7 @@
 // //                     return (
 // //                       <tbody key={g.key}>
 // //                         <tr className="border-y border-[#DCE5E0] bg-[#FAFCFB]">
-// //                           <td colSpan={7} className="pl-5 pr-3 py-3">
+// //                           <td colSpan={6} className="pl-4 pr-2 py-3">
 // //                             <div className="flex items-center gap-3">
 // //                               <DateStamp dp={dp} />
 // //                               <div>
@@ -860,7 +978,7 @@
 // //                               <AdvanceBookingsBadge count={advanceCountOn(g.key)} tnrs={advanceTnrsOn(g.key)} />
 // //                             </div>
 // //                           </td>
-// //                           <td className="pl-3 pr-5 py-3 text-right">
+// //                           <td className="pl-2 pr-4 py-3 text-right">
 // //                             <span className="inline-block rounded-lg bg-[#E4F5EA] text-[#1F7A3D] px-3 py-1 font-bold tabular-nums">
 // //                               ₹{formatAmount(g.total)}
 // //                             </span>
@@ -870,13 +988,13 @@
 // //                           const m = TYPE_META[r.type] || TYPE_META.partial;
 // //                           return (
 // //                             <tr key={r._id} className="border-b border-[#EEF2EF] last:border-0 hover:bg-[#F7F9F8]">
-// //                               <td className="pl-5 pr-3 py-2.5 align-middle whitespace-nowrap tabular-nums text-[#4B5F57]">
+// //                               <td className="pl-4 pr-2 py-2.5 align-middle whitespace-nowrap tabular-nums text-[#4B5F57]">
 // //                                 <span className="relative pl-3">
 // //                                   <span className="absolute left-0 top-0.5 bottom-0.5 w-1 rounded-full" style={{ background: m.color }} />
 // //                                   {formatTime(r.createdAt)}
 // //                                 </span>
 // //                               </td>
-// //                               <td className="px-3 py-3">
+// //                               <td className="px-2 py-3">
 // //                                 <button
 // //                                   type="button"
 // //                                   onClick={() => setViewerIndex(index)}
@@ -891,8 +1009,8 @@
 // //                                   )}
 // //                                 </button>
 // //                               </td>
-// //                               <td className="px-3 py-3 max-w-[260px]">
-// //                                 <p className="font-semibold truncate">{r.name || "Unnamed guest"}</p>
+// //                               <td className="px-2 py-3 min-w-0">
+// //                                 <p className="font-semibold truncate" title={r.name}>{r.name || "Unnamed guest"}</p>
 // //                                 {r.tnr ? (
 // //                                   <span className="inline-flex items-center gap-1 text-xs font-semibold tracking-wide text-[#3B5BDB]">
 // //                                     <span className="select-all">{r.tnr}</span> <CopyTnr tnr={r.tnr} />
@@ -901,21 +1019,19 @@
 // //                                   <span className="text-xs text-[#8FA39B]">TNR not linked yet</span>
 // //                                 )}
 // //                               </td>
-// //                               <td className="px-3 py-3 max-w-[180px] text-[#4B5F57]">
-// //                                 <span className="block truncate">{r.remarks || <span className="text-[#B9C9C1]">—</span>}</span>
+// //                               <td className="px-2 py-3 text-[#4B5F57]">
+// //                                 <span className="block truncate" title={r.remarks}>{r.remarks || <span className="text-[#B9C9C1]">—</span>}</span>
 // //                               </td>
-// //                               <td className="px-3 py-3 max-w-[220px] text-[#4B5F57]">
-// //                                 <span className="block truncate">{r.tourTitle || <span className="text-[#B9C9C1]">—</span>}</span>
-// //                               </td>
-// //                               <td className="px-3 py-3">
+// //                               <td className="px-2 py-3 text-[#4B5F57]">
+// //                                 <span className="block truncate" title={r.tourTitle}>{r.tourTitle || <span className="text-[#B9C9C1]">—</span>}</span>
 // //                                 <span
-// //                                   className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${r.bookingSource === "user" ? "bg-[#EBFBEE] text-[#2B8A3E]" : "bg-[#EDF2FF] text-[#364FC7]"
+// //                                   className={`mt-1 inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md ${r.bookingSource === "user" ? "bg-[#EBFBEE] text-[#2B8A3E]" : "bg-[#EDF2FF] text-[#364FC7]"
 // //                                     }`}
 // //                                 >
 // //                                   {r.bookingSource === "user" ? "User" : "Admin"}
 // //                                 </span>
 // //                               </td>
-// //                               <td className="px-3 py-3 max-w-[160px]">
+// //                               <td className="px-2 py-3 min-w-0">
 // //                                 {r.uploader ? (
 // //                                   <>
 // //                                     <span className="block font-semibold truncate text-[#1B2B26]">{uploaderName(r.uploader)}</span>
@@ -927,7 +1043,7 @@
 // //                                   <span className="text-[11px] text-[#B9C9C1]">Not recorded</span>
 // //                                 )}
 // //                               </td>
-// //                               <td className="pl-3 pr-5 py-3 text-right whitespace-nowrap">
+// //                               <td className="pl-2 pr-4 py-3 text-right whitespace-nowrap">
 // //                                 <span className="block font-bold tabular-nums text-sm">
 // //                                   {r.amount ? `₹${formatAmount(r.amount)}` : <span className="text-[#B9C9C1] font-normal">—</span>}
 // //                                 </span>
@@ -1052,6 +1168,7 @@
 
 // // export default PaymentRecords;
 
+
 // import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 // import { toast } from "react-toastify";
 // import {
@@ -1067,6 +1184,7 @@
 //   Check,
 //   FileImage,
 //   Landmark,
+//   FileDown,
 // } from "lucide-react";
 // import { TourContext } from "../../context/TourContext";
 
@@ -1361,6 +1479,141 @@
 //   );
 // };
 
+// // ─── PDF: browser print → "Save as PDF" (desktop + phone). Extra package theva illa. ───
+// // Ovvoru bank um thani page (HDFC oru page, ICICI oru page …)
+// const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// const BANK_NAMES = [
+//   "SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "Kotak Mahindra Bank", "Indian Bank", "Indian Overseas Bank",
+//   "Canara Bank", "Bank of Baroda", "Union Bank of India", "Punjab National Bank", "Bank of India", "IDFC FIRST Bank",
+//   "IndusInd Bank", "Yes Bank", "Federal Bank", "Karur Vysya Bank", "City Union Bank", "Tamilnad Mercantile Bank",
+//   "South Indian Bank", "Equitas Small Finance Bank", "AU Small Finance Bank", "Cash",
+// ];
+// const BANK_ALIAS = { sbi: "SBI", statebankofindia: "SBI", iob: "Indian Overseas Bank", pnb: "Punjab National Bank", bob: "Bank of Baroda", kvb: "Karur Vysya Bank", cub: "City Union Bank", tmb: "Tamilnad Mercantile Bank", kotak: "Kotak Mahindra Bank", idfc: "IDFC FIRST Bank", idfcfirst: "IDFC FIRST Bank", union: "Union Bank of India", unionbank: "Union Bank of India" };
+// const bankKey = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "").replace(/bank|ltd|limited/g, "");
+// const BANK_BY_KEY = Object.fromEntries(BANK_NAMES.map((n) => [bankKey(n), n]));
+// // "hdfc", "HDFC bank", "Hdfc Bank Ltd" → "HDFC Bank"
+// const bankOf = (remarks) => {
+//   const k = bankKey(remarks);
+//   if (!k) return "";
+//   return BANK_BY_KEY[k] || BANK_ALIAS[k] || String(remarks).trim();
+// };
+// // Total / Advance / Balance / Partial — screen mela irukkura maadhiri
+// const statsOf = (list) => {
+//   const t = { all: 0, n: list.length, advance: 0, balance: 0, partial: 0, c: { advance: 0, balance: 0, partial: 0 } };
+//   list.forEach((r) => {
+//     const a = Number(r.amount) || 0;
+//     t.all += a;
+//     if (t[r.type] !== undefined) { t[r.type] += a; t.c[r.type] += 1; }
+//   });
+//   return t;
+// };
+// const statsHtml = (st) => `<div class="stats">
+//   <div class="st first"><div class="l">Total received</div><div class="v" style="color:#1F7A3D">₹${formatAmount(st.all)}</div><div class="s">${st.n} payment${st.n !== 1 ? "s" : ""}</div></div>
+//   ${TYPE_ORDER.map((k) => `<div class="st"><div class="l"><i style="background:${k === "partial" ? "#F4B400" : TYPE_META[k].color}"></i>${TYPE_META[k].label}<span>${st.c[k]}</span></div><div class="v">₹${formatAmount(st[k])}</div><div class="s">${st.all ? Math.round((st[k] / st.all) * 100) : 0}% of total</div></div>`).join("")}
+//   <div class="split">${TYPE_ORDER.map((k) => (st[k] > 0 ? `<b style="width:${(st[k] / (st.all || 1)) * 100}%;background:${k === "partial" ? "#F4B400" : TYPE_META[k].color}"></b>` : "")).join("")}</div>
+// </div>`;
+
+// const buildPdfHtml = ({ rows, filterText, dateText }) => {
+//   const NONE = "Bank not mentioned";
+//   const banks = new Map(); // bank → rows
+//   rows.forEach((r) => {
+//     const b = bankOf(r.remarks) || NONE;
+//     if (!banks.has(b)) banks.set(b, []);
+//     banks.get(b).push(r);
+//   });
+//   const order = [...banks.keys()].sort((x, y) => (x === NONE ? 1 : y === NONE ? -1 : x.localeCompare(y)));
+//   const now = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+//   const PER_PAGE = 15; // oru page la max 15 records — otti otti illaama
+//   const thead = `<thead><tr><th class="c" style="width:4.5%">S.No</th><th style="width:10%">Date &amp; Time</th><th style="width:9%">TNR</th><th style="width:19%">Guest Name</th><th>Tour Name</th><th style="width:11.5%">Uploaded By</th><th style="width:9%">Type</th><th style="width:10.5%">Amount</th></tr></thead>`;
+//   const pages = order.map((bank) => {
+//     const list = banks.get(bank);
+//     const total = list.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+//     const chunks = [];
+//     for (let i = 0; i < list.length; i += PER_PAGE) chunks.push(list.slice(i, i + PER_PAGE));
+//     return chunks.map((chunk, ci) => {
+//       const last = ci === chunks.length - 1;
+//       const trs = chunk.map((r, j) => {
+//         const m = TYPE_META[r.type] || TYPE_META.partial;
+//         return `<tr>
+//         <td class="c">${ci * PER_PAGE + j + 1}</td>
+//         <td class="dt">${esc(new Date(r.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" }))}<div class="sub">${esc(formatTime(r.createdAt))}</div></td>
+//         <td class="tnr">${esc(r.tnr || "—")}</td>
+//         <td>${esc(r.name || "—")}</td>
+//         <td>${esc(r.tourTitle || "—")}</td>
+//         <td>${esc(uploaderName(r.uploader) || "Not recorded")}</td>
+//         <td><span class="pill" style="color:${m.color};background:${m.soft}">${m.label}</span></td>
+//         <td class="amt">${r.amount ? `₹${formatAmount(r.amount)}` : "—"}</td>
+//       </tr>`;
+//       }).join("");
+//       return `<section class="page${chunk.length === PER_PAGE ? " full" : ""}">
+//       <div class="head">
+//         <div><h1>${esc(bank)}${chunks.length > 1 ? ` <small>· Page ${ci + 1} of ${chunks.length}</small>` : ""}</h1><p class="date">${esc(dateText)}</p>${filterText ? `<p class="meta">${esc(filterText)}</p>` : ""}</div>
+//         <div class="tot"><span>${list.length} payment${list.length !== 1 ? "s" : ""}</span><b>₹${formatAmount(total)}</b></div>
+//       </div>
+//       ${ci === 0 ? statsHtml(statsOf(list)) : ""}
+//       <table>
+//         ${thead}
+//         <tbody>${trs}</tbody>
+//         ${last ? `<tfoot><tr><td colspan="7" style="text-align:right">Total</td><td class="amt">₹${formatAmount(total)}</td></tr></tfoot>` : ""}
+//       </table>
+//       <p class="gen">GV Tour Planners · Generated ${esc(now)}</p>
+//     </section>`;
+//     }).join("");
+//   }).join("");
+//   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+// <title>Payment Records - Bank wise</title>
+// <style>
+//   @page { size: A4 portrait; margin: 10mm; }
+//   * { box-sizing: border-box; }
+//   body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1B2B26; margin: 0; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #F3F6F4; }
+//   .bar { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #DCE5E0; }
+//   .bar button { font: inherit; font-size: 13px; font-weight: 700; padding: 9px 16px; border-radius: 8px; border: 0; background: #2E9E4F; color: #fff; cursor: pointer; }
+//   .bar .sec { background: #fff; color: #1B2B26; border: 1px solid #DCE5E0; }
+//   .page { background: #fff; max-width: 900px; margin: 14px auto; padding: 18px; border-radius: 10px; }
+//   .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid #1B2B26; padding-bottom: 8px; margin-bottom: 10px; }
+//   h1 { font-size: 22px; margin: 0; } h1 small { font-size: 12px; font-weight: 600; color: #8FA39B; }
+//   .meta { color: #6B7F77; font-size: 11px; margin: 2px 0 0; }
+//   .date { display: inline-block; margin: 5px 0 0; font-size: 12px; font-weight: 700; color: #1E6FD9; background: #E8F1FD; padding: 3px 9px; border-radius: 6px; }
+//   .stats { position: relative; display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; border: 1px solid #DCE5E0; border-radius: 12px; overflow: hidden; margin-bottom: 12px; padding-bottom: 5px; }
+//   .st { padding: 9px 11px; border-right: 1px dashed #DCE5E0; } .st:last-of-type { border-right: 0; } .st.first { background: #F1F8F3; }
+//   .st .l { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; color: #4B5F57; } .st .l i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; } .st .l span { margin-left: auto; color: #8FA39B; font-weight: 500; }
+//   .st .v { font-size: 16px; font-weight: 800; margin-top: 2px; } .st .s { font-size: 9.5px; color: #8FA39B; }
+//   .split { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; display: flex; background: #EEF2EF; } .split b { display: block; height: 100%; }
+//   .tot { text-align: right; } .tot span { display: block; font-size: 11px; color: #4B5F57; } .tot b { font-size: 18px; color: #1F7A3D; }
+//   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+//   th { text-align: center; font-size: 10.5px; color: #1F7A3D; background: #F2FAF4; padding: 7px 6px; border: 1px solid #CFE3D6; }
+//   td { padding: 7px 6px; border: 1px solid #E3EAE6; vertical-align: middle; word-break: break-word; line-height: 1.3; font-size: 10.5px; text-align: center; }
+//   tr { page-break-inside: avoid; }
+//   tbody tr:nth-child(even) td { background: #FAFCFB; }
+//   tfoot td { font-weight: 700; background: #F2FAF4; }
+//   .dt { white-space: nowrap; } .sub { font-size: 9.5px; color: #8FA39B; margin-top: 2px; }
+//   .c { text-align: center; } .tnr { font-weight: 600; white-space: nowrap; } .amt { white-space: nowrap; font-weight: 700; }
+//   .pill { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+//   .gen { margin: 8px 0 0; font-size: 9.5px; color: #8FA39B; text-align: right; }
+//   /* Phone la paakkumbodhu — table card maadhiri (PDF save pannaa A4 table thaan) */
+//   @media screen and (max-width: 640px) {
+//     .page { margin: 10px; padding: 12px; }
+//     .stats { grid-template-columns: 1fr 1fr; } .st { border-bottom: 1px dashed #DCE5E0; }
+//     thead { display: none; } table, tbody, tfoot, tr, td { display: block; width: 100%; }
+//     tbody tr { border: 1px solid #E3EAE6; border-radius: 8px; margin-bottom: 8px; padding: 6px 8px; }
+//     td { border: 0; padding: 2px 0; background: none !important; text-align: left; } .c { text-align: left; color: #8FA39B; } .c::before { content: "#"; }
+//     .amt { text-align: left; } tfoot td { display: inline-block; width: auto; padding: 4px 0; }
+//   }
+//   @media print {
+//     body { background: #fff; } .bar { display: none; }
+//     .page { max-width: none; margin: 0; padding: 0; border-radius: 0; page-break-after: always; break-after: page; }
+//     .page:last-child { page-break-after: auto; break-after: auto; }
+//     /* A4 page full-aa fill aaganum — 15 rows irundhaa rows stretch aagi keezha gap irukkaadhu */
+//     .page { height: 275mm; display: flex; flex-direction: column; }
+//     .page > * { flex-shrink: 0; } .page.full table { flex: 1 1 auto; }
+//     .gen { margin-top: auto; padding-top: 6px; }
+//   }
+// </style></head><body>
+//   <div class="bar"><button onclick="window.print()">Save as PDF</button><button class="sec" onclick="window.close()">Close</button></div>
+//   ${pages}
+// </body></html>`;
+// };
+
 // const PaymentRecords = () => {
 //   const { ttoken, getPaymentRecords } = useContext(TourContext);
 
@@ -1375,6 +1628,10 @@
 //   const [tourQ, setTourQ] = useState("");
 //   const [showDrop, setShowDrop] = useState(false);
 //   const [from, setFrom] = useState("");
+//   // Day box select → keezha table la andha naal mattum (IRCTC date strip maadhiri)
+//   const [selDay, setSelDay] = useState("");
+//   // Date dropdown la "Custom" select pannaa dhaan From / To theriyum
+//   const [customRange, setCustomRange] = useState(false);
 //   const [to, setTo] = useState("");
 //   const [viewerIndex, setViewerIndex] = useState(null);
 //   const [visibleCount, setVisibleCount] = useState(50);
@@ -1459,13 +1716,14 @@
 //   }, [records, search, source, selTours]);
 
 //   const filtered = useMemo(() => {
-//     const list = type ? baseFiltered.filter((r) => r.type === type) : baseFiltered;
+//     let list = type ? baseFiltered.filter((r) => r.type === type) : baseFiltered;
+//     if (selDay) list = list.filter((r) => dayKey(r.createdAt) === selDay);
 //     return [...list].sort((a, b) =>
 //       sortDir === "asc"
 //         ? new Date(a.createdAt) - new Date(b.createdAt)
 //         : new Date(b.createdAt) - new Date(a.createdAt),
 //     );
-//   }, [baseFiltered, type, sortDir]);
+//   }, [baseFiltered, type, sortDir, selDay]);
 
 //   const split = useMemo(() => {
 //     const t = { advance: 0, balance: 0, partial: 0, count: { advance: 0, balance: 0, partial: 0 } };
@@ -1492,7 +1750,7 @@
 //       if (q && ![b.tnr, b.name, b.tourTitle].join(" ").toLowerCase().includes(q)) return;
 //       const k = dayKey(b.bookedAt || b.paidAt); // tour booking date (advance.paid === true)
 //       if (!byDay.has(k)) byDay.set(k, []);
-//       byDay.get(k).push(b.tnr);
+//       byDay.get(k).push(b);
 //       total += 1;
 //     });
 //     return { byDay, total };
@@ -1503,7 +1761,8 @@
 //   // Filter illana: inniku mattum. From / To pottaa: andha naatkal mattum —
 //   // bookings = andha naatkal la motham, average = motham ÷ naatkal.
 //   const todayKey = dayKey(new Date());
-//   const advanceTnrsOn = (k) => advanceBookings.byDay.get(k) || [];
+//   const advanceTnrsOn = (k) => (advanceBookings.byDay.get(k) || []).map((b) => b.tnr);
+//   const advanceListOn = (k) => advanceBookings.byDay.get(k) || [];
 //   const perDay = useMemo(() => {
 //     let start = from || to || todayKey;
 //     let end = to || (from ? todayKey : todayKey);
@@ -1511,13 +1770,42 @@
 //     if (end > todayKey && start <= todayKey) end = todayKey;
 //     if (start > end) [start, end] = [end, start];
 //     let total = 0;
-//     advanceBookings.byDay.forEach((tnrs, k) => {
-//       if (k >= start && k <= end) total += tnrs.length;
+//     advanceBookings.byDay.forEach((items, k) => {
+//       if (k >= start && k <= end) total += items.length;
 //     });
 //     const toUTC = (k) => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d); };
 //     const days = Math.round((toUTC(end) - toUTC(start)) / 86400000) + 1;
-//     return { total, days, avg: days ? total / days : 0, start, end };
-//   }, [advanceBookings, from, to, todayKey]);
+
+//     // Days with bookings / Busiest day / day boxes:
+//     // filter illana mudhal advance booking naal → inniku varai; filter pottaa andha naatkal.
+//     let aStart = start;
+//     let aEnd = end;
+//     if (!from && !to) {
+//       const first = [...advanceBookings.byDay.keys()].sort()[0];
+//       if (first && first < aStart) aStart = first;
+//     }
+//     let activeDays = 0;
+//     let best = null;
+//     advanceBookings.byDay.forEach((items, k) => {
+//       if (k < aStart || k > aEnd) return;
+//       activeDays += 1;
+//       if (!best || items.length > best.n) best = { k, n: items.length };
+//     });
+
+//     // Keezha day boxes — Payment Records filter padi: filter illana inniku mattum,
+//     // From / To pottaa andha naatkal la booking aana naatkal.
+//     const list = []; // [dayKey, bookings]
+//     advanceBookings.byDay.forEach((items, k) => {
+//       if (k >= start && k <= end) list.push([k, items]);
+//     });
+//     if (!from && !to && !list.length) list.push([todayKey, []]); // inniku 0 bookings na kooda box
+//     const allDays = Math.round((toUTC(aEnd) - toUTC(aStart)) / 86400000) + 1;
+//     list.sort((a, b) => (sortDir === "asc" ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0])));
+//     return { total, days, avg: days ? total / days : 0, start, end, activeDays, allDays, aStart, best, list };
+//   }, [advanceBookings, from, to, todayKey, sortDir]);
+
+//   // Day box click → andha naal details keezha. Matha boxes maraiyaadhu.
+//   useEffect(() => { setSelDay(""); }, [from, to]);
 //   const fmtAvg = (n) => String(Math.round(n)); // round off — 4.3 → 4, 4.5 → 5
 
 //   const visible = filtered.slice(0, visibleCount);
@@ -1539,8 +1827,10 @@
 //     return out;
 //   }, [visible]);
 
-//   const hasFilters = search || type || source || selTours.length || from || to;
+//   const hasFilters = search || type || source || selTours.length || from || to || selDay;
 //   const clearFilters = () => {
+//     setSelDay("");
+//     setCustomRange(false);
 //     setSearch("");
 //     setType("");
 //     setSource("");
@@ -1548,6 +1838,33 @@
 //     setTourQ("");
 //     setFrom("");
 //     setTo("");
+//   };
+
+//   // PDF — ippo podra filters padi ELLAA rows um (Show more pannaadhadhu kooda)
+//   const downloadPdf = () => {
+//     if (!filtered.length) { toast.info("No payments to export for these filters"); return; }
+//     const parts = [];
+//     if (selDay) parts.push(payRangeLabel(selDay));
+//     else if (from && to && from === to) parts.push(payRangeLabel(from));
+//     else if (from || to) parts.push(`${from ? payRangeLabel(from) : "Start"} – ${to ? payRangeLabel(to) : "Today"}`);
+//     else {
+//       // All dates → mudhal payment la irundhu kadaisi payment varai
+//       const ks = filtered.map((r) => dayKey(r.createdAt)).sort();
+//       parts.push(ks.length ? (ks[0] === ks[ks.length - 1] ? payRangeLabel(ks[0]) : `${payRangeLabel(ks[0])} – ${payRangeLabel(ks[ks.length - 1])} (all dates)`) : "All dates");
+//     }
+//     if (type) parts.push(TYPE_META[type].label);
+//     if (source) parts.push(source === "user" ? "User bookings" : "Admin bookings");
+//     if (selTours.length) parts.push(selTours.length === 1 ? selTours[0] : `${selTours.length} tours`);
+//     if (search.trim()) parts.push(`Search: ${search.trim()}`);
+//     const dateText = parts.shift(); // date mela thani-aa (blue)
+//     const html = buildPdfHtml({ rows: filtered, filterText: parts.join(" · "), dateText: `Date: ${dateText}` });
+//     const w = window.open("", "_blank");
+//     if (!w) { toast.error("Allow pop-ups for this site to download the PDF"); return; }
+//     w.document.open();
+//     w.document.write(html);
+//     w.document.close();
+//     w.focus();
+//     setTimeout(() => { try { w.print(); } catch { /* user can tap Save as PDF */ } }, 500);
 //   };
 
 //   const fieldCls =
@@ -1562,7 +1879,16 @@
 //             <h1 className="text-xl font-bold tracking-tight">Payment Records</h1>
 //             <p className="text-xs text-[#6B7F77]">Advance, balance and partial payment screenshots, {sortDir === "asc" ? "oldest" : "newest"} first</p>
 //           </div>
-//           <div className="flex items-center gap-2 w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none [&>button]:justify-center">
+//           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none [&>button]:justify-center">
+//             <button
+//               type="button"
+//               onClick={downloadPdf}
+//               disabled={loading || !filtered.length}
+//               title="Download the current list as PDF"
+//               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] text-sm font-semibold text-[#4338CA] hover:bg-[#E0E7FF] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4338CA]"
+//             >
+//               <FileDown className="w-4 h-4" /> PDF
+//             </button>
 //             <button
 //               type="button"
 //               onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
@@ -1669,6 +1995,75 @@
 //               )}
 //             </div>
 //           </div>
+
+//           {/* Days with bookings + Busiest day */}
+//           <div className="mt-2 grid grid-cols-2 gap-2">
+//             <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-2">
+//               <p className="text-[11px] text-[#6B7F77]">Days with bookings</p>
+//               <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
+//                 {perDay.activeDays} / {perDay.allDays}
+//               </p>
+//               <p className="text-[10.5px] text-[#8FA39B]">
+//                 {!from && !to && perDay.activeDays ? `Since ${payRangeLabel(perDay.aStart)}` : perDay.activeDays ? "" : "No bookings"}
+//               </p>
+//             </div>
+//             {perDay.best ? (
+//               <button
+//                 type="button"
+//                 onClick={() => setSelDay((d) => (d === perDay.best.k ? "" : perDay.best.k))}
+//                 title="Show this day's bookings"
+//                 className={`text-left rounded-lg border px-3 py-2 hover:bg-[#EEF3F0] ${selDay === perDay.best.k ? "border-[#1E6FD9] bg-[#E8F1FD]" : "border-[#DCE5E0] bg-[#F7F9F8]"}`}
+//               >
+//                 <p className="text-[11px] text-[#6B7F77]">Busiest day</p>
+//                 <p className="text-base font-bold tabular-nums text-[#1B2B26] leading-tight">
+//                   {perDay.best.n} booking{perDay.best.n !== 1 ? "s" : ""}
+//                 </p>
+//                 <p className="text-[10.5px] text-[#8FA39B]">{payRangeLabel(perDay.best.k)}</p>
+//               </button>
+//             ) : (
+//               <div className="rounded-lg border border-[#DCE5E0] bg-[#F7F9F8] px-3 py-2">
+//                 <p className="text-[11px] text-[#6B7F77]">Busiest day</p>
+//                 <p className="text-base font-bold text-[#8FA39B] leading-tight">—</p>
+//               </div>
+//             )}
+//           </div>
+
+//           {/* Day boxes — click pannaa andha naal details keezha; matha boxes apdiye irukkum */}
+//           {perDay.list.length > 0 && (
+//             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+//               {perDay.list.map(([k, items]) => {
+//                 const dp = dayParts(k);
+//                 const active = selDay === k;
+//                 return (
+//                   <button
+//                     key={k}
+//                     type="button"
+//                     aria-pressed={active}
+//                     onClick={() => setSelDay(active ? "" : k)}
+//                     className={`shrink-0 text-left rounded-lg border px-3 py-1.5 ${active ? "border-[#1E6FD9] bg-[#E8F1FD]" : "border-[#DCE5E0] hover:bg-[#F7F9F8]"}`}
+//                   >
+//                     <span className="block text-[11px] text-[#6B7F77] whitespace-nowrap">
+//                       {String(dp.day).padStart(2, "0")} {dp.month} {String(dp.year).slice(2)} · {dp.rel}
+//                     </span>
+//                     <span className="block text-sm font-bold tabular-nums text-[#1E6FD9]">
+//                       {items.length} booking{items.length !== 1 ? "s" : ""}
+//                     </span>
+//                   </button>
+//                 );
+//               })}
+//             </div>
+//           )}
+
+//           {selDay && (
+//             <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
+//               <span className="rounded-full bg-[#E8F1FD] text-[#1E6FD9] font-semibold px-2.5 py-1">
+//                 Showing {payRangeLabel(selDay)} only
+//               </span>
+//               <button type="button" onClick={() => setSelDay("")} className="font-semibold text-[#4B5F57] underline hover:text-[#1B2B26]">
+//                 Show all days
+//               </button>
+//             </div>
+//           )}
 //         </section>
 
 //         {/* Filters — one compact toolbar */}
@@ -1793,14 +2188,21 @@
 //             <select
 //               aria-label="Date"
 //               value={(() => {
+//                 if (customRange) return "custom";
 //                 const hit = QUICK_DAYS.find(({ offset }) => {
 //                   const k = dayOffsetKey(offset);
 //                   return from === k && to === k;
 //                 });
-//                 return hit ? String(hit.offset) : "";
+//                 if (hit) return String(hit.offset);
+//                 return from || to ? "custom" : "";
 //               })()}
 //               onChange={(e) => {
 //                 const v = e.target.value;
+//                 if (v === "custom") {
+//                   setCustomRange(true);
+//                   return;
+//                 }
+//                 setCustomRange(false);
 //                 if (v === "") {
 //                   setFrom("");
 //                   setTo("");
@@ -1818,15 +2220,20 @@
 //                   {label}
 //                 </option>
 //               ))}
+//               <option value="custom">Custom</option>
 //             </select>
-//             <label className="relative min-w-0">
-//               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">From</span>
-//               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={`${fieldCls} pl-12`} />
-//             </label>
-//             <label className="relative min-w-0">
-//               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">To</span>
-//               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={`${fieldCls} pl-9`} />
-//             </label>
+//             {(customRange || ((from || to) && !QUICK_DAYS.some(({ offset }) => { const k = dayOffsetKey(offset); return from === k && to === k; }))) && (
+//               <>
+//               <label className="relative min-w-0">
+//                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">From</span>
+//                 <input type="date" value={from} max={to || todayKey} onChange={(e) => setFrom(e.target.value > todayKey ? todayKey : e.target.value)} className={`${fieldCls} pl-12`} />
+//               </label>
+//               <label className="relative min-w-0">
+//                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">To</span>
+//                 <input type="date" value={to} min={from || undefined} max={todayKey} onChange={(e) => setTo(e.target.value > todayKey ? todayKey : e.target.value)} className={`${fieldCls} pl-9`} />
+//               </label>
+//               </>
+//             )}
 //             <div className="col-span-2 md:col-span-1 flex h-9 rounded-lg border border-[#DCE5E0] p-0.5 bg-[#F7F9F8]" role="group" aria-label="Booking type">
 //               {[
 //                 { v: "", l: "All" },
@@ -2120,6 +2527,8 @@ import {
   Check,
   FileImage,
   Landmark,
+  FileDown,
+  CalendarDays,
 } from "lucide-react";
 import { TourContext } from "../../context/TourContext";
 
@@ -2414,6 +2823,278 @@ const Viewer = ({ items, index, onClose, onNav }) => {
   );
 };
 
+// ─── PDF: browser print → "Save as PDF" (desktop + phone). Extra package theva illa. ───
+// Ovvoru bank um thani page (HDFC oru page, ICICI oru page …)
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const BANK_NAMES = [
+  "SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "Kotak Mahindra Bank", "Indian Bank", "Indian Overseas Bank",
+  "Canara Bank", "Bank of Baroda", "Union Bank of India", "Punjab National Bank", "Bank of India", "IDFC FIRST Bank",
+  "IndusInd Bank", "Yes Bank", "Federal Bank", "Karur Vysya Bank", "City Union Bank", "Tamilnad Mercantile Bank",
+  "South Indian Bank", "Equitas Small Finance Bank", "AU Small Finance Bank", "Cash",
+];
+const BANK_ALIAS = { sbi: "SBI", statebankofindia: "SBI", iob: "Indian Overseas Bank", pnb: "Punjab National Bank", bob: "Bank of Baroda", kvb: "Karur Vysya Bank", cub: "City Union Bank", tmb: "Tamilnad Mercantile Bank", kotak: "Kotak Mahindra Bank", idfc: "IDFC FIRST Bank", idfcfirst: "IDFC FIRST Bank", union: "Union Bank of India", unionbank: "Union Bank of India" };
+const bankKey = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "").replace(/bank|ltd|limited/g, "");
+const BANK_BY_KEY = Object.fromEntries(BANK_NAMES.map((n) => [bankKey(n), n]));
+// "hdfc", "HDFC bank", "Hdfc Bank Ltd" → "HDFC Bank"
+const bankOf = (remarks) => {
+  const k = bankKey(remarks);
+  if (!k) return "";
+  return BANK_BY_KEY[k] || BANK_ALIAS[k] || String(remarks).trim();
+};
+// Total / Advance / Balance / Partial — screen mela irukkura maadhiri
+const statsOf = (list) => {
+  const t = { all: 0, n: list.length, advance: 0, balance: 0, partial: 0, c: { advance: 0, balance: 0, partial: 0 } };
+  list.forEach((r) => {
+    const a = Number(r.amount) || 0;
+    t.all += a;
+    if (t[r.type] !== undefined) { t[r.type] += a; t.c[r.type] += 1; }
+  });
+  return t;
+};
+const statsHtml = (st) => `<div class="stats">
+  <div class="st first"><div class="l">Total received</div><div class="v" style="color:#1F7A3D">₹${formatAmount(st.all)}</div><div class="s">${st.n} payment${st.n !== 1 ? "s" : ""}</div></div>
+  ${TYPE_ORDER.map((k) => `<div class="st"><div class="l"><i style="background:${k === "partial" ? "#F4B400" : TYPE_META[k].color}"></i>${TYPE_META[k].label}<span>${st.c[k]}</span></div><div class="v">₹${formatAmount(st[k])}</div><div class="s">${st.all ? Math.round((st[k] / st.all) * 100) : 0}% of total</div></div>`).join("")}
+  <div class="split">${TYPE_ORDER.map((k) => (st[k] > 0 ? `<b style="width:${(st[k] / (st.all || 1)) * 100}%;background:${k === "partial" ? "#F4B400" : TYPE_META[k].color}"></b>` : "")).join("")}</div>
+</div>`;
+
+const buildPdfHtml = ({ rows, filterText, dateText }) => {
+  const NONE = "Bank not mentioned";
+  const banks = new Map(); // bank → rows
+  rows.forEach((r) => {
+    const b = bankOf(r.remarks) || NONE;
+    if (!banks.has(b)) banks.set(b, []);
+    banks.get(b).push(r);
+  });
+  const order = [...banks.keys()].sort((x, y) => (x === NONE ? 1 : y === NONE ? -1 : x.localeCompare(y)));
+  const now = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+  const PER_PAGE = 15; // oru page la max 15 records — otti otti illaama
+  const thead = `<thead><tr><th class="c" style="width:4.5%">S.No</th><th style="width:10%">Date &amp; Time</th><th style="width:9%">TNR</th><th style="width:19%">Guest Name</th><th>Tour Name</th><th style="width:11.5%">Uploaded By</th><th style="width:9%">Type</th><th style="width:10.5%">Amount</th></tr></thead>`;
+  const pages = order.map((bank) => {
+    const list = banks.get(bank);
+    const total = list.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+    const chunks = [];
+    for (let i = 0; i < list.length; i += PER_PAGE) chunks.push(list.slice(i, i + PER_PAGE));
+    return chunks.map((chunk, ci) => {
+      const last = ci === chunks.length - 1;
+      const trs = chunk.map((r, j) => {
+        const m = TYPE_META[r.type] || TYPE_META.partial;
+        return `<tr>
+        <td class="c">${ci * PER_PAGE + j + 1}</td>
+        <td class="dt">${esc(new Date(r.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" }))}<div class="sub">${esc(formatTime(r.createdAt))}</div></td>
+        <td class="tnr">${esc(r.tnr || "—")}</td>
+        <td>${esc(r.name || "—")}</td>
+        <td>${esc(r.tourTitle || "—")}</td>
+        <td>${esc(uploaderName(r.uploader) || "Not recorded")}</td>
+        <td><span class="pill" style="color:${m.color};background:${m.soft}">${m.label}</span></td>
+        <td class="amt">${r.amount ? `₹${formatAmount(r.amount)}` : "—"}</td>
+      </tr>`;
+      }).join("");
+      return `<section class="page${chunk.length === PER_PAGE ? " full" : ""}">
+      <div class="head">
+        <div><h1>${esc(bank)}${chunks.length > 1 ? ` <small>· Page ${ci + 1} of ${chunks.length}</small>` : ""}</h1><p class="date">${esc(dateText)}</p>${filterText ? `<p class="meta">${esc(filterText)}</p>` : ""}</div>
+        <div class="tot"><span>${list.length} payment${list.length !== 1 ? "s" : ""}</span><b>₹${formatAmount(total)}</b></div>
+      </div>
+      ${ci === 0 ? statsHtml(statsOf(list)) : ""}
+      <table>
+        ${thead}
+        <tbody>${trs}</tbody>
+        ${last ? `<tfoot><tr><td colspan="7" style="text-align:right">Total</td><td class="amt">₹${formatAmount(total)}</td></tr></tfoot>` : ""}
+      </table>
+      <p class="gen">GV Tour Planners · Generated ${esc(now)}</p>
+    </section>`;
+    }).join("");
+  }).join("");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payment Records - Bank wise</title>
+<style>
+  @page { size: A4 portrait; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1B2B26; margin: 0; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #F3F6F4; }
+  .bar { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #DCE5E0; }
+  .bar button { font: inherit; font-size: 13px; font-weight: 700; padding: 9px 16px; border-radius: 8px; border: 0; background: #2E9E4F; color: #fff; cursor: pointer; }
+  .bar .sec { background: #fff; color: #1B2B26; border: 1px solid #DCE5E0; }
+  .page { background: #fff; max-width: 900px; margin: 14px auto; padding: 18px; border-radius: 10px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid #1B2B26; padding-bottom: 8px; margin-bottom: 10px; }
+  h1 { font-size: 22px; margin: 0; } h1 small { font-size: 12px; font-weight: 600; color: #8FA39B; }
+  .meta { color: #6B7F77; font-size: 11px; margin: 2px 0 0; }
+  .date { display: inline-block; margin: 5px 0 0; font-size: 12px; font-weight: 700; color: #1E6FD9; background: #E8F1FD; padding: 3px 9px; border-radius: 6px; }
+  .stats { position: relative; display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; border: 1px solid #DCE5E0; border-radius: 12px; overflow: hidden; margin-bottom: 12px; padding-bottom: 5px; }
+  .st { padding: 9px 11px; border-right: 1px dashed #DCE5E0; } .st:last-of-type { border-right: 0; } .st.first { background: #F1F8F3; }
+  .st .l { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; color: #4B5F57; } .st .l i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; } .st .l span { margin-left: auto; color: #8FA39B; font-weight: 500; }
+  .st .v { font-size: 16px; font-weight: 800; margin-top: 2px; } .st .s { font-size: 9.5px; color: #8FA39B; }
+  .split { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; display: flex; background: #EEF2EF; } .split b { display: block; height: 100%; }
+  .tot { text-align: right; } .tot span { display: block; font-size: 11px; color: #4B5F57; } .tot b { font-size: 18px; color: #1F7A3D; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th { text-align: center; font-size: 10.5px; color: #1F7A3D; background: #F2FAF4; padding: 7px 6px; border: 1px solid #CFE3D6; }
+  td { padding: 7px 6px; border: 1px solid #E3EAE6; vertical-align: middle; word-break: break-word; line-height: 1.3; font-size: 10.5px; text-align: center; }
+  tr { page-break-inside: avoid; }
+  tbody tr:nth-child(even) td { background: #FAFCFB; }
+  tfoot td { font-weight: 700; background: #F2FAF4; }
+  .dt { white-space: nowrap; } .sub { font-size: 9.5px; color: #8FA39B; margin-top: 2px; }
+  .c { text-align: center; } .tnr { font-weight: 600; white-space: nowrap; } .amt { white-space: nowrap; font-weight: 700; }
+  .pill { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+  .gen { margin: 8px 0 0; font-size: 9.5px; color: #8FA39B; text-align: right; }
+  /* Phone la paakkumbodhu — table card maadhiri (PDF save pannaa A4 table thaan) */
+  @media screen and (max-width: 640px) {
+    .page { margin: 10px; padding: 12px; }
+    .stats { grid-template-columns: 1fr 1fr; } .st { border-bottom: 1px dashed #DCE5E0; }
+    thead { display: none; } table, tbody, tfoot, tr, td { display: block; width: 100%; }
+    tbody tr { border: 1px solid #E3EAE6; border-radius: 8px; margin-bottom: 8px; padding: 6px 8px; }
+    td { border: 0; padding: 2px 0; background: none !important; text-align: left; } .c { text-align: left; color: #8FA39B; } .c::before { content: "#"; }
+    .amt { text-align: left; } tfoot td { display: inline-block; width: auto; padding: 4px 0; }
+  }
+  @media print {
+    body { background: #fff; } .bar { display: none; }
+    .page { max-width: none; margin: 0; padding: 0; border-radius: 0; page-break-after: always; break-after: page; }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+    /* A4 page full-aa fill aaganum — 15 rows irundhaa rows stretch aagi keezha gap irukkaadhu */
+    .page { height: 275mm; display: flex; flex-direction: column; }
+    .page > * { flex-shrink: 0; } .page.full table { flex: 1 1 auto; }
+    .gen { margin-top: auto; padding-top: 6px; }
+  }
+</style></head><body>
+  <div class="bar"><button onclick="window.print()">Save as PDF</button><button class="sec" onclick="window.close()">Close</button></div>
+  ${pages}
+</body></html>`;
+};
+
+// Custom calendar — Year boxes → Month boxes → Date (browser calendar maadhiri kashtam illa)
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const pad2 = (n) => String(n).padStart(2, "0");
+const ymd = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
+const DatePick = ({ value, onChange, min, max, label, padCls = "pl-12", right = false }) => {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState("day"); // day | month | year
+  const boxRef = useRef(null);
+  const base = value || max || dayKey(new Date());
+  const [view, setView] = useState({ y: Number(base.slice(0, 4)), m: Number(base.slice(5, 7)) - 1 });
+  useEffect(() => {
+    if (!open) return;
+    const b = value || max || dayKey(new Date());
+    setView({ y: Number(b.slice(0, 4)), m: Number(b.slice(5, 7)) - 1 });
+    setMode("day"); // default dates; mela year click pannaa Year → Month → Date
+    const close = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("touchstart", close); document.removeEventListener("keydown", esc); };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const today = dayKey(new Date());
+  const maxK = max || today;
+  const maxY = Number(maxK.slice(0, 4));
+  const minY = Math.min(maxY - 2, min ? Number(min.slice(0, 4)) : maxY - 2, 2024);
+  const years = [];
+  for (let y = minY; y <= maxY; y++) years.push(y);
+  const ymKey = (y, m) => `${y}-${pad2(m + 1)}`;
+  const monthOff = (y, m) => ymKey(y, m) > maxK.slice(0, 7) || (min && ymKey(y, m) < min.slice(0, 7));
+  const yearOff = (y) => y > maxY || (min && y < Number(min.slice(0, 4)));
+  const first = new Date(view.y, view.m, 1).getDay();
+  const days = new Date(view.y, view.m + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < first; i++) cells.push(null);
+  for (let d = 1; d <= days; d++) cells.push(d);
+  const shift = (n) => setView(({ y, m }) => { const d = new Date(y, m + n, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
+  const nd = new Date(view.y, view.m + 1, 1), pd = new Date(view.y, view.m - 1, 1);
+  const nextOk = mode === "day" ? !monthOff(nd.getFullYear(), nd.getMonth()) : mode === "month" ? !yearOff(view.y + 1) : false;
+  const prevOk = mode === "day" ? !monthOff(pd.getFullYear(), pd.getMonth()) : mode === "month" ? !yearOff(view.y - 1) && view.y - 1 >= minY : false;
+  const goPrev = () => (mode === "day" ? shift(-1) : setView((v) => ({ ...v, y: v.y - 1 })));
+  const goNext = () => (mode === "day" ? shift(1) : setView((v) => ({ ...v, y: v.y + 1 })));
+  const show = value ? (() => { const d = new Date(`${value}T00:00:00`); return `${pad2(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; })() : "";
+  const vy = value ? Number(value.slice(0, 4)) : null, vm = value ? Number(value.slice(5, 7)) - 1 : null;
+  const boxCls = (sel, now) =>
+    `h-11 rounded-lg text-sm font-semibold transition-colors ${sel ? "bg-[#2E9E4F] text-white" : now ? "border border-[#2E9E4F] text-[#1F7A3D] hover:bg-[#F2FAF4]" : "bg-[#F7F9F8] text-[#1B2B26] hover:bg-[#E7F6EC]"} disabled:opacity-25 disabled:hover:bg-[#F7F9F8]`;
+  return (
+    <div ref={boxRef} className="relative min-w-0">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">{label}</span>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full h-9 pr-8 ${padCls} rounded-lg border bg-white text-left text-sm outline-none ${open ? "border-[#2E9E4F] ring-2 ring-[#2E9E4F]/15" : "border-[#DCE5E0]"} ${show ? "text-[#1B2B26]" : "text-[#8FA39B]"}`}
+      >
+        {show || "Select date"}
+      </button>
+      {value ? (
+        <button type="button" onClick={() => onChange("")} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-[#8FA39B] hover:text-[#1B2B26]" aria-label="Clear date">
+          <X size={14} />
+        </button>
+      ) : (
+        <CalendarDays size={15} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8FA39B] pointer-events-none" />
+      )}
+      {open && (
+        <div className={`absolute ${right ? "right-0 md:right-auto md:left-0" : "left-0"} top-full mt-1.5 z-40 w-[280px] max-w-[calc(100vw-24px)] rounded-xl border border-[#DCE5E0] bg-white p-3 shadow-xl`}>
+          <div className="flex items-center gap-1 mb-2">
+            <button type="button" disabled={!prevOk} onClick={goPrev} className={`p-1.5 rounded-md hover:bg-[#F2FAF4] disabled:opacity-30 ${mode === "year" ? "invisible" : ""}`} aria-label="Previous"><ChevronLeft size={16} /></button>
+            <div className="flex-1 flex items-center justify-center gap-1">
+              {mode === "day" && (
+                <button type="button" onClick={() => setMode("month")} className="px-2 py-1 rounded-md text-sm font-bold text-[#1B2B26] hover:bg-[#F2FAF4]">{MONTHS[view.m]}</button>
+              )}
+              {mode !== "year" ? (
+                <button type="button" onClick={() => setMode("year")} className="px-2 py-1 rounded-md text-sm font-bold text-[#1B2B26] hover:bg-[#F2FAF4]">{view.y}</button>
+              ) : (
+                <span className="px-2 py-1 text-sm font-bold text-[#1B2B26]">Select year</span>
+              )}
+            </div>
+            <button type="button" disabled={!nextOk} onClick={goNext} className={`p-1.5 rounded-md hover:bg-[#F2FAF4] disabled:opacity-30 ${mode === "year" ? "invisible" : ""}`} aria-label="Next"><ChevronRight size={16} /></button>
+          </div>
+
+          {mode === "year" && (
+            <div className="grid grid-cols-3 gap-2">
+              {years.map((y) => (
+                <button key={y} type="button" disabled={!!yearOff(y)} onClick={() => { setView((v) => { let m = v.m; if (monthOff(y, m)) m = ymKey(y, m) > maxK.slice(0, 7) ? Number(maxK.slice(5, 7)) - 1 : Number(min.slice(5, 7)) - 1; return { y, m }; }); setMode("month"); }} className={boxCls(y === vy, y === Number(today.slice(0, 4)))}>
+                  {y}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {mode === "month" && (
+            <div className="grid grid-cols-3 gap-2">
+              {MONTHS.map((mn, i) => (
+                <button key={mn} type="button" disabled={!!monthOff(view.y, i)} onClick={() => { setView((v) => ({ ...v, m: i })); setMode("day"); }} className={boxCls(view.y === vy && i === vm, ymKey(view.y, i) === today.slice(0, 7))}>
+                  {mn}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {mode === "day" && (
+            <>
+              <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-[#8FA39B] mb-1">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => <span key={d} className="py-1">{d}</span>)}
+              </div>
+              <div className="grid grid-cols-7 gap-0.5">
+                {cells.map((d, i) => {
+                  if (!d) return <span key={`e${i}`} />;
+                  const k = ymd(view.y, view.m, d);
+                  const off = k > maxK || (min && k < min);
+                  const sel = k === value;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      disabled={!!off}
+                      onClick={() => { onChange(k); setOpen(false); }}
+                      className={`h-8 rounded-md text-sm tabular-nums transition-colors ${sel ? "bg-[#2E9E4F] text-white font-bold" : k === today ? "border border-[#2E9E4F] text-[#1F7A3D] font-semibold hover:bg-[#F2FAF4]" : "text-[#1B2B26] hover:bg-[#F2FAF4]"} disabled:opacity-25 disabled:hover:bg-transparent`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-between mt-2 pt-2 border-t border-[#EEF2EF]">
+            <button type="button" onClick={() => { onChange(""); setOpen(false); }} className="text-xs font-semibold text-[#6B7F77] hover:text-[#1B2B26] px-2 py-1">Clear</button>
+            <button type="button" disabled={today > maxK || (min && today < min)} onClick={() => { onChange(today); setOpen(false); }} className="text-xs font-semibold text-[#1F7A3D] hover:bg-[#F2FAF4] rounded px-2 py-1 disabled:opacity-30">Today</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PaymentRecords = () => {
   const { ttoken, getPaymentRecords } = useContext(TourContext);
 
@@ -2640,6 +3321,33 @@ const PaymentRecords = () => {
     setTo("");
   };
 
+  // PDF — ippo podra filters padi ELLAA rows um (Show more pannaadhadhu kooda)
+  const downloadPdf = () => {
+    if (!filtered.length) { toast.info("No payments to export for these filters"); return; }
+    const parts = [];
+    if (selDay) parts.push(payRangeLabel(selDay));
+    else if (from && to && from === to) parts.push(payRangeLabel(from));
+    else if (from || to) parts.push(`${from ? payRangeLabel(from) : "Start"} – ${to ? payRangeLabel(to) : "Today"}`);
+    else {
+      // All dates → mudhal payment la irundhu kadaisi payment varai
+      const ks = filtered.map((r) => dayKey(r.createdAt)).sort();
+      parts.push(ks.length ? (ks[0] === ks[ks.length - 1] ? payRangeLabel(ks[0]) : `${payRangeLabel(ks[0])} – ${payRangeLabel(ks[ks.length - 1])} (all dates)`) : "All dates");
+    }
+    if (type) parts.push(TYPE_META[type].label);
+    if (source) parts.push(source === "user" ? "User bookings" : "Admin bookings");
+    if (selTours.length) parts.push(selTours.length === 1 ? selTours[0] : `${selTours.length} tours`);
+    if (search.trim()) parts.push(`Search: ${search.trim()}`);
+    const dateText = parts.shift(); // date mela thani-aa (blue)
+    const html = buildPdfHtml({ rows: filtered, filterText: parts.join(" · "), dateText: `Date: ${dateText}` });
+    const w = window.open("", "_blank");
+    if (!w) { toast.error("Allow pop-ups for this site to download the PDF"); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { try { w.print(); } catch { /* user can tap Save as PDF */ } }, 500);
+  };
+
   const fieldCls =
     "w-full h-9 px-3 rounded-lg border border-[#DCE5E0] bg-white text-sm text-[#1B2B26] placeholder:text-[#8FA39B] outline-none focus:border-[#2E9E4F] focus:ring-2 focus:ring-[#2E9E4F]/15";
 
@@ -2652,7 +3360,16 @@ const PaymentRecords = () => {
             <h1 className="text-xl font-bold tracking-tight">Payment Records</h1>
             <p className="text-xs text-[#6B7F77]">Advance, balance and partial payment screenshots, {sortDir === "asc" ? "oldest" : "newest"} first</p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none [&>button]:justify-center">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none [&>button]:justify-center">
+            <button
+              type="button"
+              onClick={downloadPdf}
+              disabled={loading || !filtered.length}
+              title="Download the current list as PDF"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] text-sm font-semibold text-[#4338CA] hover:bg-[#E0E7FF] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4338CA]"
+            >
+              <FileDown className="w-4 h-4" /> PDF
+            </button>
             <button
               type="button"
               onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
@@ -2988,14 +3705,8 @@ const PaymentRecords = () => {
             </select>
             {(customRange || ((from || to) && !QUICK_DAYS.some(({ offset }) => { const k = dayOffsetKey(offset); return from === k && to === k; }))) && (
               <>
-              <label className="relative min-w-0">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">From</span>
-                <input type="date" value={from} max={to || todayKey} onChange={(e) => setFrom(e.target.value > todayKey ? todayKey : e.target.value)} className={`${fieldCls} pl-12`} />
-              </label>
-              <label className="relative min-w-0">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#8FA39B] pointer-events-none">To</span>
-                <input type="date" value={to} min={from || undefined} max={todayKey} onChange={(e) => setTo(e.target.value > todayKey ? todayKey : e.target.value)} className={`${fieldCls} pl-9`} />
-              </label>
+              <DatePick label="From" value={from} max={to || todayKey} onChange={(v) => setFrom(v > todayKey ? todayKey : v)} padCls="pl-12" />
+              <DatePick label="To" value={to} min={from || undefined} max={todayKey} onChange={(v) => setTo(v > todayKey ? todayKey : v)} padCls="pl-9" right />
               </>
             )}
             <div className="col-span-2 md:col-span-1 flex h-9 rounded-lg border border-[#DCE5E0] p-0.5 bg-[#F7F9F8]" role="group" aria-label="Booking type">

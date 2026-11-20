@@ -34,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import BankSelect from "./BankSelect"; // payment bank dropdown
 
 // Click-to-copy icon for a TNR — stopPropagation matters since this always
 // sits inside the booking row's own expand/collapse click target.
@@ -472,14 +473,12 @@ const PaymentSlot = ({ tnr, slot, label, Icon, uploadUserBookingPayment, deleteG
                 disabled={uploading}
                 className="w-full text-xs border border-gray-300 rounded-lg px-2.5 py-2 outline-none focus:border-indigo-400"
               />
-              <input
-                type="text"
-                placeholder="Bank (e.g. SBI)"
+              <BankSelect
                 value={queueRemarks[i] || ""}
-                onChange={(e) =>
+                onChange={(val) =>
                   setQueueRemarks((prev) => {
                     const next = [...prev];
-                    next[i] = e.target.value;
+                    next[i] = val;
                     return next;
                   })
                 }
