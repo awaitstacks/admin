@@ -20,6 +20,7 @@ export const FILTER_KEYS = [
   "fromDate",
   "toDate",
   "status",
+  "priority",
 ];
 
 const split = (v) => String(v || "").split(",").map((x) => x.trim()).filter(Boolean);
@@ -71,6 +72,19 @@ export function buildColumnFilters({ types = [], staff = [], statuses = [] }) {
     ],
     date: [{ key: "date", kind: "date", label: "Raised on" }],
     status: [{ key: "status", kind: "multi", label: "Status", options: statusOpts }],
+    // Priority filter — Status column popover la (Low / Medium / High)
+    priority: [
+      {
+        key: "priority",
+        kind: "multi",
+        label: "Priority",
+        options: [
+          { value: "low", label: "Low" },
+          { value: "medium", label: "Medium" },
+          { value: "high", label: "High" },
+        ],
+      },
+    ],
   };
 }
 

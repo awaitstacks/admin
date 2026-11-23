@@ -8,6 +8,7 @@ import { TourAdminContext } from "../../context/TourAdminContext";
 import { cancelWho } from "../../components/CancelWho";
 import useStaffSelf from "../../staff/useStaffSelf"; // staff site la login aana staff (Tour admin la null)
 import { StaffOptions, teamsFromStaff, ToModeSwitch } from "../../staff/ticketWho";
+import LeaveGuard from "../../components/LeaveGuard";
 
 // India — 28 states + 8 union territories (Zone create la)
 const INDIA_REGIONS = [
@@ -194,6 +195,19 @@ const ZonesPanel = ({ zones, reload, api, readOnly = false }) => {
     };
     return (
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+            <LeaveGuard
+                when={!readOnly && !busy && (picked.length > 0 || !!editId)}
+                title="Unsaved Zone"
+                message={
+                    <>
+                        You have selected states / countries for a zone but not saved it yet.
+                        <br />
+                        Leaving this page will lose the selection.
+                        <br />
+                        Are you sure you want to leave?
+                    </>
+                }
+            />
             {!readOnly && <div style={{ background: "#fff", border: "0.5px solid #e2e8f0", borderRadius: "14px", padding: "18px", marginBottom: "16px" }}>
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "12px" }}>
                     <div>
@@ -1160,9 +1174,23 @@ const AdminEnquiryForm = ({ onSuccess }) => {
     const inp = { width: "100%", border: "0.5px solid #e2e8f0", borderRadius: "8px", padding: "10px 12px 10px 36px", fontSize: "13px", color: "#1e293b", outline: "none", background: "#f8fafc", boxSizing: "border-box", height: "46px" };
     const lbl = { fontSize: "14px", fontWeight: 600, color: "#374151", display: "block", marginBottom: "5px" };
     const sec = { fontSize: "14px", fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px", paddingBottom: "10px", borderBottom: "1px solid #f1f5f9" };
-
+    const enquiryFormDirty = Object.entries(formData).some(([k, v]) => k !== "source" && String(v || "").trim() !== "");
     return (
         <div>
+            <LeaveGuard
+                when={enquiryFormDirty}
+                title="Unsaved Enquiry"
+                message={
+                    <>
+                        The enquiry you started is not submitted yet.
+                        <br />
+                        Leaving this page will lose the details you entered.
+                        <br />
+                        Are you sure you want to leave?
+                    </>
+                }
+            />
+
             <style>{`
                 @keyframes spin { to { transform:rotate(360deg); } }
                 .aeq-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
@@ -1688,6 +1716,19 @@ const TripEnquiries = ({ adminView = false }) => {
 
     return (
         <div style={{ padding: "16px 20px", background: "white", minHeight: "100vh", width: "100%", boxSizing: "border-box" }}>
+            <LeaveGuard
+                when={editModal.open}
+                title="Unsaved Changes"
+                message={
+                    <>
+                        You are editing an enquiry and the changes are not saved yet.
+                        <br />
+                        Leaving this page will lose them.
+                        <br />
+                        Are you sure you want to leave?
+                    </>
+                }
+            />
             <style>{`
                 @keyframes spin { to { transform:rotate(360deg); } }
                 @media (max-width:1000px) { .eq-desk { display:none !important; } }

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import LeaveGuard from "../../components/LeaveGuard";
 
 const trainClasses = [
   { value: "3A", label: "3A - Three tier AC" },
@@ -827,6 +828,19 @@ const ManageBooking = () => {
   return (
     <div className="relative max-w-5xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-20 lg:mt-10">
       <ToastContainer position="top-right" autoClose={4000} />
+      <LeaveGuard
+        when={hasChanges && !saving}
+        title="Unsaved Changes"
+        message={
+          <>
+            You have changed this booking but not saved it yet.
+            <br />
+            Leaving this page will lose the changes.
+            <br />
+            Are you sure you want to leave?
+          </>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-6 mb-8 gap-4">
         <div className="flex items-center gap-6">

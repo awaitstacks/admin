@@ -1,7 +1,9 @@
+
 // import React, { useContext, useEffect, useState, useRef } from "react";
 // import { useNavigate, useLocation } from "react-router-dom";
 // import { TourContext } from "../../context/TourContext";
 // import { toast } from "react-toastify";
+// import LeaveGuard from "../../components/LeaveGuard";
 
 // // stationCode is NOT guaranteed unique within a tour's boardingPoints /
 // // deboardingPoints array (same mirrors the customer-facing TourBooking.jsx
@@ -82,6 +84,9 @@
 //   const [tourInfo, setTourInfo] = useState(null);
 //   const [bookingType] = useState("offline"); // admin walk-ins are always offline/in-person
 //   const [isSubmitting, setIsSubmitting] = useState(false);
+//   // Why the last "Add to Admin Bookings" failed — shown right above the
+//   // button so it's visible even if the toast is missed.
+//   const [submitError, setSubmitError] = useState("");
 
 //   // ── "Add to Trolly" confirm → cancellable countdown ──────────────────
 //   // Clicking "Add to Trolly" used to call the booking API immediately.
@@ -194,9 +199,14 @@
 //       }));
 //       const mainTraveller = updated[0];
 //       if (!mainTraveller) return prev;
-//       // Package chosen on Aadhaar Upload (Main / Variant N) → every traveller.
+
+//       // Package chosen on Aadhaar Upload (Main / Variant N) → every
+//       // traveller, so the package dropdown, boarding points, add-ons and
+//       // the amount below all use that package instead of Main.
 //       const variantIdx =
-//         notes.variantPackageIndex === null || notes.variantPackageIndex === undefined || notes.variantPackageIndex === ""
+//         notes.variantPackageIndex === null ||
+//           notes.variantPackageIndex === undefined ||
+//           notes.variantPackageIndex === ""
 //           ? null
 //           : Number(notes.variantPackageIndex);
 //       if (
@@ -608,8 +618,23 @@
 //   // opens the confirm modal (handleAddToTrolly below is what actually
 //   // submits, and only after the countdown in step 2 finishes).
 //   const handleAddToTrollyClick = () => {
+//     const fail = (msg) => {
+//       setSubmitError(msg);
+//       toast.error(msg);
+//     };
+//     setSubmitError("");
 //     if (!tourId) {
-//       toast.error("Select a tour first");
+//       fail("Select a tour first");
+//       return;
+//     }
+//     // Same checks the backend does — catch them here with a clear message.
+//     const mobile = (contact.mobile || "").trim();
+//     if (!mobile || !/^[\d+\-\s()]{7,25}$/.test(mobile)) {
+//       fail("Enter a valid Mobile Number.");
+//       return;
+//     }
+//     if (!contact.email || !/.+@.+\..+/.test(contact.email.trim())) {
+//       fail("Enter a valid Contact Email.");
 //       return;
 //     }
 
@@ -752,6 +777,9 @@
 
 //       const data = await adminAddBooking(payload);
 
+//       if (!data?.success) {
+//         setSubmitError(data?.message || "Booking failed. Please check the details.");
+//       }
 //       if (data.success) {
 //         // If this booking came from an Aadhaar Upload group (Format 2 nav
 //         // state), link the real tnr the backend just generated straight
@@ -772,6 +800,7 @@
 //       }
 //     } catch (error) {
 //       console.error(error);
+//       setSubmitError("Booking failed. Please check traveller details.");
 //       toast.error("Booking failed. Please check traveller details.");
 //     } finally {
 //       setIsSubmitting(false);
@@ -822,6 +851,13 @@
 //       year: "numeric",
 //     });
 //   };
+
+//   // Booking form la edhaavadhu fill pannirundhaa → leave popup
+//   const bookingFormDirty =
+//     !!tourId ||
+//     travellers.some((t) => String(t.firstName || "").trim() !== "") ||
+//     String(contact.mobile || "").trim() !== "" ||
+//     String(contact.email || "").trim() !== "";
 
 //   return (
 //     <>
@@ -1437,6 +1473,12 @@
 //               </div>
 //             </div>
 
+//             {submitError && (
+//               <div className="px-5 py-4 rounded-2xl bg-red-50 border border-red-300 text-red-800 font-semibold text-center shadow-sm">
+//                 ⚠️ {submitError}
+//               </div>
+//             )}
+
 //             <button
 //               onClick={handleAddToTrollyClick}
 //               disabled={isSubmitting || confirmOpen}
@@ -1521,16 +1563,34 @@
 //           </div>
 //         </div>
 //       )}
+//       <LeaveGuard
+//         when={bookingFormDirty && !isSubmitting}
+//         title="Unsaved Booking"
+//         message={
+//           <>
+//             You have started a new booking that is not saved yet.
+//             <br />
+//             Leaving this page will lose the details you entered.
+//             <br />
+//             Are you sure you want to leave?
+//           </>
+//         }
+//       />
 //     </>
+
+
 //   );
 // };
 
 // export default CreateBooking;
 
+
+
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { TourContext } from "../../context/TourContext";
 import { toast } from "react-toastify";
+import LeaveGuard from "../../components/LeaveGuard";
 
 // stationCode is NOT guaranteed unique within a tour's boardingPoints /
 // deboardingPoints array (same mirrors the customer-facing TourBooking.jsx
@@ -1636,6 +1696,8 @@ const CreateBooking = () => {
   useEffect(() => {
     return () => {
       if (undoTimerRef.current) clearInterval(undoTimerRef.current);
+      // Page vittu poonaa (Back) missing-fields toast adutha page la varakoodaadhu
+      toast.dismiss("create-booking-missing");
     };
   }, []);
 
@@ -1732,8 +1794,8 @@ const CreateBooking = () => {
       // the amount below all use that package instead of Main.
       const variantIdx =
         notes.variantPackageIndex === null ||
-        notes.variantPackageIndex === undefined ||
-        notes.variantPackageIndex === ""
+          notes.variantPackageIndex === undefined ||
+          notes.variantPackageIndex === ""
           ? null
           : Number(notes.variantPackageIndex);
       if (
@@ -2154,52 +2216,38 @@ const CreateBooking = () => {
       fail("Select a tour first");
       return;
     }
-    // Same checks the backend does — catch them here with a clear message.
+    // Same checks the backend does — ellaa missing fields um ore dhadava kaatum.
+    const missing = [];
     const mobile = (contact.mobile || "").trim();
-    if (!mobile || !/^[\d+\-\s()]{7,25}$/.test(mobile)) {
-      fail("Enter a valid Mobile Number.");
-      return;
-    }
-    if (!contact.email || !/.+@.+\..+/.test(contact.email.trim())) {
-      fail("Enter a valid Contact Email.");
-      return;
-    }
+    if (!mobile) missing.push("Contact: Mobile Number is required.");
+    else if (!/^[\d+\-\s()]{7,25}$/.test(mobile)) missing.push("Contact: Enter a valid Mobile Number.");
+    const email = (contact.email || "").trim();
+    if (!email) missing.push("Contact: Email is required.");
+    else if (!/.+@.+\..+/.test(email)) missing.push("Contact: Enter a valid Email.");
 
-    for (let [idx, t] of travellers.entries()) {
+    travellers.forEach((t, idx) => {
+      const who = `Traveller ${idx + 1}${t.firstName?.trim() ? ` (${t.firstName.trim()})` : ""}`;
+      const need = [];
       const age = Number(t.age);
+      if (!t.firstName?.trim()) need.push("First Name (As per Aadhar)");
+      if (!t.lastName?.trim()) need.push("Last Name (As per Aadhar)");
+      if (String(t.age ?? "").trim() === "") need.push("Age");
+      else if (isNaN(age) || age < 1) need.push("a valid Age (1 or more)");
+      if (!t.gender) need.push("Gender");
+      if (t.packageType === "variant" && (t.variantPackageIndex === null || t.variantPackageIndex === undefined)) need.push("Variant Package");
+      if (!t.sharingType) need.push("Sharing Type");
+      if (!t.boardingPoint) need.push("Boarding Point");
+      if (!t.deboardingPoint) need.push("Deboarding Point");
+      if (need.length) missing.push(`${who}: ${need.join(", ")} ${need.length > 1 ? "are" : "is"} required.`);
+    });
 
-      if (!t.firstName?.trim()) {
-        toast.error(`Traveller ${idx + 1}: First Name is required (As per Aadhar).`);
-        return;
-      }
-      if (!t.lastName?.trim()) {
-        toast.error(`Traveller ${idx + 1}: Last Name is required (As per Aadhar).`);
-        return;
-      }
-      if (isNaN(age) || age < 1) {
-        toast.error(`Invalid age for traveller: ${t.firstName || "Unnamed"}.`);
-        return;
-      }
-      if (!t.gender) {
-        toast.error("Please select gender for all travellers.");
-        return;
-      }
-      if (!t.sharingType) {
-        toast.error("Please select a sharing type for all travellers.");
-        return;
-      }
-      if (!t.boardingPoint) {
-        toast.error("Please select a boarding point for all travellers.");
-        return;
-      }
-      if (!t.deboardingPoint) {
-        toast.error("Please select a deboarding point for all travellers.");
-        return;
-      }
-      if (t.packageType === "variant" && t.variantPackageIndex === null) {
-        toast.error(`Please select a variant package for traveller: ${t.firstName}.`);
-        return;
-      }
+    if (missing.length) {
+      setSubmitError(missing.join("\n"));
+      toast.error(
+        missing.length === 1 ? missing[0] : `${missing[0]} (+${missing.length - 1} more — see the list above the button)`,
+        { toastId: "create-booking-missing" },
+      );
+      return;
     }
 
     // Validation passed — ask for confirmation before anything is sent.
@@ -2378,6 +2426,13 @@ const CreateBooking = () => {
       year: "numeric",
     });
   };
+
+  // Booking form la edhaavadhu fill pannirundhaa → leave popup
+  const bookingFormDirty =
+    !!tourId ||
+    travellers.some((t) => String(t.firstName || "").trim() !== "") ||
+    String(contact.mobile || "").trim() !== "" ||
+    String(contact.email || "").trim() !== "";
 
   return (
     <>
@@ -2994,8 +3049,17 @@ const CreateBooking = () => {
             </div>
 
             {submitError && (
-              <div className="px-5 py-4 rounded-2xl bg-red-50 border border-red-300 text-red-800 font-semibold text-center shadow-sm">
-                ⚠️ {submitError}
+              <div role="alert" className="px-5 py-4 rounded-2xl bg-red-50 border border-red-300 text-red-800 font-semibold shadow-sm">
+                {submitError.includes("\n") ? (
+                  <>
+                    <p className="mb-2">⚠️ Please fill these missing fields:</p>
+                    <ul className="list-disc pl-6 space-y-1 text-sm font-medium">
+                      {submitError.split("\n").map((m, i) => <li key={i}>{m}</li>)}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="text-center">⚠️ {submitError}</p>
+                )}
               </div>
             )}
 
@@ -3083,7 +3147,22 @@ const CreateBooking = () => {
           </div>
         </div>
       )}
+      <LeaveGuard
+        when={bookingFormDirty && !isSubmitting}
+        title="Unsaved Booking"
+        message={
+          <>
+            You have started a new booking that is not saved yet.
+            <br />
+            Leaving this page will lose the details you entered.
+            <br />
+            Are you sure you want to leave?
+          </>
+        }
+      />
     </>
+
+
   );
 };
 

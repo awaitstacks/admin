@@ -1,3 +1,4 @@
+
 // // ════════════════════════════════════════════════════════════════
 // //  EmployeePerformance.jsx — Admin panel (CEO tab) — SIMPLE scorecard
 // //  Mela oru employee select → avangaludhu mattum:
@@ -41,10 +42,12 @@
 // ];
 // const BOOKING_CARDS = [
 //   { key: "", label: "Total bookings", cls: "border-slate-300 text-slate-900" },
-//   { key: "active", label: "Active", cls: "border-green-400 text-green-800" },
-//   { key: "cancelRequested", label: "Cancellation requested", cls: "border-orange-300 text-orange-700" },
-//   { key: "cancelled", label: "Cancelled", cls: "border-amber-300 text-amber-800" },
-//   { key: "rejected", label: "Rejected", cls: "border-red-300 text-red-700" },
+//   { key: "unverified", label: "Unverified", cls: "border-gray-400 text-gray-700" },
+//   { key: "active", label: "Active (Advance only paid)", cls: "border-green-400 text-green-800" },
+//   { key: "completed", label: "Completed (Booking completed)", cls: "border-yellow-400 text-yellow-800" },
+//   { key: "cancelled", label: "Fully cancelled", cls: "border-red-300 text-red-700" },
+//   { key: "tripCancelled", label: "Trip cancelled", cls: "border-rose-300 text-rose-700" },
+//   { key: "rejected", label: "Rejected", cls: "border-purple-300 text-purple-700" },
 // ];
 // const FIT_CARDS = [
 //   { key: "", label: "Total", cls: "border-slate-300 text-slate-900" },
@@ -64,7 +67,8 @@
 // const STATUS_PILL = {
 //   open: ["Open", "bg-blue-50 text-blue-700"], pickup: ["Picked up", "bg-violet-50 text-violet-700"], processing: ["Processing", "bg-amber-50 text-amber-800"],
 //   close: ["Closed", "bg-green-50 text-green-700"], reject: ["Rejected", "bg-red-50 text-red-700"],
-//   active: ["Active", "bg-green-50 text-green-700"], cancelRequested: ["Cancellation requested", "bg-orange-50 text-orange-700"], cancelled: ["Cancelled", "bg-amber-50 text-amber-800"], rejected: ["Rejected", "bg-red-50 text-red-700"],
+//   active: ["Active", "bg-green-50 text-green-700"], unverified: ["Unverified", "bg-gray-100 text-gray-700"], completed: ["Completed", "bg-yellow-50 text-yellow-800"],
+//   cancelRequested: ["Cancellation requested", "bg-orange-50 text-orange-700"], cancelled: ["Fully cancelled", "bg-red-50 text-red-700"], tripCancelled: ["Trip cancelled", "bg-rose-50 text-rose-700"], rejected: ["Rejected", "bg-purple-50 text-purple-700"],
 // };
 // // Pax — Active (cancellation request um serthu) / Cancelled (trip cancel um) / Rejected thani thani
 // const paxOf = (b) => {
@@ -73,8 +77,23 @@
 //   return { a, c, r };
 // };
 // const paxExtra = ({ c, r }) => [c ? `${c} cancelled` : "", r ? `${r} rejected` : ""].filter(Boolean).join(" · ");
-// // Kaasu received — Active + Cancellation requested bookings mattum (Cancelled / Rejected illa)
-// const countsMoney = (b) => b.state === "active" || b.state === "cancelRequested";
+// // FIT — stage pill + "by …" (FIT Enquiries page maadhiri)
+// const STAGE_PILL = {
+//   Pending: "bg-gray-100 text-gray-700", "Picked up": "bg-sky-50 text-sky-700", "Rate shared": "bg-yellow-50 text-yellow-800",
+//   Accepted: "bg-green-50 text-green-700", Closed: "bg-slate-100 text-slate-700", Cancelled: "bg-rose-50 text-rose-700", Rejected: "bg-red-50 text-red-700",
+// };
+// const StagePill = ({ s }) => (
+//   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${STAGE_PILL[s] || "bg-gray-100 text-gray-700"}`}>
+//     <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />{s}
+//   </span>
+// );
+// const ACTION_LABEL = { created: "Created", pickedUp: "Picked up", rateShared: "Rate shared", accepted: "Accepted", closed: "Closed", cancelled: "Cancelled", rejected: "Rejected", reopened: "Reopened", forwarded: "Forwarded" };
+// const duration = (e) => (e.days ? `${e.days}D${e.nights != null ? `/${e.nights}N` : ""}` : "");
+// const ZoneChips = ({ zones }) => (zones?.length
+//   ? <div className="flex flex-wrap gap-1">{zones.map((z) => <span key={z} className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-800">{z}</span>)}</div>
+//   : <span className="text-gray-400">—</span>);
+// // Kaasu received — Active bookings mattum
+// const countsMoney = (b) => b.state === "active" || b.state === "completed"; // Active + Completed mattum
 // const Pill = ({ s }) => {
 //   const [t, c] = STATUS_PILL[s] || [s, "bg-gray-100 text-gray-700"];
 //   return <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${c}`}>{t}</span>;
@@ -190,7 +209,7 @@
 //     return L.filter((e) => e.withMe);
 //   }, [L, tab, view, ALL]);
 //   const fwdNames = (arr) => [...new Set((arr || []).map((f) => (f.key ? nameOf(f.key) : f.label) || "—"))].join(", ");
-//   const fitExtra = ALL ? ["With"] : view === "fwdBy" ? ["Forwarded to", "Now with"] : view === "fwdTo" ? ["Forwarded by", "Now with"] : [];
+//   const fitExtra = ALL ? ["With"] : view === "fwdBy" ? ["Forwarded to", "Now with"] : view === "fwdTo" ? ["Forwarded by", "Now with"] : ["Now with"]; // "Handled by now" column eppavum
 
 
 //   // List — card + search filter
@@ -204,59 +223,85 @@
 //   const base = tab === "tickets" ? tBase : tab === "bookings" ? L : fBase;
 //   const paxTags = (b) => { const p = paxOf(b); return [p.c ? "c" : "", p.r ? "r" : "", !p.c && !p.r ? "none" : ""].filter(Boolean); };
 //   const cancTags = (b) => { const t = [b.gvCancellation > 0 && "gv", b.irctcCancellation > 0 && "irctc", b.refund > 0 && "refund"].filter(Boolean); return t.length ? t : ["none"]; };
-//   const ownerName = (e) => (e.ownerKey ? nameOf(e.ownerKey) : "Not picked");
+//   const monthOf = (d) => { if (!d) return "No date"; const x = new Date(d); return isNaN(x) ? "No date" : x.toLocaleDateString("en-IN", { month: "short", year: "numeric" }); };
+//   const ownerName = (e) => (e.ownerKey ? nameOf(e.ownerKey) : "Not picked yet");
+//   const raiserName = (e) => (e.raisedByWho?.key ? nameOf(e.raisedByWho.key) : e.raisedByWho?.name || "—");
 //   const splitNames = (arr) => fwdNames(arr).split(", ").filter(Boolean);
 //   const COLS =
 //     tab === "tickets" ? {
 //       ticketNo: { label: "Ticket no", fields: [{ key: "c_tno", kind: "text", label: "Ticket no contains", placeholder: "e.g. GVTKT033", get: (t) => t.ticketNo }] },
-//       ticket: { label: "Ticket", fields: [
-//         { key: "c_subj", kind: "text", label: "Subject / TNR contains", placeholder: "e.g. Advance or XQ08ZT", get: (t) => `${t.subject || ""} ${t.tnr || ""}` },
-//         { key: "c_type", kind: "multi", label: "Ticket type", options: opts(base, (t) => t.queryType), get: (t) => t.queryType },
-//       ] },
+//       ticket: {
+//         label: "Ticket", fields: [
+//           { key: "c_subj", kind: "text", label: "Subject / TNR contains", placeholder: "e.g. Advance or XQ08ZT", get: (t) => `${t.subject || ""} ${t.tnr || ""}` },
+//           { key: "c_type", kind: "multi", label: "Ticket type", options: opts(base, (t) => t.queryType), get: (t) => t.queryType },
+//         ]
+//       },
 //       raisedBy: { label: "Raised by", fields: [{ key: "c_by", kind: "multi", label: "Raised by", search: true, options: opts(base, (t) => t.raisedBy), get: (t) => t.raisedBy }] },
 //       raisedTo: { label: "Raised to", fields: [{ key: "c_to", kind: "multi", label: "Raised to", search: true, options: opts(base, (t) => t.raisedTo), get: (t) => t.raisedTo }] },
 //       date: { label: "Raised on", fields: [{ key: "date", kind: "date", label: "Raised on", get: (t) => t.createdAt }] },
 //       status: { label: "Status", fields: [{ key: "c_st", kind: "multi", label: "Status", options: TICKET_CARDS.filter((c) => c.key).map((c) => ({ value: c.key, label: c.label })), get: (t) => t.status }] },
 //     }
 //       : tab === "bookings" ? {
-//         tnr: { label: "TNR", fields: [
-//           { key: "c_tnr", kind: "text", label: "TNR contains", placeholder: "e.g. UF08IX", get: (b) => b.tnr },
-//           { key: "date", kind: "date", label: "Booked on", get: (b) => b.bookingDate },
-//         ] },
-//         tour: { label: "Tour / Customer", fields: [
-//           { key: "c_tour", kind: "multi", label: "Tour", search: true, options: opts(base, (b) => b.tour), get: (b) => b.tour },
-//           { key: "c_cust", kind: "text", label: "Customer contains", placeholder: "Customer name", get: (b) => b.customer },
-//         ] },
+//         tnr: {
+//           label: "TNR", fields: [
+//             { key: "c_tnr", kind: "text", label: "TNR contains", placeholder: "e.g. UF08IX", get: (b) => b.tnr },
+//             { key: "date", kind: "date", label: "Booked on", get: (b) => b.bookingDate },
+//           ]
+//         },
+//         tour: {
+//           label: "Tour / Customer", fields: [
+//             { key: "c_tour", kind: "multi", label: "Tour", search: true, options: opts(base, (b) => b.tour), get: (b) => b.tour },
+//             { key: "c_cust", kind: "text", label: "Customer contains", placeholder: "Customer name", get: (b) => b.customer },
+//           ]
+//         },
 //         by: { label: "Booked by", fields: [{ key: "c_by", kind: "multi", label: "Booked by", search: true, options: opts(base, (b) => nameOf(b.empKey)), get: (b) => nameOf(b.empKey) }] },
 //         pax: { label: "Pax", fields: [{ key: "c_pax", kind: "multi", label: "Pax", options: fixed([["c", "Has cancelled pax"], ["r", "Has rejected pax"], ["none", "No cancelled / rejected"]]), get: paxTags }] },
-//         pay: { label: "Advance / Balance", fields: [
-//           { key: "c_adv", kind: "multi", label: "Advance", options: fixed([["paid", "Paid"], ["pending", "Pending"]]), get: (b) => (b.advance?.paid ? "paid" : "pending") },
-//           { key: "c_bal", kind: "multi", label: "Balance", options: fixed([["paid", "Paid"], ["pending", "Pending"], ["adjusted", "Adjusted in cancellation"]]), get: (b) => (b.balance?.adjusted ? "adjusted" : b.balance?.paid ? "paid" : "pending") },
-//         ] },
+//         pay: {
+//           label: "Advance / Balance", fields: [
+//             { key: "c_adv", kind: "multi", label: "Advance", options: fixed([["paid", "Paid"], ["pending", "Pending"]]), get: (b) => (b.advance?.paid ? "paid" : "pending") },
+//             { key: "c_bal", kind: "multi", label: "Balance", options: fixed([["paid", "Paid"], ["pending", "Pending"], ["adjusted", "Adjusted in cancellation"]]), get: (b) => (b.balance?.adjusted ? "adjusted" : b.balance?.paid ? "paid" : "pending") },
+//           ]
+//         },
 //         canc: { label: "Cancellation", fields: [{ key: "c_canc", kind: "multi", label: "Cancellation", options: fixed([["gv", "Has GV"], ["irctc", "Has IRCTC"], ["refund", "Has refund"], ["none", "No cancellation"]]), get: cancTags }] },
 //         status: { label: "Status", fields: [{ key: "c_st", kind: "multi", label: "Status", options: BOOKING_CARDS.filter((c) => c.key).map((c) => ({ value: c.key, label: c.label })), get: (b) => b.state }] },
 //       }
 //         : {
-//           code: { label: "FIT code", fields: [
-//             { key: "c_code", kind: "text", label: "FIT code contains", placeholder: "e.g. GVFIT0030", get: (e) => e.fitCode },
-//             { key: "date", kind: "date", label: "Created on", get: (e) => e.createdAt },
-//           ] },
-//           name: { label: "Name / Destination", fields: [
-//             { key: "c_name", kind: "text", label: "Name contains", placeholder: "Customer name", get: (e) => e.name },
-//             { key: "c_dest", kind: "multi", label: "Destination", search: true, options: opts(base, (e) => e.destination), get: (e) => String(e.destination || "").trim() },
-//           ] },
-//           zone: { label: "Zone", fields: [{ key: "c_zone", kind: "multi", label: "Zone", options: opts(base, (e) => String(e.zone || "").split(",")), get: (e) => String(e.zone || "").split(",").map((z) => z.trim()) }] },
+//           code: {
+//             label: "Enquiry", fields: [
+//               { key: "c_code", kind: "text", label: "FIT code contains", placeholder: "e.g. GVFIT0030", get: (e) => e.fitCode },
+//               { key: "date", kind: "date", label: "Enquired on", get: (e) => e.createdAt },
+//               { key: "c_raised", kind: "multi", label: "Raised by", search: true, options: opts(base, raiserName), get: raiserName },
+//             ]
+//           },
+//           name: {
+//             label: "Customer", fields: [
+//               { key: "c_name", kind: "text", label: "Name / mobile contains", placeholder: "Name or mobile", get: (e) => `${e.name || ""} ${e.mobile || ""}` },
+//             ]
+//           },
+//           trip: {
+//             label: "Trip", fields: [
+//               { key: "c_dest", kind: "multi", label: "Destination", search: true, options: opts(base, (e) => e.destination), get: (e) => String(e.destination || "").trim() },
+//               { key: "c_ttype", kind: "multi", label: "Tour type", options: opts(base, (e) => e.tourType), get: (e) => e.tourType },
+//               { key: "c_tmonth", kind: "multi", label: "Travel month", options: opts(base, (e) => monthOf(e.travelDate)), get: (e) => monthOf(e.travelDate) },
+//               { key: "c_zone", kind: "multi", label: "Zone", options: opts(base, (e) => e.zones || []), get: (e) => (e.zones?.length ? e.zones : ["No zone"]) },
+//             ]
+//           },
 //           fto: { label: "Forwarded to", fields: [{ key: "c_fto", kind: "multi", label: "Forwarded to", search: true, options: opts(base, (e) => splitNames(e.fwdOut)), get: (e) => splitNames(e.fwdOut) }] },
 //           fby: { label: "Forwarded by", fields: [{ key: "c_fby", kind: "multi", label: "Forwarded by", search: true, options: opts(base, (e) => splitNames(e.fwdIn)), get: (e) => splitNames(e.fwdIn) }] },
-//           with: { label: ALL ? "With" : "Now with", fields: [{ key: "c_with", kind: "multi", label: ALL ? "With" : "Now with", search: true, options: opts(base, ownerName), get: ownerName }] },
-//           sales: { label: "Sales value", fields: [{ key: "c_sales", kind: "multi", label: "Sales value", options: fixed([["yes", "Has sales value"], ["no", "No sales value"]]), get: (e) => (e.salesValue > 0 ? "yes" : "no") }] },
+//           with: { label: "Handled by now", fields: [{ key: "c_with", kind: "multi", label: "Currently handled by", search: true, options: opts(base, ownerName), get: ownerName }] },
+//           value: {
+//             label: "Value", fields: [
+//               { key: "c_sales", kind: "multi", label: "Sales value", options: fixed([["yes", "Has sales value"], ["no", "No sales value"]]), get: (e) => (e.salesValue > 0 ? "yes" : "no") },
+//               { key: "c_canc", kind: "multi", label: "Cancellation charge", options: fixed([["yes", "Has cancellation charge"], ["no", "No cancellation charge"]]), get: (e) => (e.cancellationCharge > 0 ? "yes" : "no") },
+//             ]
+//           },
 //           stage: { label: "Stage", fields: [{ key: "c_st", kind: "multi", label: "Stage", options: FIT_CARDS.filter((c) => c.key).map((c) => ({ value: c.key, label: c.label })), get: (e) => e.stage }] },
 //         };
 //   // Indha tab la kaattura columns mattum (filter apply aaga)
 //   const visibleCols =
 //     tab === "tickets" ? ["ticketNo", "ticket", "raisedBy", "raisedTo", "date", "status"]
 //       : tab === "bookings" ? ["tnr", "tour", ...(ALL ? ["by"] : []), "pax", "pay", "canc", "status"]
-//         : ["code", "name", "zone", ...(ALL ? ["with"] : view === "fwdBy" ? ["fto", "with"] : view === "fwdTo" ? ["fby", "with"] : []), "sales", "stage"];
+//         : ["code", "name", "trip", ...(ALL ? ["with"] : view === "fwdBy" ? ["fto", "with"] : view === "fwdTo" ? ["fby", "with"] : ["with"]), "value", "stage"];
 //   const activeFields = visibleCols.flatMap((id) => COLS[id]?.fields || []);
 //   const localDay = (d) => { if (!d) return ""; const x = new Date(d); return isNaN(x) ? "" : x.toLocaleDateString("en-CA"); };
 //   const passCols = (r) => activeFields.every((f) => {
@@ -377,11 +422,11 @@
 //               )}
 //               {tab === "bookings" && (
 //                 <>
-//                   <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
+//                   <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
 //                     {BOOKING_CARDS.map((c) => <Card key={c.label} c={c} count={bCount(c.key)} active={card === c.key} onClick={() => setCard(c.key)} />)}
 //                   </div>
 //                   <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-//                     <Money label="Advance received" value={sum(CB, (b) => (countsMoney(b) && b.advance?.paid ? b.advance.amount : 0))} sub={`${CB.filter((b) => countsMoney(b) && b.advance?.paid).length} paid · ${CB.filter((b) => countsMoney(b) && !b.advance?.paid).length} pending`} tone="text-green-700" />
+//                     <Money label="Advance received" value={sum(CB, (b) => (countsMoney(b) && b.advance?.paid ? b.advance.amount : 0))} sub={`${CB.filter((b) => countsMoney(b) && b.advance?.paid).length} bookings · Active + Completed`} tone="text-green-700" />
 //                     <Money label="Balance received" value={sum(CB, (b) => (countsMoney(b) && b.balance?.paid ? b.balance.amount : 0))} sub={`${CB.filter((b) => countsMoney(b) && b.balance?.paid).length} paid · ${CB.filter((b) => countsMoney(b) && !b.balance?.paid && !b.balance?.adjusted).length} pending`} tone="text-green-700" />
 //                     <Money label="GV cancellation" value={sum(CB, (b) => b.gvCancellation)} />
 //                     <Money label="IRCTC cancellation" value={sum(CB, (b) => b.irctcCancellation)} />
@@ -396,6 +441,13 @@
 //                   </div>
 //                   <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
 //                     <Money label="Sales value (accepted)" value={sum(CB.filter((e) => ["Accepted", "Closed"].includes(e.stage)), (e) => e.salesValue)} tone="text-green-700" />
+//                     <Money label="Cancellation charge" value={sum(CB, (e) => e.cancellationCharge)} sub={`${CB.filter((e) => e.cancellationCharge > 0).length} enquiries`} tone="text-rose-700" />
+//                     {CB.some((e) => "gvVinoth" in e) && (
+//                       <>
+//                         <Money label="Vinoth share (GVEMP008)" value={sum(CB, (e) => e.gvVinoth)} sub={`${CB.filter((e) => e.gvVinoth > 0).length} enquiries`} tone="text-indigo-700" />
+//                         <Money label="Giridharan share (GVEMP009)" value={sum(CB, (e) => e.gvGiridhar)} sub={`${CB.filter((e) => e.gvGiridhar > 0).length} enquiries`} tone="text-indigo-700" />
+//                       </>
+//                     )}
 //                   </div>
 //                 </>
 //               )}
@@ -457,7 +509,7 @@
 //                         <li key={`${b.tnr}-${i}`} className="px-4 py-3">
 //                           <div className="flex items-center justify-between gap-2">
 //                             <span className="font-mono text-sm font-bold text-amber-800">{b.tnr || "—"}</span>
-//                             <Pill s={b.state} />
+//                             <span className="flex items-center gap-1.5">{b.requestedTr > 0 && <span className="text-[11px] font-semibold text-orange-700">{b.requestedTr} cancel request</span>}<Pill s={b.state} /></span>
 //                           </div>
 //                           <p className="mt-1 font-semibold text-gray-900">{b.tour}</p>
 //                           <p className="text-xs text-gray-500">{b.customer || "—"} · {paxOf(b).a} pax{paxExtra(paxOf(b)) ? ` (${paxExtra(paxOf(b))})` : ""} · {fmtDate(b.bookingDate)}{ALL ? ` · ${nameOf(b.empKey)}` : ""}</p>
@@ -496,7 +548,7 @@
 //                                   <><Kv label="GV" v={b.gvCancellation} /><Kv label="IRCTC" v={b.irctcCancellation} /><Kv label="Refund" v={b.refund} /></>
 //                                 ) : <span className="text-gray-400">—</span>}
 //                               </td>
-//                               <td className="px-3 py-2.5"><Pill s={b.state} /></td>
+//                               <td className="px-3 py-2.5"><Pill s={b.state} />{b.requestedTr > 0 && <p className="mt-1 text-[11px] font-semibold text-orange-700">{b.requestedTr} cancel request</p>}</td>
 //                             </tr>
 //                           ))}
 //                         </tbody>
@@ -514,50 +566,92 @@
 //                   </>
 //                 ) : (
 //                   <>
-//                     {mobileFilters()}
-//                     {/* Mobile — cards */}
-//                     <ul className="divide-y divide-gray-100 md:hidden">
+//                     {mobileFilters("lg")}
+//                     {/* Mobile / tablet — cards */}
+//                     <ul className="divide-y divide-gray-100 lg:hidden">
 //                       {rows.map((e) => (
 //                         <li key={e._id} className="px-4 py-3">
 //                           <div className="flex items-center justify-between gap-2">
 //                             <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-800">{e.fitCode || "—"}</span>
-//                             <span className="text-xs font-semibold">{e.stage}</span>
+//                             <StagePill s={e.stage} />
 //                           </div>
-//                           <p className="mt-1 font-semibold text-gray-900">{e.name}</p>
-//                           <p className="text-xs text-gray-500">{e.destination || "—"} · {e.zone || "No zone"}{e.salesValue ? ` · ${inr(e.salesValue)}` : ""}</p>
-//                           {!ALL && view === "fwdBy" && <p className="mt-1 text-xs">Forwarded to <b>{fwdNames(e.fwdOut)}</b></p>}
-//                           {!ALL && view === "fwdTo" && <p className="mt-1 text-xs">Forwarded by <b>{fwdNames(e.fwdIn)}</b></p>}
-//                           {fitExtra.length > 0 && <p className="text-xs">Now with <b>{e.ownerKey ? nameOf(e.ownerKey) : "Not picked"}</b></p>}
+//                           <div className="mt-1.5 flex items-start justify-between gap-2">
+//                             <div className="min-w-0">
+//                               <p className="truncate font-semibold text-gray-900">{e.name}</p>
+//                               {e.mobile && <p className="text-xs text-gray-500">📞 {e.mobile}</p>}
+//                             </div>
+//                           </div>
+//                           <p className="mt-1 text-xs text-gray-600">Raised by <b className="text-gray-900">{raiserName(e)}</b></p>
+//                           <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 rounded-xl bg-gray-50 p-2.5 text-xs sm:grid-cols-3">
+//                             <p><span className="text-gray-500">Destination </span><b className="text-purple-800">{e.destination || "—"}</b>{duration(e) ? ` · ${duration(e)}` : ""}</p>
+//                             <p><span className="text-gray-500">Travel </span><b>{e.travelDate ? fmtDate(e.travelDate) : "—"}</b></p>
+//                             <p><span className="text-gray-500">Enquired </span>{fmtDate(e.createdAt)}</p>
+//                             {e.pickupDate && <p><span className="text-gray-500">Pickup </span><b className="text-red-600">{fmtDate(e.pickupDate)}</b></p>}
+//                             {e.salesValue > 0 && <p><span className="text-gray-500">Sales </span><b className="text-green-700">{inr(e.salesValue)}</b></p>}
+//                             {e.cancellationCharge > 0 && <p><span className="text-gray-500">Cancellation </span><b className="text-rose-700">{inr(e.cancellationCharge)}</b></p>}
+//                             {e.pax > 0 && <p><span className="text-gray-500">Pax </span>{e.pax}</p>}
+//                           </div>
+//                           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+//                             <ZoneChips zones={e.zones} />
+//                             {!ALL && view === "fwdBy" && <span>Forwarded to <b>{fwdNames(e.fwdOut)}</b></span>}
+//                             {!ALL && view === "fwdTo" && <span>Forwarded by <b>{fwdNames(e.fwdIn)}</b></span>}
+//                             {fitExtra.length > 0 && <span>Currently handled by <b>{ownerName(e)}</b></span>}
+//                             {e.lastBy && <span className="text-gray-500">{ACTION_LABEL[e.lastBy.action] || "Updated"} by <b className="text-gray-800">{e.lastBy.key ? nameOf(e.lastBy.key) : e.lastBy.name || "—"}</b></span>}
+//                           </div>
 //                         </li>
 //                       ))}
 //                     </ul>
 //                     {/* Desktop — table */}
-//                     <div className="hidden md:block">
+//                     <div className="hidden lg:block">
 //                       <table className="w-full table-fixed text-left text-sm">
 //                         <thead className="bg-blue-50 text-xs text-gray-600"><tr>
-//                           {head("code", "w-36")}{head("name")}
-//                           {head("zone", "w-[14%]")}
-//                           {visibleCols.filter((id) => ["fto", "fby", "with"].includes(id)).map((id) => head(id, "w-[14%]"))}
-//                           {head("sales", "w-32")}{head("stage", "w-32")}
+//                           {head("code", "w-[15%]")}{head("name", "w-[17%]")}{head("trip")}
+//                           {visibleCols.filter((id) => ["fto", "fby", "with"].includes(id)).map((id) => head(id, "w-[13%]"))}
+//                           {head("value", "w-[11%]")}{head("stage", "w-[17%]")}
 //                         </tr></thead>
 //                         <tbody>
 //                           {rows.map((e) => (
-//                             <tr key={e._id} className="border-t border-gray-100 align-top">
-//                               <td className="px-3 py-2.5"><span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-800">{e.fitCode || "—"}</span></td>
-//                               <td className="px-3 py-2.5"><p className="truncate font-semibold">{e.name}</p><p className="truncate text-xs text-gray-500">{e.destination || "—"}</p></td>
-//                               <td className="truncate px-3 py-2.5 text-xs" title={e.zone}>{e.zone || "—"}</td>
-//                               {!ALL && view === "fwdBy" && <td className="truncate px-3 py-2.5 text-xs font-semibold">{fwdNames(e.fwdOut)}</td>}
-//                               {!ALL && view === "fwdTo" && <td className="truncate px-3 py-2.5 text-xs font-semibold">{fwdNames(e.fwdIn)}</td>}
-//                               {fitExtra.length > 0 && <td className="truncate px-3 py-2.5 text-xs font-semibold">{e.ownerKey ? nameOf(e.ownerKey) : "Not picked"}</td>}
-//                               <td className="px-3 py-2.5">{e.salesValue ? inr(e.salesValue) : "—"}</td>
-//                               <td className="px-3 py-2.5 text-xs font-semibold">{e.stage}</td>
+//                             <tr key={e._id} className="border-t border-gray-100 align-top hover:bg-gray-50/60">
+//                               <td className="px-3 py-3">
+//                                 <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-800">{e.fitCode || "—"}</span>
+//                                 <p className="mt-1.5 text-[11px] text-gray-500">{fmtDate(e.createdAt)}</p>
+//                                 <p className="truncate text-[11px] text-gray-500" title={raiserName(e)}>by <b className="text-gray-700">{raiserName(e)}</b></p>
+//                               </td>
+//                               <td className="px-3 py-3">
+//                                 <p className="truncate font-semibold text-gray-900" title={e.name}>{e.name || "—"}</p>
+//                                 <p className="truncate text-xs text-gray-500">{[e.mobile, e.pax ? `${e.pax} pax` : ""].filter(Boolean).join(" · ")}</p>
+//                               </td>
+//                               <td className="px-3 py-3">
+//                                 <p className="truncate"><b className="text-purple-800">{e.destination || "—"}</b><span className="text-xs text-gray-500">{duration(e) ? ` · ${duration(e)}` : ""}</span></p>
+//                                 <p className="truncate text-xs text-gray-600">✈️ {e.travelDate ? fmtDate(e.travelDate) : "No date"}{e.pickupDate && <span className="font-semibold text-red-600"> · 🚌 {fmtDate(e.pickupDate)}</span>}</p>
+//                                 {e.zones?.length > 0 && <div className="mt-1"><ZoneChips zones={e.zones} /></div>}
+//                               </td>
+//                               {!ALL && view === "fwdBy" && <td className="truncate px-3 py-3 text-xs font-semibold">{fwdNames(e.fwdOut)}</td>}
+//                               {!ALL && view === "fwdTo" && <td className="truncate px-3 py-3 text-xs font-semibold">{fwdNames(e.fwdIn)}</td>}
+//                               {fitExtra.length > 0 && <td className={`truncate px-3 py-3 text-xs font-semibold ${e.ownerKey ? "text-gray-900" : "text-gray-400"}`} title={ownerName(e)}>{ownerName(e)}</td>}
+//                               <td className="px-3 py-3 text-xs">
+//                                 {e.salesValue || e.cancellationCharge ? (
+//                                   <>
+//                                     {e.salesValue > 0 && <p className="font-semibold text-green-700">{inr(e.salesValue)}</p>}
+//                                     {e.cancellationCharge > 0 && <p className="font-semibold text-rose-700">−{inr(e.cancellationCharge)} <span className="font-normal text-gray-500">cancel</span></p>}
+//                                   </>
+//                                 ) : <span className="text-gray-400">—</span>}
+//                               </td>
+//                               <td className="px-3 py-3">
+//                                 <StagePill s={e.stage} />
+//                                 {e.lastBy && (
+//                                   <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-gray-500" title={`${ACTION_LABEL[e.lastBy.action] || "Updated"} by ${e.lastBy.key ? nameOf(e.lastBy.key) : e.lastBy.name || "—"}`}>
+//                                     {ACTION_LABEL[e.lastBy.action] || "Updated"} by <b className="text-gray-700">{e.lastBy.key ? nameOf(e.lastBy.key) : e.lastBy.name || "—"}</b> · {fmtDate(e.lastBy.at)}
+//                                   </p>
+//                                 )}
+//                               </td>
 //                             </tr>
 //                           ))}
 //                         </tbody>
 //                       </table>
 //                     </div>
 //                     <div className="flex flex-wrap justify-between gap-2 border-t-2 border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold">
-//                       <span>Total · {rows.length} enquiries</span><span>Sales value {inr(sum(rows, (e) => e.salesValue))}</span>
+//                       <span>Total · {rows.length} enquiries</span><span className="flex flex-wrap gap-x-4"><span className="text-green-700">Sales value {inr(sum(rows, (e) => e.salesValue))}</span><span className="text-rose-700">Cancellation {inr(sum(rows, (e) => e.cancellationCharge))}</span></span>
 //                     </div>
 //                   </>
 //                 )}
@@ -571,6 +665,8 @@
 // };
 
 // export default EmployeePerformance;
+
+
 
 // ════════════════════════════════════════════════════════════════
 //  EmployeePerformance.jsx — Admin panel (CEO tab) — SIMPLE scorecard
@@ -612,6 +708,12 @@ const TICKET_VIEWS = [
   { key: "Assigned", label: "Assigned to them" },
   { key: "Raised", label: "Raised by them" },
   { key: "Forwarded", label: "Forwarded by them" },
+  { key: "Edits", label: "✏️ Edit history" }, // avanga panna ticket edits (Raise Ticket → Edit History maadhiri)
+];
+// All employees → Tickets / ellaa employees oda full edit history
+const ALL_TICKET_VIEWS = [
+  { key: "Assigned", label: "🎫 All tickets" },
+  { key: "Edits", label: "✏️ Edit history (all employees)" },
 ];
 const BOOKING_CARDS = [
   { key: "", label: "Total bookings", cls: "border-slate-300 text-slate-900" },
@@ -701,6 +803,143 @@ const Money = ({ label, value, sub, tone = "text-gray-900" }) => (
     {sub && <p className="text-[11px] text-gray-500">{sub}</p>}
   </div>
 );
+
+// ─── Edit history — oru employee panna ticket edits (Admin Raise Ticket → Edit History maadhiri) ───
+const EDIT_KIND = {
+  query: ["Ticket edited", "bg-blue-50 text-blue-700"],
+  "reply-edit": ["Reply edited", "bg-violet-50 text-violet-700"],
+  "reply-delete": ["Reply deleted", "bg-red-50 text-red-700"],
+};
+const fmtDT = (d) =>
+  d ? `${new Date(d).toLocaleDateString("en-IN")} ${new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}` : "—";
+const byLabel = (e) => e.staffName || (e.by === "touradmin" ? "Tour admin" : "Admin");
+
+const EditHistoryPanel = ({ backendUrl, aToken, staffId, all = false, from, to }) => {
+  const [items, setItems] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState("");
+  const [term, setTerm] = useState("");
+  const [hidden, setHidden] = useState({});
+
+  useEffect(() => { setPage(1); }, [staffId, all, from, to, term]);
+  useEffect(() => {
+    const t = setTimeout(() => setTerm(search.trim()), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    if (!staffId && !all) return;
+    let alive = true;
+    setItems(null);
+    axios
+      .get(`${backendUrl}/api/touradmin/queries/edit-history`, {
+        headers: { aToken },
+        params: { staff: all ? undefined : staffId, page, limit: 10, search: term || undefined, from: from || undefined, to: to || undefined },
+      })
+      .then(({ data }) => {
+        if (!alive) return;
+        if (!data?.success) throw new Error(data?.message || "Failed to load edit history");
+        setItems(data.items || []);
+        setTotalPages(data.totalPages || 1);
+        setTotal(data.total || 0);
+      })
+      .catch((err) => {
+        if (!alive) return;
+        toast.error(err.response?.data?.message || err.message);
+        setItems([]);
+      });
+    return () => { alive = false; };
+  }, [backendUrl, aToken, staffId, all, page, term, from, to]);
+
+  const edits = (items || []).reduce((n, q) => n + (q.edits?.length || 0), 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by ticket no (GVTKT001) or subject"
+          className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+        />
+        <span className="text-xs text-gray-500">{total} ticket{total !== 1 ? "s" : ""}{items ? ` · ${edits} edit${edits !== 1 ? "s" : ""} on this page` : ""}</span>
+      </div>
+
+      {!items ? (
+        <p className="py-10 text-center text-sm text-gray-500">Loading…</p>
+      ) : items.length === 0 ? (
+        <p className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-500">{all ? "No edits by any employee" : "No edits by this employee"}{from || to ? " in this period" : ""}.</p>
+      ) : (
+        items.map((q) => {
+          const isHidden = hidden[q.queryId];
+          return (
+            <div key={q.queryId} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-2 bg-blue-50/60 px-4 py-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-white px-2 py-0.5 text-xs font-bold tracking-wide text-blue-800">{q.ticketNo || "—"}</span>
+                    <Pill s={q.status} />
+                    <span className="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-gray-700">{q.editCount} edit{q.editCount !== 1 ? "s" : ""}</span>
+                  </div>
+                  <p className="mt-1.5 truncate font-semibold text-gray-900">{q.subject}</p>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-gray-600">
+                  <span>Last edit {fmtDT(q.lastEditedAt)}</span>
+                  <button type="button" onClick={() => setHidden((h) => ({ ...h, [q.queryId]: !h[q.queryId] }))} className="font-semibold text-blue-600 hover:underline">
+                    {isHidden ? "Show" : "Hide"}
+                  </button>
+                </div>
+              </div>
+              {!isHidden && (
+                <ol className="space-y-4 px-4 py-4">
+                  {q.edits.map((e) => {
+                    const [kLabel, kCls] = EDIT_KIND[e.kind] || EDIT_KIND.query;
+                    return (
+                      <li key={e.id} className="relative pl-6">
+                        <span className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-blue-500" aria-hidden="true" />
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="font-bold text-gray-900">Edit {e.editNo}</span>
+                          <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${kCls}`}>{kLabel}</span>
+                          <span className="text-gray-500">by <b className="text-gray-800">{byLabel(e)}</b></span>
+                          <span className="text-xs text-gray-500">{fmtDT(e.editedAt)}</span>
+                        </div>
+                        <div className="mt-2 space-y-2 rounded-xl border border-gray-100 p-2">
+                          {(e.changes || []).map((c, i) => (
+                            <div key={i} className="grid gap-2 md:grid-cols-[10rem_1fr_1fr]">
+                              <p className="px-1 py-1 text-sm font-semibold text-gray-700">{c.label}</p>
+                              <div className="rounded-lg bg-red-50 px-3 py-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wide text-red-700">Before</p>
+                                <p className="whitespace-pre-line break-words text-sm text-gray-800">{c.before || "—"}</p>
+                              </div>
+                              <div className="rounded-lg bg-green-50 px-3 py-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wide text-green-700">After</p>
+                                <p className="whitespace-pre-line break-words text-sm text-gray-800">{c.after || "—"}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
+          );
+        })
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2 text-sm">
+          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-40">Previous</button>
+          <span className="text-gray-600">Page {page} of {totalPages}</span>
+          <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-40">Next</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ════════════════════════════════════════════════════════════════
 const EmployeePerformance = ({
@@ -972,9 +1211,9 @@ const EmployeePerformance = ({
           </div>
 
           {/* ── Views (ticket page / FIT page maadhiri) ── */}
-          {!ALL && (tab === "tickets" || tab === "fit") && (
+          {((!ALL && (tab === "tickets" || tab === "fit")) || (ALL && tab === "tickets")) && (
             <div className="mb-3 flex flex-wrap gap-1 rounded-2xl bg-gray-100 p-1 sm:inline-flex">
-              {(tab === "tickets" ? TICKET_VIEWS : FIT_VIEWS).map((v) => (
+              {(tab === "tickets" ? (ALL ? ALL_TICKET_VIEWS : TICKET_VIEWS) : FIT_VIEWS).map((v) => (
                 <button key={v.key} type="button" onClick={() => setView(v.key)} className={pill(view === v.key)}>{v.label}</button>
               ))}
             </div>
@@ -983,8 +1222,10 @@ const EmployeePerformance = ({
             <p className="-mt-1 mb-3 text-xs text-gray-500">{FIT_VIEWS.find((v) => v.key === view)?.hint}</p>
           )}
 
-          {/* ── Cards ── */}
-          {loading || !list ? (
+          {/* ── Edit history (oru employee) ── */}
+          {tab === "tickets" && view === "Edits" ? (
+            <EditHistoryPanel backendUrl={backendUrl} aToken={aToken} staffId={ALL ? "" : me?.staffId} all={ALL} from={from} to={to} />
+          ) : loading || !list ? (
             <p className="py-10 text-center text-sm text-gray-500">Loading…</p>
           ) : (
             <>

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import BankSelect from "./BankSelect"; // payment bank dropdown
+import { createPortal } from "react-dom";
 
 // Click-to-copy icon for a TNR — stopPropagation matters since this always
 // sits inside the booking row's own expand/collapse click target.
@@ -99,9 +100,9 @@ const toPreviewUrl = (url = "") => url.replace(/\.pdf(\?.*)?$/i, ".jpg$1");
 const ScreenshotViewer = ({ items, index, onClose, onNav }) => {
   if (index === null || index === undefined || !items?.[index]) return null;
   const item = items[index];
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -144,7 +145,8 @@ const ScreenshotViewer = ({ items, index, onClose, onNav }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

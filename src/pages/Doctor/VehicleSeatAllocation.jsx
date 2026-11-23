@@ -4,6 +4,7 @@ import { TourContext } from "../../context/TourContext";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import LeaveGuard from "../../components/LeaveGuard";
 
 const VehicleSeatAllocation = () => {
   const {
@@ -302,11 +303,10 @@ const VehicleSeatAllocation = () => {
 
                   {vehicle.remainingSeats !== null && (
                     <span
-                      className={`text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full ${
-                        vehicle.remainingSeats > 0
+                      className={`text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full ${vehicle.remainingSeats > 0
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
-                      }`}
+                        }`}
                     >
                       {vehicle.remainingSeats} remaining
                     </span>
@@ -364,11 +364,10 @@ const VehicleSeatAllocation = () => {
                             </td>
                             <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                               <span
-                                className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                                  t.locked === "Yes"
+                                className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${t.locked === "Yes"
                                     ? "bg-yellow-100 text-yellow-800"
                                     : "bg-green-100 text-green-800"
-                                }`}
+                                  }`}
                               >
                                 {t.locked}
                               </span>
@@ -389,6 +388,18 @@ const VehicleSeatAllocation = () => {
           </div>
         </>
       )}
+      <LeaveGuard
+        when={!!selectedTourId && !seatAllocationLoading && seatAllocation?.vehicles?.length > 0}
+        message={
+          <>
+            You are currently viewing the seat allocation for <strong>{selectedTourName}</strong>.
+            <br />
+            Leaving will clear the current list.
+            <br />
+            Are you sure you want to leave?
+          </>
+        }
+      />
     </div>
   );
 };

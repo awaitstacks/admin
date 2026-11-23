@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import TnrTickets from "../../components/TnrTickets"; // indha TNR la raise aana tickets
 import { TravellerCancelInfo } from "../../components/CancelWho"; // cancellation yaaru request / approve panna
+import LeaveGuard from "../../components/LeaveGuard";
 
 const TaskDashboard = () => {
   const {
@@ -295,9 +296,9 @@ const TaskDashboard = () => {
   const formatDate = (date) =>
     date
       ? new Date(date).toLocaleString("en-IN", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        })
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
       : "—";
 
   const copyToClipboard = (text) => {
@@ -376,11 +377,10 @@ const TaskDashboard = () => {
                 handleMarkAction(booking.tnr, type);
               }}
               disabled={isActing}
-              className={`ml-3 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition ${
-                isActing
+              className={`ml-3 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition ${isActing
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-green-600 hover:bg-green-700"
-              }`}
+                }`}
             >
               {isActing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -456,11 +456,10 @@ const TaskDashboard = () => {
                 {booking.travellers?.map((t, i) => (
                   <div
                     key={i}
-                    className={`bg-gray-50 p-3 rounded-lg space-y-1 text-xs ${
-                      t.cancelled?.byTraveller || t.cancelled?.byAdmin
+                    className={`bg-gray-50 p-3 rounded-lg space-y-1 text-xs ${t.cancelled?.byTraveller || t.cancelled?.byAdmin
                         ? "border-l-4 border-red-400"
                         : ""
-                    }`}
+                      }`}
                   >
                     <p className="font-medium break-words whitespace-normal leading-snug">
                       {t.title} {t.firstName} {t.lastName} ({t.age} yrs,{" "}
@@ -636,8 +635,8 @@ const TaskDashboard = () => {
                     )}
                   </div>
                 )) || (
-                  <p className="text-gray-500 italic text-sm">No travellers</p>
-                )}
+                    <p className="text-gray-500 italic text-sm">No travellers</p>
+                  )}
               </div>
             </div>
 
@@ -811,6 +810,19 @@ const TaskDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 sm:p-6 lg:p-8">
+      <LeaveGuard
+        when={!isLoading}
+        title="Confirm Navigation"
+        message={
+          <>
+            You are about to leave the Task Dashboard.
+            <br />
+            Any open task details will be closed.
+            <br />
+            Are you sure you want to continue?
+          </>
+        }
+      />
       <ToastContainer
         position="top-right"
         autoClose={3000}

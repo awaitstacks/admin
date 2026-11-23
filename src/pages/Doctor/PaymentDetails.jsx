@@ -13,6 +13,7 @@ import {
   CreditCard,
   QrCode,
 } from "lucide-react";
+import LeaveGuard from "../../components/LeaveGuard";
 
 const PaymentDetails = () => {
   const {
@@ -267,8 +268,27 @@ const PaymentDetails = () => {
     setFormError("");
   };
 
+  // Form la edhaavadhu type pannirundhaa / edit pannikittu irundhaa → leave popup
+  const paymentFormDirty =
+    !!editingId ||
+    !!qrFile ||
+    Object.values(formData).some((v) => String(v || "").trim() !== "");
+
   return (
     <>
+      <LeaveGuard
+        when={paymentFormDirty && !loading}
+        title="Unsaved Changes"
+        message={
+          <>
+            The payment method details you entered are not saved yet.
+            <br />
+            Leaving this page will lose them.
+            <br />
+            Are you sure you want to leave?
+          </>
+        }
+      />
       {/* Local ToastContainer – only for this page */}
       <ToastContainer
         containerId="payment-details-toast"

@@ -3,6 +3,7 @@ import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Copy, Share2, Loader2, CheckCircle } from "lucide-react";
+import LeaveGuard from "../../components/LeaveGuard";
 
 const TermsAgreementPage = () => {
   const { tourList, getTourList, getBookings } = useContext(TourContext);
@@ -132,6 +133,19 @@ const TermsAgreementPage = () => {
   return (
     <div className="min-h-screen w-full bg-gray-50 py-4 px-2 sm:px-4 md:py-8 lg:px-8">
       <ToastContainer position="top-right" autoClose={3000} theme="light" />
+      <LeaveGuard
+        when={!!selectedTourId && !loading && generatedLinks.length > 0}
+        message={
+          <>
+            You are currently viewing the agreement links for{" "}
+            <strong>{tourList.find((t) => t._id === selectedTourId)?.title || "this tour"}</strong>.
+            <br />
+            Leaving will clear the current list.
+            <br />
+            Are you sure you want to leave?
+          </>
+        }
+      />
 
       <div className="w-full max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 lg:p-10">
         {/* Responsive Header */}
@@ -225,11 +239,10 @@ const TermsAgreementPage = () => {
               {generatedLinks.map((link) => (
                 <div
                   key={link.tnr}
-                  className={`relative flex flex-col h-full rounded-2xl border transition-all ${
-                    link.isAgreed
+                  className={`relative flex flex-col h-full rounded-2xl border transition-all ${link.isAgreed
                       ? "bg-green-50/30 border-green-100"
                       : "bg-white border-gray-100 shadow-sm hover:shadow-md"
-                  }`}
+                    }`}
                 >
                   <div className="p-5 flex-grow">
                     <div className="flex justify-between items-start mb-4">

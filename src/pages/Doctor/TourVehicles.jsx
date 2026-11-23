@@ -3,6 +3,7 @@ import { TourContext } from "../../context/TourContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Plus, Edit, Trash2, X, Bus, User } from "lucide-react";
+import LeaveGuard from "../../components/LeaveGuard";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const getLeftCount = (seatsCount) => {
@@ -328,6 +329,20 @@ const TourVehicles = () => {
         theme="light"
       />
 
+      <LeaveGuard
+        when={showCreateModal || showEditModal}
+        title="Unsaved Changes"
+        message={
+          <>
+            The vehicle setup is open and not saved yet.
+            <br />
+            Leaving this page will lose the details you entered.
+            <br />
+            Are you sure you want to leave?
+          </>
+        }
+      />
+
       <div className="p-4 sm:p-8 max-w-7xl mx-auto font-sans">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-800 mt-12 mb-8 sm:mt-0 sm:mb-8 text-center uppercase tracking-tight">
           Seat Allocation Management (SAM)
@@ -450,7 +465,7 @@ const TourVehicles = () => {
                       {vehicle.bookedSeatsCount > 0 ? (
                         <div className="bg-red-50 p-3 rounded-xl border border-red-100 text-sm text-red-700">
                           {vehicle.bookedSeats &&
-                          vehicle.bookedSeats.length > 0 ? (
+                            vehicle.bookedSeats.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                               {vehicle.bookedSeats
                                 .map((bs) => bs.seatNumber)
