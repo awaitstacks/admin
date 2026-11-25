@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import TnrTickets from "../../components/TnrTickets"; // indha TNR la raise aana tickets
 import { TravellerCancelInfo } from "../../components/CancelWho"; // cancellation yaaru request / approve panna
-import LeaveGuard from "../../components/LeaveGuard";
 
 const renderTripWiseAddons = (traveller, currencySymbol) => {
   if (
@@ -695,19 +694,7 @@ const AdminCreatedBooking = () => {
           )}
         </div>
       </div>
-      <LeaveGuard
-        when={!loading}
-        title="Confirm Navigation"
-        message={
-          <>
-            You are about to leave this page.
-            <br />
-            Any search or filters will be lost.
-            <br />
-            Are you sure you want to continue?
-          </>
-        }
-      />
+      
 
     </>
   );

@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import TnrTickets from "../../components/TnrTickets"; // indha TNR la raise aana tickets
 import { TravellerCancelInfo } from "../../components/CancelWho"; // cancellation yaaru request / approve panna
-import LeaveGuard from "../../components/LeaveGuard";
+
 
 const TaskDashboard = () => {
   const {
@@ -810,19 +810,7 @@ const TaskDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 sm:p-6 lg:p-8">
-      <LeaveGuard
-        when={!isLoading}
-        title="Confirm Navigation"
-        message={
-          <>
-            You are about to leave the Task Dashboard.
-            <br />
-            Any open task details will be closed.
-            <br />
-            Are you sure you want to continue?
-          </>
-        }
-      />
+     
       <ToastContainer
         position="top-right"
         autoClose={3000}

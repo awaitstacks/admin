@@ -3,7 +3,6 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { TourContext } from "../../context/TourContext";
 import { STAFF_TAB_GROUPS, STAFF_TABS, STAFF_TAB_LABEL, STAFF_TAB_GROUP } from "../../config/staffTabs";
-import LeaveGuard from "../../components/LeaveGuard";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STAFF ROLES — HR team create pannuvaanga (eg: Ticketing Team, Booking Team)
@@ -268,19 +267,7 @@ export default function StaffRoles() {
         )}
       </div>
 
-      <LeaveGuard
-        when={formOpen && !saving}
-        title="Unsaved Changes"
-        message={
-          <>
-            The role form is open and not saved yet.
-            <br />
-            Leaving this page will lose the details you entered.
-            <br />
-            Are you sure you want to leave?
-          </>
-        }
-      />
+      
 
       {/* ── create / edit ── */}
       {formOpen && (

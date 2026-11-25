@@ -12,7 +12,6 @@
 import React, { useContext, useCallback } from "react";
 import { TourContext } from "../../context/TourContext";
 import PaymentTasksView from "../../components/PaymentTasksView";
-import LeaveGuard from "../../components/LeaveGuard"; // common leave popup
 
 const PaymentTasks = () => {
   const { ttoken, getPaymentTasks, markPaymentTaskDone, deleteGroupPayment, ticketApi } =
@@ -49,20 +48,7 @@ const PaymentTasks = () => {
         deletePayment={deletePayment}
         ticketApi={ticketApi}
       />
-      {/* Leave popup — common component (back / sidebar click / reload) */}
-      <LeaveGuard
-        when={!!ttoken}
-        title="Confirm Navigation"
-        message={
-          <>
-            You are about to leave the Payment Dashboard.
-            <br />
-            Any filters or open details will be lost.
-            <br />
-            Are you sure you want to continue?
-          </>
-        }
-      />
+      
     </>
   );
 };

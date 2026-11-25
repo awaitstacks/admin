@@ -1509,7 +1509,7 @@ const PaymentRecords = () => {
         )}
       </div>
       <LeaveGuard
-        when={!loading}
+        when={!!hasFilters} // filter / date select pannirundhaa mattum kekkum
         title="Confirm Navigation"
         message={
           <>

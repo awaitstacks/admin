@@ -4,7 +4,6 @@ import { TourContext } from "../../context/TourContext";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import LeaveGuard from "../../components/LeaveGuard";
 
 const VehicleSeatAllocation = () => {
   const {
@@ -388,18 +387,7 @@ const VehicleSeatAllocation = () => {
           </div>
         </>
       )}
-      <LeaveGuard
-        when={!!selectedTourId && !seatAllocationLoading && seatAllocation?.vehicles?.length > 0}
-        message={
-          <>
-            You are currently viewing the seat allocation for <strong>{selectedTourName}</strong>.
-            <br />
-            Leaving will clear the current list.
-            <br />
-            Are you sure you want to leave?
-          </>
-        }
-      />
+      
     </div>
   );
 };

@@ -813,7 +813,7 @@ const TourDashboard = () => {
       <ToastContainer position="top-right" autoClose={4000} />
 
       <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
-        Tour Dashboard
+        Tour Info
       </h1>
 
       {isLoading ? (

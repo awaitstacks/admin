@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useContext } from "rea
 import Chart from "chart.js/auto";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { TourAdminContext } from "../../context/TourAdminContext";
+import LeaveGuard from "../../components/LeaveGuard";
 
 const MN = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 Chart.register(ChartDataLabels);
@@ -34,9 +35,10 @@ const lollipopStemsPlugin = {
     const xScale = chart.scales.x;
     const categoryCount = Math.max(1, (xScale.max ?? 1) - (xScale.min ?? 0));
     const pxPerCategory = chart.chartArea.width / categoryCount;
-    const dotRadius = Math.max(1.5, Math.min(3.5, pxPerCategory / 16));
-    const lineWidth = Math.max(2.5, Math.min(2.5, pxPerCategory / 30));
-    const fontSize = Math.max(10, Math.min(11, Math.round(pxPerCategory / 9)));
+    const k = chart.options._lollipopScale || 1; // PDF image la perusa (screen la 1)
+    const dotRadius = Math.max(1.5, Math.min(3.5, pxPerCategory / 16)) * k;
+    const lineWidth = Math.max(2.5, Math.min(2.5, pxPerCategory / 30)) * k;
+    const fontSize = Math.round(Math.max(10, Math.min(11, Math.round(pxPerCategory / 9))) * k);
 
     chart.data.datasets.forEach((dataset) => {
       const dsIndex = chart.data.datasets.indexOf(dataset);
@@ -333,7 +335,7 @@ function TourCard({ t, i }) {
       <div onClick={() => setOpen(p => !p)}
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", cursor: "pointer", gap: 8, background: "#fff" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 13, color: "#1a1a2e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: "#1a1a2e", whiteSpace: "normal", overflowWrap: "anywhere", lineHeight: 1.3 }}>
             {i + 1}. {t.tourName || "—"}
           </div>
           <div style={{ fontSize: 10, color: "#aaa", marginTop: 1 }}>{t.tourType || ""}</div>
@@ -350,6 +352,261 @@ function TourCard({ t, i }) {
       )}
     </div>
   );
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PDF REPORT — Sales Analytics (A4 landscape, browser print → Save as PDF)
+//  Cards + ellaa charts (image ah) + Tour profile table — ippo irukkura filters oda
+// ════════════════════════════════════════════════════════════════
+const pdfEsc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Chart font perusa — PDF la padikka easy
+const bumpFonts = (o, f) => {
+  if (Array.isArray(o)) return o.map((x) => bumpFonts(x, f));
+  if (!o || typeof o !== "object") return o;
+  const out = {};
+  Object.keys(o).forEach((k) => {
+    const v = o[k];
+    if (k === "font" && v && typeof v === "object" && !Array.isArray(v) && typeof v.size === "number") out[k] = { ...v, size: Math.round(v.size * f) };
+    else out[k] = typeof v === "function" ? v : bumpFonts(v, f);
+  });
+  return out;
+};
+// Page la irukkura adhe chart config → high quality PNG (screen chart ah thodaadhu)
+// PDF ku chart style — smooth line + light fill, perusa points, bar thickness limit
+const hexA = (c, a) => (typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c) ? `${c}${a}` : c);
+const prettyData = (type, data) => {
+  const d = JSON.parse(JSON.stringify(data || {})); // screen chart oda data ah share pannaadhu
+  (d.datasets || []).forEach((ds) => {
+    if (type === "line") {
+      Object.assign(ds, { tension: 0.35, fill: "origin", backgroundColor: hexA(ds.borderColor, "1F"), borderWidth: 4, pointRadius: 7, pointHoverRadius: 7, pointBorderColor: "#fff", pointBorderWidth: 2.5 });
+    } else if (type === "bar") {
+      Object.assign(ds, { maxBarThickness: 110, borderRadius: ds.stack ? 4 : 10 });
+    }
+  });
+  return d;
+};
+const chartToImage = (config, w = 1500, h = 700, f = 1.9) => {
+  const holder = document.createElement("div");
+  holder.style.cssText = `position:fixed;left:-99999px;top:0;width:${w}px;height:${h}px;`;
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
+  holder.appendChild(canvas);
+  document.body.appendChild(holder);
+  let chart;
+  try {
+    const opts = bumpFonts(config.options || {}, f);
+    const pad = opts.layout?.padding || {};
+    chart = new Chart(canvas, {
+      ...config,
+      data: prettyData(config.type, config.data),
+      options: {
+        ...opts,
+        _lollipopScale: f,
+        layout: { padding: { top: (pad.top || 10) * 1.6, right: (pad.right || 10) + 20, left: 10, bottom: 6 } },
+        responsive: false, maintainAspectRatio: false, animation: false, devicePixelRatio: 2,
+      },
+    });
+    chart.draw();
+    return canvas.toDataURL("image/png");
+  } catch (e) {
+    console.error("chart image error:", e);
+    return "";
+  } finally {
+    chart?.destroy();
+    holder.remove();
+  }
+};
+// Chart keezha "key numbers" — ovvoru dataset total + peak
+const chartStats = (config, money) => {
+  const labels = config.data?.labels || [];
+  const val = (p) => (p && typeof p === "object" ? Number(p.y) || 0 : Number(p) || 0);
+  const lab = (p, i) => (p && typeof p === "object" ? labels[Math.round(p.x)] : labels[i]);
+  const show = (n) => (money ? fmtFull(n) : Number(n || 0).toLocaleString("en-IN"));
+  const out = [];
+  (config.data?.datasets || []).forEach((ds) => {
+    const pts = ds.data || [];
+    const total = pts.reduce((a, p) => a + val(p), 0);
+    const color = typeof ds.borderColor === "string" && ds.borderColor !== "transparent" ? ds.borderColor : ds.backgroundColor;
+    out.push({ label: `${ds.label || "Total"}`, value: show(total), color });
+  });
+  // Peak — ellaa datasets layum sethu adhigamaana value (GV / IRCTC edhu adhigamo adhu)
+  let best = 0, bLab = "", bName = "";
+  (config.data?.datasets || []).forEach((ds) => {
+    (ds.data || []).forEach((p, i) => { if (val(p) > best) { best = val(p); bLab = lab(p, i) ?? "—"; bName = ds.label || "Total"; } });
+  });
+  if (best > 0) out.push({ label: (config.data?.datasets || []).length > 1 ? `Highest · ${bName}` : "Highest", value: `${bLab} · ${show(best)}`, color: "#111827", peak: true });
+  return out;
+};
+
+const PDF_STATUS = {
+  Available: ["#DBEAFE", "#1E40AF"], Soldout: ["#FFEDD5", "#B45309"], Cancelled: ["#FEE2E2", "#991B1B"], "Booking Closed": ["#E2E8F0", "#334155"],
+};
+const TOURS_PER_PAGE = 10; // oru page ku 10 rows — idaiveli vittu
+
+function buildSalesPdfHtml({ filterText, hero, sections, charts, tours, totals }) {
+  const now = new Date();
+  const gen = `${now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} ${now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
+  const head = (sub) => `<header class="hd">
+      <div class="brand"><div class="logo">📊</div><div><h1>Sales Analytics Report</h1><div class="sub">${pdfEsc(sub)}</div></div></div>
+      <div class="meta"><b>GV - Tour Planners LLP</b><span>${pdfEsc(filterText)}</span></div>
+    </header>`;
+  const foot = `<footer class="pf"><span>Generated on ${pdfEsc(gen)}</span><span class="pno"></span></footer>`;
+
+  // Page 1 — hero + ellaa sections
+  const heroHtml = `<div class="hero">${hero.map(([icon, label, value, c1, c2]) => `
+      <div class="hcard" style="background:linear-gradient(135deg, ${c1}, ${c2})"><div class="hic">${icon}</div><div><span>${pdfEsc(label)}</span><b>${pdfEsc(value)}</b></div></div>`).join("")}</div>`;
+  // Section — oru varisai cards (center la icon + perusaana number + label)
+  const secBlock = ({ title, color, items }) => `
+      <div class="sx"><div class="sh" style="--c:${color}">${pdfEsc(title)}</div>
+        <div class="grid" style="grid-template-columns:repeat(${items.length}, 1fr)">${items.map(([icon, label, value, bg, fg]) => `
+          <div class="st" style="--fg:${fg || "#111827"};--bg:${bg}"><div class="ic" style="background:${bg}">${icon}</div><b class="vl" style="color:${fg || "#111827"}${String(value).length > 8 ? ";font-size:24px" : ""}">${pdfEsc(value)}</b><span class="lb">${pdfEsc(label)}</span></div>`).join("")}</div>
+      </div>`;
+  // Summary 2 page: 1) hero + Tours + Tour bookings  2) Travellers + Gender + Cancellation
+  const page1 = `<section class="page">${head("Summary · 1 of 2")}${heroHtml}<div class="secs">${sections.slice(0, 2).map(secBlock).join("")}</div>${foot}</section>`;
+  const page2 = `<section class="page">${head("Summary · 2 of 2")}<div class="secs">${sections.slice(2).map(secBlock).join("")}</div>${foot}</section>`;
+
+  // Chart pages — oru page ku oru perusaana chart
+  const chartPages = charts.map((c, i) => `<section class="page">${head(`Charts · ${i + 1} of ${charts.length}`)}
+      <div class="chart">
+        <div class="ctop">
+          <div><div class="ct"><span class="cno">${i + 1}</span>${pdfEsc(c.title)}</div><div class="cs">${pdfEsc(c.sub)}</div></div>
+          ${c.legend?.length ? `<div class="lg">${c.legend.map(([col, l]) => `<span><i style="background:${col}"></i>${pdfEsc(l)}</span>`).join("")}</div>` : ""}
+        </div>
+        <div class="cimg">${c.img ? `<img src="${c.img}" alt="">` : `<div class="noimg">Chart not available</div>`}</div>
+        ${c.stats?.length ? `<div class="kst">${c.stats.map((k) => `<div class="k${k.peak ? " pk" : ""}" style="--k:${k.color || "#7C3AED"}"><span>${pdfEsc(k.label)}</span><b>${pdfEsc(k.value)}</b></div>`).join("")}</div>` : ""}
+      </div>${foot}</section>`);
+
+  // Tour table pages
+  const th = ["S.No", "Tour name", "TNR", "Travellers", "Cancelled", "Trip cancelled", "Female", "Male", "Others", "Child", "GV cancel", "IRCTC cancel", "Total cancel", "Status"];
+  const cols = ["4.5%", "", "4.5%", "6.5%", "6.5%", "6.5%", "5.5%", "5%", "5.5%", "4.5%", "7.5%", "7.5%", "7.5%", "10.5%"];
+  const colgroup = `<colgroup>${cols.map((w) => `<col${w ? ` style="width:${w}"` : ""}>`).join("")}</colgroup>`;
+  const thead = `<thead><tr>${th.map((h, i) => `<th${i > 1 ? ' class="c"' : ""}>${h}</th>`).join("")}</tr></thead>`;
+  const num = (n, cls = "") => `<td class="c ${cls}">${n || 0}</td>`;
+  const tRows = tours.map((t, i) => {
+    const [bg, fg] = PDF_STATUS[t.status] || ["#FEF9C3", "#854D0E"];
+    return `<tr><td class="c mut">${i + 1}</td>
+      <td><b class="tn">${pdfEsc(t.tourName || "—")}</b><span class="tt">${pdfEsc(t.tourType || "")}</span></td>
+      ${num(t.totalTNR, "b")}${num(t.totalTravellers, "pur b")}
+      <td class="c"><span class="pl" style="--b:#FECACA;--f:#DC2626">${t.cancelledTravellers || 0}</span></td>
+      <td class="c"><span class="pl" style="--b:#DDD6FE;--f:#7C3AED">${t.tripCancelledTravellers || 0}</span></td>
+      <td class="c"><span class="pl" style="--b:#FBCFE8;--f:#9D174D">${t.totalFemale || 0}</span></td>
+      <td class="c"><span class="pl" style="--b:#BFDBFE;--f:#1D4ED8">${t.totalMale || 0}</span></td>
+      <td class="c"><span class="pl" style="--b:#A5F3FC;--f:#0E7490">${t.totalOther || 0}</span></td>
+      <td class="c"><span class="pl" style="--b:#FDE68A;--f:#854D0E">${t.totalChild || 0}</span></td>
+      <td class="c gv">${pdfEsc(fmtFull(t.gvPool || 0))}</td><td class="c ir">${pdfEsc(fmtFull(t.irctcPool || 0))}</td>
+      <td class="c b">${pdfEsc(fmtFull((t.gvPool || 0) + (t.irctcPool || 0)))}</td>
+      <td class="c"><span class="bd" style="background:${bg};color:${fg}">${pdfEsc(t.status)}</span></td></tr>`;
+  });
+  const tfoot = `<tfoot><tr><td></td><td>Total · ${tours.length} tours</td>${num(totals.tnr)}${num(totals.pax, "pur")}${num(totals.canc)}${num(totals.trip)}${num(totals.fem)}${num(totals.mal)}${num(totals.oth)}${num(totals.chi)}
+      <td class="c gv">${pdfEsc(fmtFull(totals.gv))}</td><td class="c ir">${pdfEsc(fmtFull(totals.ir))}</td><td class="c">${pdfEsc(fmtFull(totals.gv + totals.ir))}</td><td></td></tr></tfoot>`;
+  // Table pages — script pirikkum (max 10 rows / page; peru 2 line aanaalum page ku veliya pogaadhu)
+  const tablePage = `<section class="page tpg">${head("Tour profile performance")}
+      <div class="tw"><table>${colgroup}${thead}<tbody></tbody></table></div>${foot}</section>`;
+  const tableData = `<template id="tpl">${tablePage}</template>
+    <template id="trows"><table><tbody>${tRows.join("") || `<tr><td colspan="14" class="empty">No tours match</td></tr>`}</tbody>${tfoot}</table></template>`;
+  const tablePages = [`<div id="tpages"></div>`, tableData];
+
+  const pages = [page1, page2, ...chartPages, ...tablePages];
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sales Analytics Report - ${pdfEsc(filterText)}</title>
+<style>
+  @page { size: A4 landscape; margin: 8mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; color: #111827; background: #E9ECF3; font-size: 12px; }
+  .bar { position: sticky; top: 0; z-index: 2; display: flex; gap: 10px; justify-content: center; align-items: center; padding: 10px; background: #fff; border-bottom: 1px solid #E5E7EB; }
+  .bar button { border: 0; border-radius: 8px; padding: 9px 20px; font-weight: 700; font-size: 14px; cursor: pointer; background: #7C3AED; color: #fff; }
+  .bar button.sec { background: #E5E7EB; color: #374151; }
+  .bar .hint { padding: 8px 14px; border-radius: 8px; background: #FEF3C7; border: 2px solid #F59E0B; color: #92400E; font-size: 15px; font-weight: 700; }
+  .bar .hint b { color: #B91C1C; font-weight: 800; text-decoration: underline; }
+  .page { width: 281mm; height: 193mm; overflow: hidden; margin: 14px auto; background: #fff; display: flex; flex-direction: column; position: relative; }
+  @media screen { .page { width: 297mm; height: 209mm; padding: 8mm; box-shadow: 0 2px 10px rgba(0,0,0,.08); } }
+  .page > * { flex-shrink: 0; }
+  .hd { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-radius: 12px; color: #fff;
+        background: linear-gradient(120deg, #4C1D95 0%, #6D28D9 45%, #2563EB 100%); }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .hd h1 { margin: 0; font-size: 21px; letter-spacing: .3px; }
+  .hd .sub { font-size: 12px; opacity: .85; margin-top: 1px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
+  .meta { text-align: right; } .meta b { display: block; font-size: 15px; } .meta span { font-size: 11.5px; opacity: .9; }
+  .hero { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
+  .hcard { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; color: #fff; }
+  .hic { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+  .hcard span { display: block; font-size: 11px; font-weight: 600; opacity: .92; } .hcard b { display: block; font-size: 22px; line-height: 1.15; }
+  .secs { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; gap: 14px; margin-top: 6px; }
+  .sx { flex: 0 0 auto; display: flex; flex-direction: column; }
+  .sx .sh { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: #374151; border-left: 5px solid var(--c); padding-left: 10px; margin-bottom: 8px; }
+  .grid { display: grid; gap: 10px; grid-auto-rows: 33mm; } /* box height kammi — sections naduvula gap */
+  .st { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 4px; padding: 8px 8px; border-radius: 14px;
+        border: 1px solid #ECEEF4; border-top: 5px solid var(--fg); background: linear-gradient(180deg, var(--bg) 0%, #FFFFFF 70%); min-width: 0; }
+  .ic { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .st .vl { font-size: 27px; font-weight: 800; line-height: 1.05; white-space: nowrap; }
+  .st .lb { font-size: 12px; color: #4B5563; font-weight: 700; line-height: 1.25; }
+  .chart { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-top: 10px; border: 1px solid #E5E7EB; border-radius: 16px; padding: 12px 18px 12px; background: linear-gradient(180deg, #FFFFFF 0%, #FAF9FF 100%); }
+  .ctop { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .ct { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; color: #1F2937; }
+  .cno { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #7C3AED, #2563EB); color: #fff; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
+  .cs { font-size: 12px; color: #6B7280; margin: 2px 0 0 38px; }
+  .lg { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .lg span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #F3F4F6; font-size: 12px; font-weight: 600; color: #374151; }
+  .lg i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .cimg { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; margin-top: 6px; }
+  .cimg img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .kst { display: flex; gap: 10px; margin-top: 8px; }
+  .k { flex: 1 1 0; min-width: 0; border-radius: 12px; padding: 8px 12px; background: #fff; border: 1px solid #E5E7EB; border-top: 4px solid var(--k); }
+  .k span { display: block; font-size: 11px; color: #6B7280; font-weight: 600; } .k b { display: block; font-size: 18px; color: var(--k); white-space: nowrap; }
+  .k.pk { background: #F5F3FF; border-color: #DDD6FE; border-top-color: #7C3AED; } .k.pk b { color: #4C1D95; }
+  .noimg { flex: 1; display: flex; align-items: center; justify-content: center; color: #9CA3AF; }
+  .tw { margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th { background: #EDE9FE; color: #4C1D95; font-size: 11.5px; font-weight: 800; padding: 10px 8px; border: 1px solid #C4B5FD; text-align: left; }
+  td { padding: 8px 8px; border: 1px solid #E5E7EB; font-size: 12px; height: 13.6mm; vertical-align: middle; }
+  tbody tr:nth-child(even) td { background: #FAF9FF; }
+  .c { text-align: center; } .b { font-weight: 700; } .mut { color: #9CA3AF; } .pur { color: #7C3AED; font-weight: 700; }
+  .tn { display: block; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; } .tt { display: block; font-size: 10px; color: #9CA3AF; }
+  .pl { display: inline-block; min-width: 26px; padding: 2px 6px; border-radius: 12px; border: 1.5px solid var(--b); color: var(--f); font-weight: 700; font-size: 11px; }
+  .gv { color: #15803D; font-weight: 700; } .ir { color: #B45309; font-weight: 700; }
+  .bd { display: inline-block; max-width: 100%; padding: 3px 9px; border-radius: 10px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+  tfoot td { background: #F5F3FF !important; font-weight: 800; border-top: 2px solid #7C3AED; }
+  td.empty { text-align: center; color: #6B7280; height: 24mm; }
+  .pf { margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; font-size: 10px; color: #9CA3AF; border-top: 1px solid #F3F4F6; }
+  .pf > span { flex: 1; } .pf > .pno { text-align: right; } .pf > .eor { text-align: center; font-weight: 800; color: #4B5563; }
+  @media print {
+    body { background: #fff; } .bar { display: none; }
+    .page { margin: 0; box-shadow: none; page-break-after: always; break-after: page; }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+  }
+</style></head><body>
+  <div class="bar"><button onclick="window.print()">Save as PDF</button><button class="sec" onclick="window.close()">Close</button><span class="hint">⚠️ In the print box, set <b>Orientation → Landscape</b> before saving</span></div>
+  ${pages.join("")}
+  <script>
+    (function () {
+      // Tour table — page page ah
+      var MAX = ${TOURS_PER_PAGE}, holder = document.getElementById("tpages"), src = document.getElementById("trows").content;
+      var rows = Array.prototype.slice.call(src.querySelectorAll("tbody > tr")), tf = src.querySelector("tfoot");
+      function np() { var p = document.getElementById("tpl").content.firstElementChild.cloneNode(true); holder.appendChild(p); return p; }
+      function over(p) { return p.scrollHeight > p.clientHeight + 1; }
+      var pg = np(), body = pg.querySelector("tbody"), n = 0;
+      rows.forEach(function (tr) {
+        if (n >= MAX) { pg = np(); body = pg.querySelector("tbody"); n = 0; }
+        body.appendChild(tr); n++;
+        if (n > 1 && over(pg)) { body.removeChild(tr); pg = np(); body = pg.querySelector("tbody"); body.appendChild(tr); n = 1; }
+      });
+      if (tf) {
+        var t = pg.querySelector("table"); t.appendChild(tf);
+        if (over(pg) && body.children.length > 1) { var lr = body.lastElementChild; t.removeChild(tf); body.removeChild(lr); pg = np(); body = pg.querySelector("tbody"); body.appendChild(lr); pg.querySelector("table").appendChild(tf); }
+      }
+      var ps = document.querySelectorAll(".page");
+      ps.forEach(function (p, i) {
+        var n = p.querySelector(".pno"); if (n) n.textContent = "Page " + (i + 1) + " of " + ps.length;
+        // Report mudiyura page footer la naduvula "End of Report" (adhe font size, bold)
+        if (n && i === ps.length - 1) { var e = document.createElement("span"); e.className = "eor"; e.textContent = "End of Report"; n.before(e); }
+      });
+      var imgs = Array.prototype.slice.call(document.images);
+      Promise.all(imgs.map(function (im) { return im.complete ? 0 : new Promise(function (r) { im.onload = im.onerror = r; }); }))
+        .then(function () { setTimeout(function () { try { window.print(); } catch (e) {} }, 400); });
+    })();
+  </script>
+</body></html>`;
 }
 
 export default function Analytics() {
@@ -783,6 +1040,112 @@ export default function Analytics() {
   const tripCancelledToursCount = tourList.filter(t => t.tripCancelled).length;
   const tripCancelledTravellersCount = tourList.reduce((a, t) => a + (t.tripCancelledTravellers || 0), 0);
 
+  // ── PDF download — ippo irukkura filters oda cards + charts + table ──
+  const filterLabel = () => {
+    const parts = [];
+    // "All years" badhila data irukkura mudhal year – kadaisi year (e.g. 2025 – 2027)
+    const ys = [...new Set(allAvailableYears.map(Number).filter(Boolean))].sort((a, b) => a - b);
+    const minY = ys[0], maxY = ys[ys.length - 1];
+    const allYears = ys.length ? (minY === maxY ? `${minY}` : `${minY} – ${maxY}`) : "All years";
+    if (rangeMode) {
+      const yr = range.fromYear || range.toYear
+        ? (() => { const f = range.fromYear || minY || "", t = range.toYear || maxY || ""; return !f || !t || String(f) === String(t) ? String(f || t) : `${f} – ${t}`; })()
+        : "";
+      const mo = range.fromMonth && range.toMonth ? `${MN[+range.fromMonth]}–${MN[+range.toMonth]}` : range.fromMonth ? MN[+range.fromMonth] : range.toMonth ? MN[+range.toMonth] : "";
+      if (yr) parts.push(yr);
+      if (mo) parts.push(mo);
+      if (!yr) parts.unshift(allYears);
+    } else {
+      parts.push(filters.year || allYears);
+      parts.push(filters.month ? MN[+filters.month] : "All months");
+    }
+    if (filters.type) parts.push(filters.type);
+    if (filters.status) parts.push(filters.status);
+    if (selTours.length) parts.push(selTours.length === 1 ? selTours[0].tourName : `${selTours.length} tours`);
+    return parts.join(" · ");
+  };
+  const downloadPdf = () => {
+    const yLbl = rangeMode ? "" : ` (${filters.year || new Date().getFullYear()})`;
+    const LG_STATUS = [["#16a34a", "Active"], ["#f97316", "Cancelled"], ["#8b5cf6", "Trip Cancelled"], ["#dc2626", "Rejected"]];
+    const LG_TOUR = [["#2563eb", "Available"], ["#f97316", "Soldout"], ["#dc2626", "Cancelled"]];
+    const charts = [
+      { title: "Total travellers — year wise", sub: "By departure year", cfg: chartYW },
+      { title: `Total travellers — month wise${yLbl}`, sub: "By departure month", cfg: chartMW },
+      { title: "Traveller status — year wise", sub: "Active / Cancelled / Trip cancelled / Rejected", cfg: chartTravStatusYW, legend: LG_STATUS },
+      { title: `Traveller status — month wise${yLbl}`, sub: "Active / Cancelled / Trip cancelled / Rejected", cfg: chartTravStatusMW, legend: LG_STATUS },
+      { title: "Tour status — year wise", sub: "Available / Soldout / Cancelled per year", cfg: chartTourStatusYW, legend: LG_TOUR },
+      { title: `Tour status — month wise${yLbl}`, sub: "Available / Soldout / Cancelled by month", cfg: chartTourStatusMW, legend: LG_TOUR },
+      { title: "Cancellations — year wise", sub: "GV vs IRCTC cancel amounts per year", cfg: chartCancelYW, legend: [["#ef4444", "GV Cancelled"], ["#f59e0b", "IRCTC Cancelled"]] },
+      { title: `Cancellations — month wise${yLbl}`, sub: "GV vs IRCTC cancel amounts by month", cfg: chartCancelMW, legend: [["#ef4444", "GV"], ["#f59e0b", "IRCTC"]] },
+    ].map(({ cfg, ...c }, i) => ({ ...c, img: chartToImage(cfg), stats: chartStats(cfg, i >= 6) }));
+
+    const totalCancel = (summary.totalGVPool || 0) + (summary.totalIRCTCPool || 0);
+    const hero = [
+      ["🚌", "Total tours", tourList.length, "#7C3AED", "#A855F7"],
+      ["📋", "Total bookings", summary.totalBookings || 0, "#2563EB", "#3B82F6"],
+      ["👥", "Total travellers", (summary.totalTravellers || 0).toLocaleString("en-IN"), "#0E7490", "#06B6D4"],
+      ["📊", "Average travellers", avgTravellers, "#15803D", "#22C55E"],
+      ["💰", "Total cancellation", fmtFull(totalCancel), "#B91C1C", "#F43F5E"],
+    ];
+    const sections = [
+      {
+        title: "Tours", color: "#7C3AED", items: [
+          ["🚌", "Total tours", tourList.length, "#EDE9FE", "#5B21B6"],
+          ["📊", "Average tours", avgTourCount, "#E0E7FF", "#3730A3"],
+          ["✅", "Available", tourList.filter(t => !t.tripCancelled && t.available !== false).length, "#DBEAFE", "#1E40AF"],
+          ["🔴", "Soldout", tourList.filter(t => !t.tripCancelled && t.available === false).length, "#FFEDD5", "#C2410C"],
+          ["🚫", "Cancelled", tripCancelledToursCount, "#FEE2E2", "#B91C1C"],
+        ]
+      },
+      {
+        title: "Tour bookings", color: "#2563EB", items: [
+          ["📋", "Total bookings", summary.totalBookings || 0, "#E0F2FE", "#0369A1"],
+          ["⏳", "Unverified", summary.unverifiedBookings || 0, "#F1F5F9", "#334155"],
+          ["🟢", "Active (advance paid)", summary.activeBookings || 0, "#DCFCE7", "#15803D"],
+          ["🏆", "Completed", summary.completedBookings || 0, "#FEF9C3", "#854D0E"],
+          ["❌", "Fully cancelled", summary.fullyCancelledBookings || 0, "#FEE2E2", "#B91C1C"],
+          ["🚫", "Rejected", summary.rejectedBookings || 0, "#F3E8FF", "#7E22CE"],
+          ["🛑", "Trip cancelled", summary.tripCancelledBookings || 0, "#FECACA", "#991B1B"],
+        ]
+      },
+      {
+        title: "Travellers", color: "#0E7490", items: [
+          ["👥", "Total travellers", (summary.totalTravellers || 0).toLocaleString("en-IN"), "#EDE9FE", "#5B21B6"],
+          ["📊", "Average (Active+CR)", avgTravellers, "#E0E7FF", "#3730A3"],
+          ["⏳", "Unverified", summary.unverifiedTravellers || 0, "#FEF3C7", "#92400E"],
+          ["🟢", "Active", summary.activeTravellers || 0, "#DCFCE7", "#15803D"],
+          ["🔶", "Cancelled", summary.cancelledTravellers || 0, "#FEF3C7", "#C2410C"],
+          ["🕐", "Cancel request", summary.cancellationRequestTravellers || 0, "#FDE8D8", "#9A3412"],
+          ["🚫", "Rejected", summary.rejectedTravellers || 0, "#FEE2E2", "#B91C1C"],
+          ["🛑", "Trip cancelled", tripCancelledTravellersCount, "#FECACA", "#991B1B"],
+        ]
+      },
+      {
+        title: "Gender (completed bookings)", color: "#DB2777", items: [
+          ["👩", "Female", summary.totalFemale || 0, "#FCE7F3", "#9D174D"],
+          ["👨", "Male", summary.totalMale || 0, "#DBEAFE", "#1D4ED8"],
+          ["🧑", "Others", summary.totalOther || 0, "#CFFAFE", "#0E7490"],
+          ["🧒", "Child", summary.totalChild || 0, "#FEF9C3", "#854D0E"],
+        ]
+      },
+      {
+        title: "Cancellation amount", color: "#DC2626", items: [
+          ["₹", "GV cancellation", fmtFull(summary.totalGVPool || 0), "#DCFCE7", "#15803D"],
+          ["🎫", "IRCTC cancellation", fmtFull(summary.totalIRCTCPool || 0), "#FEF3C7", "#B45309"],
+          ["💰", "Total cancellation", fmtFull(totalCancel), "#FEE2E2", "#B91C1C"],
+        ]
+      },
+    ];
+    const tours = tourList.map((t) => ({ ...t, status: getTourStatus(t) }));
+    const totals = { tnr: totTNR, pax: totPax, canc: totCancelledTrav, trip: tripCancelledTravellersCount, fem: totFem, mal: totMal, oth: totOth, chi: totChi, gv: totGVt, ir: totIRt };
+
+    const html = buildSalesPdfHtml({ filterText: filterLabel(), hero, sections, charts, tours, totals });
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const w = window.open(url, "_blank");
+    if (!w) { URL.revokeObjectURL(url); alert("Allow pop-ups for this site to download the PDF"); return; }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
   if (loading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", color: "#888", fontSize: 14 }}>Loading analytics...</div>;
 
   const cc = { ...S.cc, minWidth: 0, overflow: "hidden" };
@@ -790,6 +1153,20 @@ export default function Analytics() {
   return (
     <div ref={rootRef} className="an-root" style={S.pg}>
       <style>{RESPONSIVE_CSS}</style>
+      {/* Leave popup — filter / range / tour select pannirundhaa mattum kekkum */}
+      <LeaveGuard
+        when={!!(filters.year || filters.month || filters.type || filters.status || rangeMode || range.fromYear || range.toYear || range.fromMonth || range.toMonth || selTours.length)}
+        title="Leave Sales Analytics?"
+        message={
+          <>
+            You have filters selected on this page.
+            <br />
+            Leaving will clear the filters and the current view.
+            <br />
+            Are you sure you want to leave?
+          </>
+        }
+      />
 
       <div style={{ ...S.topbar, justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ textAlign: 'center' }}>
@@ -801,7 +1178,21 @@ export default function Analytics() {
           </div>
         </div>
       </div>
-      <br />
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+        <button
+          type="button"
+          onClick={downloadPdf}
+          disabled={tableLoading}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: "none",
+            background: tableLoading ? "#c4b5fd" : "linear-gradient(120deg, #6d28d9, #2563eb)", color: "#fff",
+            fontSize: 13, fontWeight: 700, cursor: tableLoading ? "not-allowed" : "pointer", boxShadow: "0 2px 8px rgba(109,40,217,.25)",
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+          {tableLoading ? "Loading…" : "Download PDF"}
+        </button>
+      </div>
 
       <div style={{ ...S.fbar, marginBottom: 12 }}>
         <div className="an-fbar-grid">
@@ -1078,7 +1469,7 @@ export default function Analytics() {
             <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: "28px" }} />
-                <col style={{ width: "15%" }} />
+                <col style={{ width: "20%" }} />
                 <col style={{ width: "5%" }} />
                 <col style={{ width: "6%" }} />
                 <col style={{ width: "6%" }} />
@@ -1087,9 +1478,9 @@ export default function Analytics() {
                 <col style={{ width: "5%" }} />
                 <col style={{ width: "5%" }} />
                 <col style={{ width: "5%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "9%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
                 <col style={{ width: "8%" }} />
               </colgroup>
               <thead>
@@ -1118,11 +1509,11 @@ export default function Analytics() {
                             onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = "#fafafa"; }}
                             onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = "transparent"; }}>
                             <td style={{ ...S.td, color: "#ccc", fontSize: 10, textAlign: "center", padding: "7px 2px" }}>{i + 1}</td>
-                            <td style={{ ...S.td, padding: "7px 6px 7px 4px" }}>
+                            <td style={{ ...S.td, padding: "7px 6px 7px 4px", whiteSpace: "normal" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                                 <span style={{ fontSize: 10, color: "#7c3aed", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform .15s", flexShrink: 0 }}>▸</span>
                                 <div style={{ minWidth: 0, overflow: "hidden" }}>
-                                  <div style={{ fontWeight: 600, fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.tourName || "—"}</div>
+                                  <div style={{ fontWeight: 600, fontSize: 12, whiteSpace: "normal", overflowWrap: "anywhere", lineHeight: 1.3 }}>{t.tourName || "—"}</div>
                                   <small style={{ color: "#aaa", fontSize: 10 }}>{t.tourType || ""}</small>
                                 </div>
                               </div>
