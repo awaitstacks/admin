@@ -397,58 +397,129 @@ const ManageBooking = () => {
   // handleAddonChange so the same selectedAddons[] shape is used
   // on both the user-facing booking page and here.
   // ─────────────────────────────────────────────────────────
+  // const normalizeAddonEntry = (a, refList) => {
+  //   const list = refList || [];
+  //   const wantedType = (a.tripType || "").trim().toUpperCase();
+
+  //   const matchWithinType = (predicate) => {
+  //     if (!wantedType) return -1;
+  //     for (let i = 0; i < list.length; i++) {
+  //       const entry = list[i];
+  //       if ((entry.tripType || "").trim().toUpperCase() !== wantedType)
+  //         continue;
+  //       if (!predicate || predicate(entry)) return i;
+  //     }
+  //     return -1;
+  //   };
+
+  //   if (a.trainNo || a.trainName) {
+  //     let idx = matchWithinType(
+  //       (tr) =>
+  //         (a.trainNo && tr.trainNo === a.trainNo) ||
+  //         (a.trainName && tr.trainName === a.trainName),
+  //     );
+  //     if (idx === -1) idx = matchWithinType(null);
+  //     if (idx === -1) {
+  //       idx = list.findIndex(
+  //         (tr) =>
+  //           (a.trainNo && tr.trainNo === a.trainNo) ||
+  //           (a.trainName && tr.trainName === a.trainName),
+  //       );
+  //     }
+  //     if (idx !== -1) return { tripKind: "train", tripIndex: idx };
+  //   }
+  //   if (a.flightNo || a.airline) {
+  //     let idx = matchWithinType(
+  //       (fl) =>
+  //         (a.flightNo && fl.flightNo === a.flightNo) ||
+  //         (a.airline && fl.airline === a.airline),
+  //     );
+  //     if (idx === -1) idx = matchWithinType(null);
+  //     if (idx === -1) {
+  //       idx = list.findIndex(
+  //         (fl) =>
+  //           (a.flightNo && fl.flightNo === a.flightNo) ||
+  //           (a.airline && fl.airline === a.airline),
+  //       );
+  //     }
+  //     if (idx !== -1) return { tripKind: "flight", tripIndex: idx };
+  //   }
+  //   if (a.tripKind && a.tripIndex !== undefined && a.tripIndex !== null) {
+  //     return { tripKind: a.tripKind, tripIndex: Number(a.tripIndex) };
+  //   }
+  //   if (a.trainIndex !== undefined && a.trainIndex !== null) {
+  //     return { tripKind: "train", tripIndex: Number(a.trainIndex) };
+  //   }
+  //   return { tripKind: undefined, tripIndex: undefined };
+  // };
+
   const normalizeAddonEntry = (a, refList) => {
     const list = refList || [];
+    const isFlight = !!(a.flightNo || a.airline) && !(a.trainNo || a.trainName);
+    const kind = a.trainNo || a.trainName ? "train" : isFlight ? "flight" : a.tripKind;
+    const noKey = kind === "flight" ? "flightNo" : "trainNo";
+    const nameKey = kind === "flight" ? "airline" : "trainName";
     const wantedType = (a.tripType || "").trim().toUpperCase();
-
-    const matchWithinType = (predicate) => {
-      if (!wantedType) return -1;
-      for (let i = 0; i < list.length; i++) {
-        const entry = list[i];
-        if ((entry.tripType || "").trim().toUpperCase() !== wantedType)
-          continue;
-        if (!predicate || predicate(entry)) return i;
-      }
-      return -1;
+    const same = (x, y) => String(x ?? "").trim() === String(y ?? "").trim();
+    const typeOk = (e) =>
+      !wantedType || (e.tripType || "").trim().toUpperCase() === wantedType;
+    // Same tripType first, illana list full ah
+    const find = (pred) => {
+      let i = list.findIndex((e) => typeOk(e) && pred(e));
+      if (i === -1) i = list.findIndex(pred);
+      return i;
+    };
+    const out = (i) => ({ tripKind: kind || "train", tripIndex: i });
+    const idOf = (x) => {
+      if (x && typeof x === "object" && x.$oid) return String(x.$oid);
+      return x !== undefined && x !== null ? String(x) : "";
     };
 
-    if (a.trainNo || a.trainName) {
-      let idx = matchWithinType(
-        (tr) =>
-          (a.trainNo && tr.trainNo === a.trainNo) ||
-          (a.trainName && tr.trainName === a.trainName),
-      );
-      if (idx === -1) idx = matchWithinType(null);
-      if (idx === -1) {
-        idx = list.findIndex(
-          (tr) =>
-            (a.trainNo && tr.trainNo === a.trainNo) ||
-            (a.trainName && tr.trainName === a.trainName),
-        );
-      }
-      if (idx !== -1) return { tripKind: "train", tripIndex: idx };
+    // 1. Train / flight oda sondha _id (tripId) — order maarinaalum adhe train
+    const tripId = idOf(a.tripId);
+    if (tripId) {
+      const i = list.findIndex((e) => idOf(e._id) === tripId);
+      if (i !== -1) return out(i);
     }
-    if (a.flightNo || a.airline) {
-      let idx = matchWithinType(
-        (fl) =>
-          (a.flightNo && fl.flightNo === a.flightNo) ||
-          (a.airline && fl.airline === a.airline),
-      );
-      if (idx === -1) idx = matchWithinType(null);
-      if (idx === -1) {
-        idx = list.findIndex(
-          (fl) =>
-            (a.flightNo && fl.flightNo === a.flightNo) ||
-            (a.airline && fl.airline === a.airline),
-        );
-      }
-      if (idx !== -1) return { tripKind: "flight", tripIndex: idx };
+    // 2. Add-on oda _id — ovvoru add-on um oru train kulla dhaan irukkum.
+    //    Train order maathunaalum (2 → 3), andha add-on irukura train ah
+    //    kandupidichidum. Rendu train la kidaichaa (copy panna data) skip.
+    const addonId = idOf(a.addonId);
+    if (addonId) {
+      const hits = [];
+      list.forEach((e, i) => {
+        if ((e.addons || []).some((ad) => idOf(ad._id || ad.id) === addonId)) hits.push(i);
+      });
+      if (hits.length === 1) return out(hits[0]);
     }
-    if (a.tripKind && a.tripIndex !== undefined && a.tripIndex !== null) {
-      return { tripKind: a.tripKind, tripIndex: Number(a.tripIndex) };
+
+    // 3. Save aana position — adhe train / flight ah innum point pannudhaa?
+    const stored = a.tripIndex ?? a.trainIndex;
+    if (stored !== undefined && stored !== null && kind) {
+      const e = list[Number(stored)];
+      if (
+        e &&
+        (a[noKey] ? same(e[noKey], a[noKey]) : !a[nameKey] || same(e[nameKey], a[nameKey]))
+      )
+        return out(Number(stored));
     }
-    if (a.trainIndex !== undefined && a.trainIndex !== null) {
-      return { tripKind: "train", tripIndex: Number(a.trainIndex) };
+    // 4. Train / flight NUMBER match
+    if (a[noKey]) {
+      const i = find((e) => same(e[noKey], a[noKey]));
+      if (i !== -1) return out(i);
+    }
+    // 5. Number illaadha pazhaya data — name match
+    if (a[nameKey]) {
+      const i = find((e) => same(e[nameKey], a[nameKey]));
+      if (i !== -1) return out(i);
+    }
+    // 6. Adhuvum illana — same tripType la first trip (pazhaya maadhiri)
+    if (wantedType && kind) {
+      const i = list.findIndex(typeOk);
+      if (i !== -1) return out(i);
+    }
+    if (a.tripKind && stored !== undefined && stored !== null) {
+      return { tripKind: a.tripKind, tripIndex: Number(stored) };
     }
     return { tripKind: undefined, tripIndex: undefined };
   };
@@ -500,6 +571,7 @@ const ManageBooking = () => {
           tripKind,
           tripIndex,
           ...(tripKind === "train" ? { trainIndex: tripIndex } : {}),
+          tripId: trip._id, // train / flight oda sondha id — order maarinaalum match aagum
           trainNo: trip.trainNo,
           trainName: trip.trainName,
           flightNo: trip.flightNo,
@@ -675,6 +747,7 @@ const ManageBooking = () => {
             ).map((a) => ({
               tripKind: a.tripKind,
               tripIndex: a.tripIndex,
+              tripId: a.tripId,
               trainNo: a.trainNo,
               trainName: a.trainName,
               flightNo: a.flightNo,
