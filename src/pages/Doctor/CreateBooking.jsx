@@ -109,6 +109,8 @@
 //   useEffect(() => {
 //     return () => {
 //       if (undoTimerRef.current) clearInterval(undoTimerRef.current);
+//       // Page vittu poonaa (Back) missing-fields toast adutha page la varakoodaadhu
+//       toast.dismiss("create-booking-missing");
 //     };
 //   }, []);
 
@@ -627,52 +629,38 @@
 //       fail("Select a tour first");
 //       return;
 //     }
-//     // Same checks the backend does — catch them here with a clear message.
+//     // Same checks the backend does — ellaa missing fields um ore dhadava kaatum.
+//     const missing = [];
 //     const mobile = (contact.mobile || "").trim();
-//     if (!mobile || !/^[\d+\-\s()]{7,25}$/.test(mobile)) {
-//       fail("Enter a valid Mobile Number.");
-//       return;
-//     }
-//     if (!contact.email || !/.+@.+\..+/.test(contact.email.trim())) {
-//       fail("Enter a valid Contact Email.");
-//       return;
-//     }
+//     if (!mobile) missing.push("Contact: Mobile Number is required.");
+//     else if (!/^[\d+\-\s()]{7,25}$/.test(mobile)) missing.push("Contact: Enter a valid Mobile Number.");
+//     const email = (contact.email || "").trim();
+//     if (!email) missing.push("Contact: Email is required.");
+//     else if (!/.+@.+\..+/.test(email)) missing.push("Contact: Enter a valid Email.");
 
-//     for (let [idx, t] of travellers.entries()) {
+//     travellers.forEach((t, idx) => {
+//       const who = `Traveller ${idx + 1}${t.firstName?.trim() ? ` (${t.firstName.trim()})` : ""}`;
+//       const need = [];
 //       const age = Number(t.age);
+//       if (!t.firstName?.trim()) need.push("First Name (As per Aadhar)");
+//       if (!t.lastName?.trim()) need.push("Last Name (As per Aadhar)");
+//       if (String(t.age ?? "").trim() === "") need.push("Age");
+//       else if (isNaN(age) || age < 1) need.push("a valid Age (1 or more)");
+//       if (!t.gender) need.push("Gender");
+//       if (t.packageType === "variant" && (t.variantPackageIndex === null || t.variantPackageIndex === undefined)) need.push("Variant Package");
+//       if (!t.sharingType) need.push("Sharing Type");
+//       if (!t.boardingPoint) need.push("Boarding Point");
+//       if (!t.deboardingPoint) need.push("Deboarding Point");
+//       if (need.length) missing.push(`${who}: ${need.join(", ")} ${need.length > 1 ? "are" : "is"} required.`);
+//     });
 
-//       if (!t.firstName?.trim()) {
-//         toast.error(`Traveller ${idx + 1}: First Name is required (As per Aadhar).`);
-//         return;
-//       }
-//       if (!t.lastName?.trim()) {
-//         toast.error(`Traveller ${idx + 1}: Last Name is required (As per Aadhar).`);
-//         return;
-//       }
-//       if (isNaN(age) || age < 1) {
-//         toast.error(`Invalid age for traveller: ${t.firstName || "Unnamed"}.`);
-//         return;
-//       }
-//       if (!t.gender) {
-//         toast.error("Please select gender for all travellers.");
-//         return;
-//       }
-//       if (!t.sharingType) {
-//         toast.error("Please select a sharing type for all travellers.");
-//         return;
-//       }
-//       if (!t.boardingPoint) {
-//         toast.error("Please select a boarding point for all travellers.");
-//         return;
-//       }
-//       if (!t.deboardingPoint) {
-//         toast.error("Please select a deboarding point for all travellers.");
-//         return;
-//       }
-//       if (t.packageType === "variant" && t.variantPackageIndex === null) {
-//         toast.error(`Please select a variant package for traveller: ${t.firstName}.`);
-//         return;
-//       }
+//     if (missing.length) {
+//       setSubmitError(missing.join("\n"));
+//       toast.error(
+//         missing.length === 1 ? missing[0] : `${missing[0]} (+${missing.length - 1} more — see the list above the button)`,
+//         { toastId: "create-booking-missing" },
+//       );
+//       return;
 //     }
 
 //     // Validation passed — ask for confirmation before anything is sent.
@@ -1474,8 +1462,17 @@
 //             </div>
 
 //             {submitError && (
-//               <div className="px-5 py-4 rounded-2xl bg-red-50 border border-red-300 text-red-800 font-semibold text-center shadow-sm">
-//                 ⚠️ {submitError}
+//               <div role="alert" className="px-5 py-4 rounded-2xl bg-red-50 border border-red-300 text-red-800 font-semibold shadow-sm">
+//                 {submitError.includes("\n") ? (
+//                   <>
+//                     <p className="mb-2">⚠️ Please fill these missing fields:</p>
+//                     <ul className="list-disc pl-6 space-y-1 text-sm font-medium">
+//                       {submitError.split("\n").map((m, i) => <li key={i}>{m}</li>)}
+//                     </ul>
+//                   </>
+//                 ) : (
+//                   <p className="text-center">⚠️ {submitError}</p>
+//                 )}
 //               </div>
 //             )}
 
@@ -1632,6 +1629,29 @@ const hydrateTraveller = (partial) => ({
   ...blankTraveller(),
   ...partial,
 });
+
+// ── Trip order: Boarding → Middle → Deboarding (by tripType) ──
+// legRank / sortTripsForView: screen order only — each trip keeps its
+// ORIGINAL index, so add-on match / save logic is unchanged.
+// sortAddonsByTrip: add-ons are saved in trip order, whatever the click order.
+const legRank = (tt) => {
+  const s = String(tt || "").trim().toLowerCase();
+  if (s.includes("deboard")) return 3;
+  if (s.includes("board")) return 1;
+  return 2; // Middle, or no trip type → keeps its original place
+};
+const sortTripsForView = (list = []) =>
+  list
+    .map((trip, idx) => ({ trip, idx }))
+    .sort((a, b) => legRank(a.trip.tripType) - legRank(b.trip.tripType) || a.idx - b.idx);
+const isFlightEntry = (a) => a.flightIndex !== undefined && a.flightIndex !== null;
+const sortAddonsByTrip = (list = []) =>
+  [...list].sort(
+    (a, b) =>
+      legRank(a.tripType) - legRank(b.tripType) ||
+      Number(isFlightEntry(a)) - Number(isFlightEntry(b)) ||
+      (a.trainIndex ?? a.flightIndex ?? 0) - (b.trainIndex ?? b.flightIndex ?? 0),
+  );
 
 const CreateBooking = () => {
   const location = useLocation();
@@ -1931,7 +1951,7 @@ const CreateBooking = () => {
                 (ma.flightIndex === undefined || a.flightIndex !== ma.flightIndex),
             );
           });
-          t.selectedAddons = [...sa, ...matchedAddons];
+          t.selectedAddons = sortAddonsByTrip([...sa, ...matchedAddons]);
         }
       });
 
@@ -2088,7 +2108,7 @@ const CreateBooking = () => {
           addedAt: new Date(),
         });
       }
-      t.selectedAddons = selectedAddons;
+      t.selectedAddons = sortAddonsByTrip(selectedAddons);
     };
 
     // Same "booking details are shared across the group" rule as the
@@ -2137,7 +2157,7 @@ const CreateBooking = () => {
           addedAt: new Date(),
         });
       }
-      t.selectedAddons = selectedAddons;
+      t.selectedAddons = sortAddonsByTrip(selectedAddons);
     };
 
     // Same sharing rule as the train add-on handler above — a flight
@@ -2633,6 +2653,11 @@ const CreateBooking = () => {
                   .filter(
                     ({ flight }) =>
                       Array.isArray(flight.addons) && flight.addons.length > 0,
+                  )
+                  .sort(
+                    (a, b) =>
+                      legRank(a.flight.tripType) - legRank(b.flight.tripType) ||
+                      a.flightIndexInPackage - b.flightIndexInPackage,
                   );
 
                 const trainAddonsExist = trainDetails.some(
@@ -2880,7 +2905,7 @@ const CreateBooking = () => {
 
                           {trainDetails.length > 0 ? (
                             <div className="space-y-3">
-                              {trainDetails.map((train, trainIndex) => {
+                              {sortTripsForView(trainDetails).map(({ trip: train, idx: trainIndex }, pos) => {
                                 const trainAddons = train.addons || [];
                                 return (
                                   <div
@@ -2890,7 +2915,7 @@ const CreateBooking = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-[60px_1fr_300px] gap-4 items-center">
                                       <div className="flex md:justify-center">
                                         <div className="w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
-                                          {String(trainIndex + 1).padStart(2, "0")}
+                                          {String(pos + 1).padStart(2, "0")}
                                         </div>
                                       </div>
                                       <div>
@@ -2949,7 +2974,7 @@ const CreateBooking = () => {
                               </h3>
                             </div>
                             <div className="space-y-3">
-                              {flightsWithAddons.map(({ flight, flightIndexInPackage }) => (
+                              {flightsWithAddons.map(({ flight, flightIndexInPackage }, pos) => (
                                 <div
                                   key={flight._id || flightIndexInPackage}
                                   className="border border-gray-200 rounded-xl p-4 sm:p-5 bg-white hover:border-purple-200 transition-all"
@@ -2957,7 +2982,7 @@ const CreateBooking = () => {
                                   <div className="grid grid-cols-1 md:grid-cols-[60px_1fr_300px] gap-4 items-center">
                                     <div className="flex md:justify-center">
                                       <div className="w-10 h-10 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-sm">
-                                        {String(flightIndexInPackage + 1).padStart(2, "0")}
+                                        {String(pos + 1).padStart(2, "0")}
                                       </div>
                                     </div>
                                     <div>
